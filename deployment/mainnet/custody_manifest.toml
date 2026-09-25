@@ -1,0 +1,569 @@
+# =============================================================================
+# STSH — CANONICAL CUSTODY MANIFEST (freeze V6 §13, H3)
+# =============================================================================
+#
+# THE single canonical custody inventory. DERIVED, NEVER AUTHORED: every entry
+# exists because at least one candidate-producing derivation (D1–D5) produced
+# it, and carries exactly ONE Axis-1 IC-controller disposition
+# (freeze §13.2a/§13.4).
+#
+# `deployment/mainnet/genesis_manifest.toml` is NOT a deployment inventory —
+# it is token allocation and init-wiring only and must never be cited as the
+# canister set (freeze §13.2).
+#
+# Deploy-time gates, separate (freeze §13.5) — plus, per SSA integration
+# INT-02: the independent vault deployment init artifact
+# `deployment/mainnet/vault_init.did` must exist and verify against the
+# Vault's REQUIRED_CUTOVER constants and this manifest's
+# set_controller_at_cutover rows BEFORE any deployment. That check is
+# deploy-time class only: `verify_custody_manifest --deploy-time` fails with
+# the typed PendingDeploymentArtifact until L4/runbook produces the artifact;
+# the build-time gate stays green without it. The build-time cutover check
+# proves source↔manifest equality + fixture consistency only — it does NOT
+# prove the real deployment payload; only this artifact check does.
+#
+# Build-time gate: scripts/verify_custody_manifest (a blocking phase in
+# run_gate.sh, AFTER the MemoryId lint but NOT immediately after it — a
+# citation-inventory lint runs between the two, and "immediately" made the
+# ordering sound like a contract it never was; corrected by lane R-11) enforces
+# freeze §13.2a:
+#   - every candidate in D1∪D2∪D3∪D4∪D5 appears EXACTLY ONCE here with a
+#     disposition;
+#   - conflicting facts about the same principal FAIL — but only within the
+#     same semantic field (observed_current vs expected) and the same gate
+#     epoch; stale/mixed-epoch evidence fails as typed StaleEvidence (distinct
+#     from FactConflict, NEVER a pass);
+#   - absence from a source fails ONLY where that source is declared complete
+#     for its universe;
+#   - D5 receipts must be bijective with Vault-created production entries.
+#
+# Gate epoch for all fact comparison in this file: "custody-l0-2026-08-03".
+#
+# D6 is NOT a candidate source (freeze §13.2b, round-4 R4-1): its pinned
+# command `dfx canister list` does not exist in dfx 0.28.0. It survives only
+# as a post-union attribution cross-check and contributes no candidates here.
+
+schema_version = 2
+gate_epoch = "custody-l0-2026-08-03"
+
+# ── §P.1 — the 2+9 custody partition ─────────────────────────────────────────
+#
+# schema_version 2 splits the eleven custody targets into two halves with
+# DIFFERENT evidence contracts:
+#
+#   BootstrapRing (2)   vault, upgrader — born at bootstrap. The Vault did not
+#                       create them, so no D5 receipt for either can be
+#                       genuine. Evidence is a ceremony artifact.
+#   BornUnderVault (9)  the exact BORN_UNDER_VAULT_ROLES allowlist
+#                       (canisters/vault/src/lib.rs). Created by the Vault,
+#                       each evidenced by exactly one `bound` D5 receipt.
+#
+# Under schema_version 1 both halves carried `born_under_vault`, which asserted
+# Vault provenance for the ring pair. D5 bijectivity ("every born-under-vault
+# entry has a receipt") was then unsatisfiable in principle and could only pass
+# vacuously — the shape that reports success while proving nothing.
+#
+# WHERE RING EVIDENCE LIVES — RULED: a SEPARATELY HASHED CEREMONY INPUT, not a
+# field of this file. This manifest is derived, never authored: every entry
+# exists because a derivation produced it. The ring pair is the one pair no
+# derivation can produce. Pasting its ceremony observations here would author
+# the single class of fact this file exists to reject. So the manifest carries
+# only the fail-closed pointer below; the observations live in their own
+# artifact with their own hash.
+#
+# FAIL-CLOSED: while `status = "pending"` no ring entry may carry a principal
+# (an unevidenced principal is an authored fact), and any D5 receipt naming a
+# ring role fails as RingReceiptPresentedAsVaultCreated. When
+# `status = "populated"` the artifact must exist and hash to evidence_sha256 —
+# missing, unreadable, unpinned or mismatched all FAIL; none is an empty pass.
+
+# ── DEPLOY POSTURE (R-3b S1) ─────────────────────────────────────────────────
+#
+# Before R-3b, `./run_gate.sh` stayed green over the deploy-time checks by not
+# running them at all: `--deploy-time` was never passed, so authority binding,
+# recovery roster, release identity and launch evidence executed on NO gate run
+# and a regression in any of them would have gone unnoticed.
+#
+# It stays green now by DECLARING what is pending instead. `run_gate.sh` runs
+# `verify_custody_manifest --deploy-posture`, which executes the full
+# deploy-time set and compares the OBSERVED keys to `expected_pending` for
+# EXACT SET EQUALITY. Each key is `Violation::key()` — built from TYPED fields
+# on the violation, never from its message text — so swapping WHICH obligation
+# is pending (same kind, same count) is a set difference and fails, and a
+# reworded message can never silently change an obligation's identity.
+#
+# Only four violation kinds may EVER be declared here (AuthorityFieldIncomplete,
+# PendingDeploymentArtifact, ReleaseIdentityNotAsserted, LaunchEvidenceIncomplete);
+# any other kind-prefix is refused at LOAD, exit 2, before a check runs.
+#
+# `posture = "launch"` is a reviewed ONE-LINE change. It requires
+# `expected_pending = []` (refused at load otherwise) and then demands a
+# completely clean deploy verdict — no allowlist survives the flip.
+
+[deploy_gate]
+posture = "pre-ceremony"
+expected_pending = [
+  # Ceremony not yet performed: D5 carries zero creation receipts for the
+  # born-under-Vault targets.
+  "LaunchEvidenceIncomplete:d5-receipts",
+  # Lane A-3 FINALIZE (2026-09-12) bound `ids_name = "shielded_pool"` to the
+  # born_under_vault entry, which the D2 binding check forces to carry
+  # `principal = "cxrfg-qaaaa-aaaar-qchfa-cai"`. The pool principal is therefore
+  # NAMED here while [sources.d5] is still `pending` with `receipts = []`, so
+  # check_launch_evidence observes it as an unreceipted Vault-created target.
+  # CAUSE: the pool principal is bound before the J-18 creation receipts are
+  # recorded. REMOVED BY: the finalize-assemble lane that records the D5
+  # receipts (RULING_RECORD_RING_CLOSURE_TIMING_2026-09-12). No receipt is
+  # authored in A-3.
+  "LaunchEvidenceIncomplete:unreceipted:cxrfg-qaaaa-aaaar-qchfa-cai",
+]
+
+[bootstrap_ring]
+status = "pending"
+evidence_path = "deployment/mainnet/bootstrap_ring_evidence.toml"
+evidence_sha256 = ""
+members = ["vault", "upgrader"]
+
+# ── Candidate-producing derivations (freeze §13.2) ───────────────────────────
+
+[sources.d1]
+kind = "dfx_json_launch_entries"
+path = "dfx.json"
+# Complete for its universe BY CONSTRUCTION: it IS the file.
+declared_complete_for = ["repo_declared_canisters"]
+blind_to = "anything never in the repo"
+
+[sources.d2]
+kind = "canister_ids_json"
+path = "canister_ids.json"
+# NOT complete for out-of-manifest canisters — PROVEN by s3tyu (freeze §13.2a).
+# Absence from D2 is not evidence of anything and must not fail the gate.
+declared_complete_for = []
+blind_to = "out-of-manifest canisters"
+
+[sources.d3]
+kind = "dns_zone_snapshot"
+# EVIDENCE SLOT PENDING — requires an authoritative DNS-zone export/API
+# snapshot for stsh.fi (apex, www, every relevant record), which L0 cannot
+# obtain without mainnet/network access. Declared here with its completeness
+# claim; contributes NO candidates until populated. A pending source never
+# fails coverage, and "pending" is never silently treated as "empty"
+# (freeze §13.2 RR-2).
+status = "pending"
+declared_complete_for = ["custom_domain_bound_canisters"]
+blind_to = "canisters with no custom domain, or a zone snapshot that failed to obtain"
+candidates = []
+
+[sources.d4]
+kind = "artifact2_evidenced_set"
+# ARTIFACT2_deployment_manifest.md (sha256 eb7a171a…, corrected round 3),
+# read-only on-chain evidence via `dfx canister --network ic --identity
+# anonymous info <principal>`, dfx 0.28.0.
+status = "populated"
+declared_complete_for = []
+blind_to = "its own collection method"
+collection_run = "artifact2-2026-08-02"
+# The corrected ARTIFACT2 evidenced set (§1 + correction 7 + freeze §13.4
+# known rulings). zmvwg's controller/module-hash facts exist only in
+# truncated form in the source and are therefore NOT recorded as comparable
+# facts below — no fabrication.
+candidates = [
+  "ohspu-zqaaa-aaaad-qmasq-cai",
+  "pyeop-7yaaa-aaaam-ajfja-cai",
+  "s3tyu-aaaaa-aaaab-qhdjq-cai",
+  "zmvwg-xqaaa-aaaan-q6l3a-cai",
+]
+
+[sources.d5]
+kind = "vault_create_canister_receipts"
+# EVIDENCE SLOT PENDING — the Vault does not exist yet, so no receipts can
+# exist. Complete BY CONSTRUCTION going forward (freeze §13.3); must be
+# bijective with Vault-created production entries (vacuously true until
+# receipts exist — enforced by the gate).
+status = "pending"
+declared_complete_for = ["vault_created_production"]
+blind_to = "anything created before the Vault existed"
+receipts = []
+
+# ── D4 observed facts (semantic field: observed_current) ─────────────────────
+# Every fact binds: source · network · observation time · collection run
+# (freeze §13.2a temporal semantics, RR3-3). Compared only against facts of
+# the SAME semantic field and the SAME gate epoch.
+
+[[facts]]
+principal = "ohspu-zqaaa-aaaad-qmasq-cai"
+field = "controllers"
+semantic = "observed_current"
+value = ["wlomv-jat3n-sovoa-gnnzs-f34ie-chqee-zjrlc-t6yav-7hybw-iwdyo-hqe"]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T16:20:17Z"
+collection_run = "artifact2-2026-08-02"
+epoch = "custody-l0-2026-08-03"
+
+[[facts]]
+principal = "ohspu-zqaaa-aaaad-qmasq-cai"
+field = "module_hash"
+semantic = "observed_current"
+value = []
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T16:20:17Z"
+collection_run = "artifact2-2026-08-02"
+epoch = "custody-l0-2026-08-03"
+
+[[facts]]
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+field = "controllers"
+semantic = "observed_current"
+value = [
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+  "cnbb4-nvhxr-nypbw-pkmbd-kyzqf-sx2su-ngqy7-hh4wm-qvlca-bm6ct-oqe",
+]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T16:20:17Z"
+collection_run = "artifact2-2026-08-02"
+epoch = "custody-l0-2026-08-03"
+
+[[facts]]
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+field = "module_hash"
+semantic = "observed_current"
+value = ["0x2f73b9e18b992f221a5fbab7fc59d840a9cbc461f7cfe875049f51354d23696c"]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T16:20:17Z"
+collection_run = "artifact2-2026-08-02"
+epoch = "custody-l0-2026-08-03"
+
+[[facts]]
+principal = "s3tyu-aaaaa-aaaab-qhdjq-cai"
+field = "controllers"
+semantic = "observed_current"
+value = [
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+  "cnbb4-nvhxr-nypbw-pkmbd-kyzqf-sx2su-ngqy7-hh4wm-qvlca-bm6ct-oqe",
+]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T18:11:07Z"
+collection_run = "artifact2-2026-08-02"
+epoch = "custody-l0-2026-08-03"
+
+[[facts]]
+principal = "s3tyu-aaaaa-aaaab-qhdjq-cai"
+field = "module_hash"
+semantic = "observed_current"
+value = ["0x2f73b9e18b992f221a5fbab7fc59d840a9cbc461f7cfe875049f51354d23696c"]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T18:11:07Z"
+collection_run = "artifact2-2026-08-02"
+epoch = "custody-l0-2026-08-03"
+
+# ── Axis 1 — candidate inventory, exactly one disposition each ───────────────
+#
+# Candidate identity: D1 candidates match on `dfx_name`; D2 on `ids_name`;
+# D3/D4/D5 on `principal`. A name in dfx.json and the same string in
+# canister_ids.json need NOT denote the same deployment (the old pool proves
+# it), so the two are matched through SEPARATE fields and never conflated.
+
+# — The closed ring itself (born at bootstrap, freeze §3c invariant 1) —
+#   §P.1: BootstrapRing, NOT BornUnderVault. Neither was created by the Vault,
+#   so neither can carry a D5 receipt; their evidence is the separately hashed
+#   ceremony input declared in [bootstrap_ring] above.
+[[canister]]
+dfx_name = "vault"
+disposition = "bootstrap_ring"
+ring_role = "vault"
+note = "The Vault itself. Principal allocated at bootstrap; controllers == [Upgrader]."
+
+[[canister]]
+dfx_name = "upgrader"
+disposition = "bootstrap_ring"
+ring_role = "upgrader"
+note = "The Upgrader. Principal allocated at bootstrap; controllers == [Vault]."
+
+# — Born under Vault (freeze §12 + ARTIFACT2 §3): created and installed by the
+#   Vault with controllers == [Vault]; principal allocated at bootstrap —
+[[canister]]
+dfx_name = "shielded_pool"
+disposition = "born_under_vault"
+principal = "cxrfg-qaaaa-aaaar-qchfa-cai"
+ids_name = "shielded_pool"
+note = "FRESH pool, born under the Vault at J-18 (2026-09-12, D5 receipt proposal 1, Bound, controller cpdab-saaaa-aaaar-qca2q-cai). Distinct deployment from ohspu below, which merely SHARED the canister_ids.json name until lane A-3 FINALIZE moved `ids_name` here and re-pointed canister_ids.json at this principal. The D2 binding check forces `principal` on this entry once `ids_name` is bound; see [deploy_gate].expected_pending for the launch-evidence consequence."
+
+[[canister]]
+dfx_name = "treasury"
+disposition = "born_under_vault"
+note = "Fresh deploy with init.controller = Vault (ARTIFACT2 §3 recommendation)."
+
+[[canister]]
+dfx_name = "vesting"
+disposition = "born_under_vault"
+note = "Fresh deploy with init.controller = Vault (ARTIFACT2 §3 recommendation)."
+
+[[canister]]
+dfx_name = "nullifier_registry"
+disposition = "born_under_vault"
+note = "BornUnderVault ONLY — created at A6.5c, installed at A7. NOT in the set-controller cutover set (freeze §13.4, SSA 5; brief gotcha 16). Not deployed at 6520185."
+
+[[canister]]
+dfx_name = "stsh_token"
+disposition = "born_under_vault"
+note = "RULED IN (freeze §12). Zero application variants — controller-only target. Genesis install rides a hash-bound Vault proposal binding BOTH wasm and arg hashes (freeze §3f): the genesis mint is a 2-of-3-approved, arg-hash-pinned install. STAKING_CANISTER pinned to Vault (freeze §14)."
+
+[[canister]]
+dfx_name = "merkle_tree"
+disposition = "born_under_vault"
+note = "RULED IN (freeze §12). Zero application variants — controller-only target."
+
+[[canister]]
+dfx_name = "verifier"
+disposition = "born_under_vault"
+note = "RULED Owner 2026-08-03: BornUnderVault (the freeze named the L3e read-back but never the axis-1 disposition — a freeze-text gap, closed by this ruling). ARTIFACT2 §3: controllers [Vault], must equal the pool's (DEF-078/P15-002). Not deployed at 6520185."
+
+[[canister]]
+dfx_name = "smoke_alarm_monitor"
+disposition = "born_under_vault"
+note = "RULED Owner 2026-08-03: BornUnderVault, controller-only dry-run target (ARTIFACT2 §3, spec §10). This is a different thing from the on-canister cycle monitor that freeze §11 ruled OUT (V7 ruled the launch monitor external/off-chain); do not conflate the two. Not deployed at 6520185. COUNT-OK: dated ruling citation, not a count — the value is a RULED provenance string, derived from no corpus any tool scans (lane R-11)."
+
+# — Set-controller at cutover —
+[[canister]]
+dfx_name = "solvency_status"
+ids_name = "solvency_status"
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+disposition = "set_controller_at_cutover"
+domain_bound = true
+note = "reserves.stsh.fi asset canister. Post-cutover controllers == [Vault]; module hash unchanged (cutover changes controllers only). A legitimate controller transition between snapshots is StaleEvidence, never a pass (freeze §13.2a)."
+
+[[canister]]
+dfx_name = "wallet_frontend"
+principal = "s3tyu-aaaaa-aaaab-qhdjq-cai"
+disposition = "set_controller_at_cutover"
+domain_bound = true
+note = "app.stsh.fi wallet UI — the highest-exposure surface in the manifest. ABSENT from canister_ids.json (D2 not complete; freeze §13.2a fixture case). Found via D3 (domain binding, ARTIFACT2 §1c) and D4. Included in the cutover set at the same or higher priority than pyeop (ARTIFACT2 §1c follow-up 2). Post-cutover controllers == [Vault]."
+
+# — Out of scope (freeze §13.4 known rulings) —
+[[canister]]
+principal = "ohspu-zqaaa-aaaad-qmasq-cai"
+disposition = "out_of_scope"
+out_of_scope_reason = "Old shielded_pool. `ids_name` was MOVED off this entry to the born_under_vault pool at lane A-3 FINALIZE (2026-09-12); the disposition is UNCHANGED. Empty (module hash None). Controller wlomv-…-hqe UNIDENTIFIED — not retirable via any presently-demonstrated project-controlled identity. HOSTILE/UNCONTROLLED posture; NOT retired under our control. Mitigation is the A-3 domain severance as a security control (freeze §13.4, brief gotcha 7)."
+
+[[canister]]
+principal = "zmvwg-xqaaa-aaaan-q6l3a-cai"
+disposition = "out_of_scope"
+domain_bound = true
+out_of_scope_reason = "Serves stsh.fi apex + www. Controller observed only in truncated form (t64is-…-nqe, D4). Evidence supports 'appears third-party-builder-deployed' and 'not presently demonstrated project-controlled' — it does NOT prove third-party-builder ownership or that no project-held non-dfx identity controls it (freeze §13.4, RR-4). Migration, if ownership is settled, is a deliberately deferred post-launch item."
+
+# ── STAKING — NOT DECLARED IN dfx.json (D1 launch-set exclusion) ─────────────
+# THIS BLOCK DOCUMENTS AN ABSENCE. No [[canister]] entry follows from it; the
+# next [[canister]] entry below belongs to vetkeys, not to staking.
+#
+# LAUNCH-SET EXCLUSION (D1, ratified 2026-08-14; CTO_RULING_L1_DFX_STAKING_
+# REMOVAL_V2_2026-08-17 §1 B-1): the staking canister is NOT INSTALLED at
+# launch — not deployed, no mainnet principal — and as of this ruling it is not
+# declared in dfx.json AT ALL. Inventory entries here are derived from the
+# D1∪D2∪D3∪D4∪D5 sources, never hand-authored; with staking absent from D1
+# there is no source row from which a staking entry could be derived, so no
+# staking [[canister]] entry exists. The absence is the correct state, not an
+# omission.
+#
+# Both stored staking principals (shielded_pool STAKING, stsh_token
+# STAKING_CANISTER — see the authority_field entries below) are pinned to the
+# VAULT at launch, never to a staking-canister principal (freeze §14).
+#
+# Reintroducing staking is a post-launch governance action under the staking
+# gate (freeze §15), which MUST re-derive a manifest entry at that time.
+
+[[canister]]
+dfx_name = "vetkeys"
+disposition = "born_under_vault"
+note = "RULED Owner 2026-08-03 by deployment status (a repo fact): NOT deployed at 6520185 — absent from canister_ids.json (D2) and from ARTIFACT2's evidenced set (D4; no deployed-principal evidence exists) — so BornUnderVault, same pattern as nullifier. Workspace-EXCLUDED standalone crate (ic-cdk 0.20 links conflict)."
+
+# ── Axis 2 — authority-principal inventory (freeze §13.4, §6 builder sweep) ──
+# Scope is AUTHORITY: principals used for authorization, privileged routing,
+# peer-call trust, controller/configuration, or custody — not every serialized
+# Principal. 18 durable authority fields at commit 6520185; 20 from LAUNCH-HARDEN-04 (pool VETKEYS_CANISTER, vetkeys DEVICE_CHECK_CALLER). Launch values that
+# name a born-under-vault principal are PENDING until that principal is
+# allocated at bootstrap; any change to a stored authority value post-launch
+# goes through the same proposal and evidence path as any other action
+# (freeze §13.4 — a launch read-back is not perpetual proof).
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "TOKEN"
+storage = "shielded-pool/src/lib.rs:2608-2613 (authority refs)"
+writers = ["init"]
+launch_value = "PENDING(stsh_token born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "NULLIFIER"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(nullifier_registry born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "MERKLE"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(merkle_tree born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "TREASURY"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(treasury born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "STAKING"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(vault principal) — pinned to Vault at launch (V7 Ruling A); no pause authority exists outside the Vault (brief gotcha 8)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "CONTROLLER"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "VERIFIER_CANISTER"
+storage = "shielded-pool/src/lib.rs:2617"
+writers = ["init", "governed runtime update: set_verifier_canister (:6533)"]
+launch_value = "PENDING(verifier born-under-vault principal)"
+read_back = "get_authority_refs (L3c) — the ONE pre-existing rebind+read-back pair (freeze §6: 17-of-18 gap count already credits it)"
+
+[[authority_field]]
+canister = "treasury"
+field = "TOKEN"
+storage = "treasury/src/lib.rs:331-333 (CANISTER_REFS eager cell, MemoryId 4)"
+writers = ["init"]
+launch_value = "PENDING(stsh_token born-under-vault principal)"
+read_back = "get_canister_refs_readback (L3a)"
+
+[[authority_field]]
+canister = "treasury"
+field = "POOL"
+storage = "treasury/src/lib.rs:331-333"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_canister_refs_readback (L3a)"
+
+[[authority_field]]
+canister = "treasury"
+field = "CONTROLLER"
+storage = "treasury/src/lib.rs:331-333"
+writers = ["init"]
+launch_value = "PENDING(vault principal)"
+read_back = "get_canister_refs_readback (L3a)"
+
+[[authority_field]]
+canister = "vesting"
+field = "TOKEN"
+storage = "vesting/src/lib.rs:180-181 (CANISTER_REFS eager cell, MemoryId 3)"
+writers = ["init"]
+launch_value = "PENDING(stsh_token born-under-vault principal)"
+read_back = "get_canister_refs_readback (L3b)"
+
+[[authority_field]]
+canister = "vesting"
+field = "CONTROLLER"
+storage = "vesting/src/lib.rs:385-389 (CANISTER_REFS eager cell, MemoryId 3)"
+writers = ["init", "post_upgrade(rebind_controller)"]
+# LAUNCH-HARDEN-04 O-7 (RG-3; CTO Addendum 1 item 7): on-chain state is the
+# truth. The genesis install bound fshhc (vesting_init.did, genesis_manifest.toml —
+# historical record, UNCHANGED); the LAUNCH-HARDEN-04 Vault Upgrade of cfxs7
+# (raw arg `(opt record { rebind_controller = opt principal "cpdab-…" })`, arg
+# sha256 84bd8f408cb773bc63f20cfb46e3a1420a9cc577025efc19cf03a5b1ea394fac)
+# rebinds it to the Vault. Still NO callable setter: the only post-init writer is
+# the controller-gated upgrade ceremony (vesting/src/lib.rs post_upgrade, :949-1005),
+# which traps unless the new value is a non-anonymous IC controller of cfxs7.
+launch_value = "cpdab-saaaa-aaaar-qca2q-cai"
+read_back = "get_canister_refs_readback (L3b) — .controller == cpdab… after the HARDEN-04 upgrade"
+
+[[authority_field]]
+canister = "nullifier_registry"
+field = "POOL_CANISTER"
+storage = "nullifier-registry/src/lib.rs:92,119,125,133,384-408 (POOL_REF eager cell, MemoryId 2)"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_authority_refs (L3d; name may vary, shape may not) — the 18th field (freeze §6, RR-3)"
+
+[[authority_field]]
+canister = "verifier"
+field = "AUTHORIZED_POOL"
+storage = "verifier/src/lib.rs:74"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_authorized_pool (L3e)"
+
+[[authority_field]]
+canister = "stsh_token"
+field = "TREASURY"
+storage = "token/src/lib.rs:461"
+writers = ["init"]
+# PROSE CORRECTION (RULING_RECORD_POOL_TRUST_ROOTS_2026-09-13 §2, lane A-7
+# REBASE). This row is the LEDGER's treasury ACCOUNT — the allocation recipient,
+# i.e. the TREASURY_MULTISIG holder that genesis_manifest `[token_init].treasury`
+# names — and NOT the treasury canister. CUSTODY_DECISION.md Option 2 is explicit
+# that the treasury canister must not custody real STSH, so the two cannot be the
+# same principal. The old "born-under-vault principal" wording described the
+# treasury CANISTER and was stale against that decision. The pool's callee
+# identity IS the canister; that is `shielded_pool.TREASURY` above, not this row.
+# Disposition is UNCHANGED: still PENDING.
+launch_value = "PENDING(TREASURY_MULTISIG holder — the ledger's treasury ACCOUNT, per genesis_manifest token_init.treasury; NOT the treasury canister)"
+read_back = "get_authority_refs (L3f)"
+
+[[authority_field]]
+canister = "stsh_token"
+field = "FEE_COLLECTOR"
+storage = "token/src/lib.rs:466"
+writers = ["init"]
+launch_value = "PENDING(ruled at genesis; per genesis_manifest token_init.fee_collector, replaced with the real principal at RR-1)"
+read_back = "get_authority_refs (L3f)"
+
+[[authority_field]]
+canister = "stsh_token"
+field = "STAKING_CANISTER"
+storage = "token/src/lib.rs:467 (required InitArgs principal, :511-521; persisted :2083-2084, restored :2143)"
+writers = ["init", "upgrade-restore (:2143)"]
+launch_value = "PENDING(vault principal) — RULED: pinned to the Vault at launch (freeze §14). Fails closed: assert_staking_canister traps on None (:1967-1969). NO setter — post-launch change is a governance upgrade (freeze §15)."
+read_back = "get_authority_refs (L3f)"
+
+[[authority_field]]
+canister = "merkle_tree"
+field = "POOL_CANISTER"
+storage = "merkle-tree/src/lib.rs:125 (POOL_REF eager cell, MemoryId 5)"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_authority_refs (L3g)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "VETKEYS_CANISTER"
+storage = "shielded-pool/src/lib.rs (VETKEYS_CANISTER_CELL, MemoryId 28)"
+writers = ["post_upgrade(vetkeys_canister)"]
+launch_value = "a7l2d-caaaa-aaaar-qchja-cai"
+read_back = "get_vetkeys_canister"
+
+[[authority_field]]
+canister = "vetkeys"
+field = "DEVICE_CHECK_CALLER"
+storage = "vetkeys/src/state.rs (DEVICE_CHECK_CALLER, MemoryId 20)"
+writers = ["init(device_check_caller)", "post_upgrade(device_check_caller)"]
+launch_value = "cxrfg-qaaaa-aaaar-qchfa-cai"
+read_back = "get_device_check_caller"

@@ -1,0 +1,10 @@
+# The foreign byte container, declared opaque for the ONE crate that uses it.
+[[opaque]]
+krate  = "canisters/a"
+name   = "ForeignBytes"
+reason = "fixture: a foreign newtype over bytes; no in-tree definition, cannot carry a raw amount"
+
+[[opaque]]
+krate  = "canisters/b"
+name   = "ForeignBytes"
+reason = "fixture: same declaration for the sibling crate, so this case is GREEN and its sibling isolates the scope"

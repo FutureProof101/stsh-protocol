@@ -1,0 +1,257 @@
+# =============================================================================
+# STSH — CANONICAL GENESIS MANIFEST (approved template: P-ARITH brief §0.3 V1.5)
+# =============================================================================
+#
+# THE single source of truth for genesis token distribution + init wiring.
+# MAINNET_DEPLOYMENT.md points here; Gate-D (scripts/verify_genesis_manifest)
+# verifies the canonical init artifacts (stsh_token_init.did /
+# vesting_init.did) against THIS file, field by field, before any deploy.
+#
+# PRINCIPALS ARE P0-3 PLACEHOLDERS (deterministic test principals, obviously
+# non-production). Release DoD RR-1 replaces every placeholder with the real
+# production principal; Gate-D/Gate-V then execute against the real artifacts
+# (RR-2/RR-3). The placeholder set keeps every role DISTINCT so the
+# cross-artifact binding checks are provable at fixture level (Builder DoD
+# AR-5/AR-6).
+#
+# Locked decisions transcribed here (no builder discretion):
+# - Σ = 1,000,000,000 STSH = 100,000,000,000,000,000 (10^17) base units.
+#   UNCHANGED by D-4: the legal-counsel grant is funded from `treasury`, not minted.
+# - Row percentages are BASIS POINTS (`percent_bps`), summing to 10,000 — NOT
+#   integer percent. The D-4 legal-counsel grant is 0.5% (50 bps) and treasury
+#   is 29.5% (2,950 bps); neither is representable as an integer percent, which
+#   is why the field moved. `percent_bps` is AUDIT METADATA ONLY: it appears in
+#   no init artifact and in no canister — minting is driven by
+#   `amount_base_units` alone. Where the two could ever disagree, THE AMOUNT WINS
+#   and the discrepancy is a defect.
+# - `subaccount = null` on every allocation (single canonical form).
+# - `created_at_genesis = false`, `genesis_timestamp_ns = 0` in the artifact
+#   (the canister overwrites both during init).
+# - `lock_policy` is AUDIT METADATA; enforcement = custody principal/controller
+#   (founders: the external vesting canister + Gate-V).
+# - `vesting_policy = null` on EVERY row incl. founders — the vesting canister
+#   + Gate-V are the authoritative schedule (no second source of truth).
+# - Vesting custody at genesis = `founders` ONLY; `ceremony_rewards` funds
+#   CEREMONY_HOLDING (post-ceremony grants), NOT genesis vesting.
+# - Founders shape LOCKED (§0.4 Option A): cliff 6 + linear 30 (fully vested
+#   month 36), continuous linear on fixed 30-day months.
+
+schema_version = 3
+
+[token]
+ticker = "STSH"
+decimals = 8
+total_supply_base_units = 100000000000000000   # 10^17
+
+[token_init]
+# Top-level stsh_token init fields (token/lib.rs:495) — Gate-D validates:
+# treasury == the `treasury` allocation recipient; fee_collector non-null AND
+# != treasury; each value == its production principal-manifest entry at RR-1.
+treasury         = "dgsev-ynaaf-ygyyl-dmvug-63dem-vza"   # TREASURY_MULTISIG (P0-3 placeholder)
+# STAKING EXCLUDED FROM THE LAUNCH INSTALL SET (D1, ratified 2026-08-14).
+# The staking canister is NOT installed at launch — it has no manifest entry
+# here and no mainnet principal. This field is NOT an install declaration: it is
+# the token's required, fail-closed stored staking principal, and at RR-1 it is
+# replaced with the VAULT principal, never with a staking-canister principal
+# (freeze §14; see deployment/mainnet/custody_manifest.toml, stsh_token
+# STAKING_CANISTER authority_field and the `staking` out_of_scope entry).
+# Introducing staking is a post-launch governance upgrade (freeze §15).
+staking_canister = "6oj2f-afabn-ygyyl-dmvug-63dem-vza"   # P0-3 placeholder → Vault principal at RR-1
+fee_collector    = "q4fuw-d5abr-ygyyl-dmvug-63dem-vza"   # NEUTRAL_FEE_COLLECTOR (P0-3 placeholder)
+
+[vesting_init]
+# Top-level vesting init fields (vesting/lib.rs:167) — Gate-D validates:
+# token_canister == the token being deployed; controller == the approved
+# production controller manifest; founders_vesting_canister == the principal
+# receiving the `founders` allocation. Every founder schedule uses
+# cliff_months = 6, linear_months = 30 (§0.4 Option A, LOCKED).
+token_canister            = "dsxao-yfabv-ygyyl-dmvug-63dem-vza"   # STSH_TOKEN_CANISTER (P0-3 placeholder)
+controller                = "nmynl-efabz-ygyyl-dmvug-63dem-vza"   # VESTING_CONTROLLER_MULTISIG (P0-3 placeholder)
+founders_vesting_canister = "6wp5i-7vaan-ygyyl-dmvug-63dem-vza"   # FOUNDERS_VESTING_CANISTER (P0-3 placeholder)
+founder_cliff_months  = 6
+founder_linear_months = 30
+
+[pool_init]
+# W-VKGATE (AR1-05 CRITICAL / register C-27). The shielded pool's init trust
+# roots, so Gate-D verifies them FIELD-BY-FIELD exactly as it already does for
+# token_init and vesting_init. Before this section the pool's verifying-key pin
+# — the root of its whole soundness story — was verified by nothing, and the
+# only protection against installing against the dev key was runbook prose.
+#
+# vk_hash is a P0-3 PLACEHOLDER, NOT A PIN. The A6.7 re-ceremony has not run, so
+# no launch verifying key exists yet; RR-1 replaces this value and RR-2/RR-3
+# re-execute Gate-D against the real artifacts. The all-zeros value is the same
+# pre-M0 sentinel the pool documents at InitArgs::initial_vk_hash — deliberately
+# not a plausible-looking hash, so it cannot be mistaken for a real pin.
+#
+# DPOOL-2 REFUSES the M5 single-participant dev hash
+# (fc73ca4dcdcfd5a2eb0dd6165c5cf2b1e039c3acdad2d360258c5d42ba530dc8) in this
+# field — the manifest-side counterpart of the pool's DENY_VK_HASH init trap.
+# Refusing one known-bad value is not provenance: any other hash passes.
+vk_hash         = "0000000000000000000000000000000000000000000000000000000000000000"
+proof_system    = "groth16-bn254"
+ceremony_record = "docs/ceremony/CEREMONY_RECORD_v3.md"
+# Trust roots, cross-checked against the sections that already own them:
+#   token_canister == vesting_init.token_canister   (DPOOL-4)
+#   treasury_canister == token_init.treasury        (DPOOL-5)
+#   staking_canister == token_init.staking_canister (DPOOL-6 — pinned to the
+#     VAULT at RR-1, never to a staking canister; freeze §14)
+#   controller == vesting_init.controller           (DPOOL-7)
+token_canister    = "dsxao-yfabv-ygyyl-dmvug-63dem-vza"
+treasury_canister = "dgsev-ynaaf-ygyyl-dmvug-63dem-vza"
+staking_canister  = "6oj2f-afabn-ygyyl-dmvug-63dem-vza"
+controller        = "nmynl-efabz-ygyyl-dmvug-63dem-vza"
+
+# ── Allocation table (§0.3 — exact Candid LockPolicy variants) ───────────────
+
+[[allocation]]
+category_id = "treasury"
+category_name = "Treasury"
+amount_base_units = 29500000000000000
+percent_bps = 2950
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "TREASURY_MULTISIG"
+principal = "dgsev-ynaaf-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "insurance"
+category_name = "Insurance Reserve"
+amount_base_units = 10000000000000000
+percent_bps = 1000
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "INSURANCE_MULTISIG"
+principal = "ny5jq-enaaj-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "founders"
+category_name = "Founders"
+amount_base_units = 18000000000000000
+percent_bps = 1800
+lock_policy = "Vested"
+vesting_policy = "null"
+principal_role = "FOUNDERS_VESTING_CANISTER"
+principal = "6wp5i-7vaan-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "dev"
+category_name = "Post-Ceremony Dev"
+amount_base_units = 3000000000000000
+percent_bps = 300
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "DEV_HOLDING_MULTISIG"
+principal = "qedt3-4naar-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "zk_advisors"
+category_name = "ZK Advisors"
+amount_base_units = 4000000000000000
+percent_bps = 400
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "ZK_HOLDING_MULTISIG"
+principal = "dkrhd-hvaav-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "ceremony_rewards"
+category_name = "Ceremony Rewards"
+amount_base_units = 2000000000000000
+percent_bps = 200
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "CEREMONY_HOLDING"
+principal = "nu6kg-3vaaz-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "audit_bounty"
+category_name = "Audit / Bug Bounty"
+amount_base_units = 8000000000000000
+percent_bps = 800
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "BOUNTY_MULTISIG"
+principal = "62m66-anaa5-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "airdrop"
+category_name = "Usage-Reward Airdrop"
+amount_base_units = 5000000000000000
+percent_bps = 500
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "AIRDROP_PROGRAM"
+principal = "qqgxa-4fabb-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "shielded_incentives"
+category_name = "Shielded-Use Incentives"
+amount_base_units = 8000000000000000
+percent_bps = 800
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "INCENTIVES_EMISSION"
+principal = "d6udy-h5abf-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+category_id = "liquidity"
+category_name = "Liquidity"
+amount_base_units = 12000000000000000
+percent_bps = 1200
+lock_policy = "ImmediatelyLiquid"
+vesting_policy = "null"
+principal_role = "LIQUIDITY_MULTISIG"
+principal = "na3o5-35abj-ygyyl-dmvug-63dem-vza"
+
+[[allocation]]
+# D-4 (drift item): legal-counsel vesting grant. Added by OWNER_RULING_D4_LEGAL_COUNSEL
+# 2026-08-23 — 0.5% of Sigma, donor `treasury` (30% -> 29.5%). Sigma is UNCHANGED at
+# 10^17; this row funds itself entirely out of the treasury row above.
+#
+# D-4 V2 (OWNER_RULING_D4_LEGAL_COUNSEL_V2): the schedule is ON-CANISTER, the same
+# wiring as founders. `vesting_policy = "null"` exactly as on every other row — the
+# vesting canister + Gate-V remain the SOLE schedule authority (manifest law above,
+# no second source of truth). The schedule itself is the [[counsel_schedule]] entry
+# below: cliff 0 + linear 12.
+#
+# `principal` is the genesis vesting canister — deliberately the SAME principal the
+# `founders` row carries, because that canister is the schedule authority for both.
+# The roles stay DISTINCT (`LEGAL_COUNSEL_VESTING` vs `FOUNDERS_VESTING_CANISTER`);
+# only the principals collide, under the ENUMERATED D16 exemption (that pair and
+# nothing else).
+category_id = "legal_counsel"
+category_name = "Legal Counsel"
+amount_base_units = 500000000000000
+percent_bps = 50
+lock_policy = "Vested"
+vesting_policy = "null"
+principal_role = "LEGAL_COUNSEL_VESTING"
+principal = "6wp5i-7vaan-ygyyl-dmvug-63dem-vza"
+
+# ── Counsel schedule (D-4 V2) ───────────────────────────────────────────────
+#    Deliberately an ADJACENT NAMED SECTION, not a [[founder_schedule]] row: this
+#    beneficiary is not a founder and must not be labelled as one. Gate-V binds it
+#    through the generalised schedule list (V5) and the widened sums (V6/VP1/VP2).
+#    Shape is pinned SEPARATELY from founders: cliff 0 + linear 12 (APPROVED_COUNSEL_*),
+#    a straight 12-month continuous release with no cliff.
+#    Σ(counsel_schedule) MUST equal the `legal_counsel` allocation amount.
+
+[[counsel_schedule]]
+beneficiary = "mirhl-3nacj-ygyyl-dmvug-63dem-vza"   # LEGAL_COUNSEL_BENEFICIARY_PLACEHOLDER (P0-3; index-18 token MOVED here from the allocation row)
+total_amount_base_units = 500000000000000
+
+# ── Founder schedules (P0-3 placeholder split; Σ MUST equal the `founders`
+#    allocation amount — Gate-V phase 1 enforces this) ────────────────────────
+
+[[founder_schedule]]
+beneficiary = "6ckzt-75ab5-ygyyl-dmvug-63dem-vza"   # FOUNDER_1_PLACEHOLDER
+total_amount_base_units = 9000000000000000
+
+[[founder_schedule]]
+beneficiary = "rym6w-4vacb-ygyyl-dmvug-63dem-vza"   # FOUNDER_2_PLACEHOLDER
+total_amount_base_units = 6000000000000000
+
+[[founder_schedule]]
+beneficiary = "cw6ko-hnacf-ygyyl-dmvug-63dem-vza"   # FOUNDER_3_PLACEHOLDER
+total_amount_base_units = 3000000000000000

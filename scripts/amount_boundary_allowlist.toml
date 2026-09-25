@@ -1,0 +1,683 @@
+# =============================================================================
+# Reviewed raw-amount boundaries — C4 §4 rule 2 (W3 3-1 D2)
+# =============================================================================
+# `verify_amount_boundaries` fails on any raw u128/i128 reachable from a public
+# endpoint — directly, through a wrapper type, or through an install/init
+# argument — that is not listed here.
+#
+# BUILDERS DO NOT ADD ROWS. A new raw-amount boundary is a STOP-and-refer: only
+# CTO/SSA adjudication grants a reviewed entry (packet §3, F5). The rows below
+# are exactly the C4 §4 rule-2 set, transcribed, each naming the gate that makes
+# it safe.
+#
+# `path` is the exact traversal path the tool prints, so a row can never quietly
+# cover a boundary other than the one it was written for.
+
+# ── Rule-2 class 1: the gated staking lock/unlock pair ──────────────────────
+
+[[amount]]
+krate    = "canisters/token"
+endpoint = "lock_for_staking"
+path     = "amount: u128"
+gate     = "caller-gated to the staking canister principal"
+reason   = "C4 §4 rule 2, as transcribed: the gated lock/unlock pair. Not an open public boundary — an untrusted caller cannot reach it."
+
+[[amount]]
+krate    = "canisters/token"
+endpoint = "unlock_from_staking"
+path     = "amount: u128"
+gate     = "caller-gated to the staking canister principal"
+reason   = "C4 §4 rule 2, as transcribed: the gated lock/unlock pair."
+
+# ── Rule-2 class 2: `stake`, on the documented self-consistency argument ────
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "stake"
+path     = "amount: u128"
+gate     = "self-consistency: the amount is debited from the caller's own balance, so an inflated value fails the transfer rather than crediting anything"
+reason   = "C4 §4 rule 2, as transcribed: `stake` on the documented self-consistency argument."
+
+# ── Rule-2 class 3: the `create_proposal` wrapper fields ────────────────────
+# The three u128 fields rule 3 names explicitly: reached through ProposalType,
+# never as direct parameters. They are the reason the wrapper case exists.
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "create_proposal"
+path     = "proposal_type::ProposalType.TreasurySpend.amount: u128"
+gate     = "proposal only — no value moves until a passed vote executes it"
+reason   = "C4 §4 rule 2, as transcribed: the create_proposal wrapper fields on the same adjudication."
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "create_proposal"
+path     = "proposal_type::ProposalType.RewardScheduleUpdate.new_emission_rate_per_day: u128"
+gate     = "proposal only — no value moves until a passed vote executes it"
+reason   = "C4 §4 rule 2, as transcribed: the create_proposal wrapper fields on the same adjudication."
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "create_proposal"
+path     = "proposal_type::ProposalType.GovernanceParamUpdate.0::GovernanceParams.min_proposal_deposit: u128"
+gate     = "proposal only — no value moves until a passed vote executes it"
+reason   = "C4 §4 rule 2, as transcribed: the create_proposal wrapper fields on the same adjudication."
+
+# ── Rule-2 class 4: deploy-time init allocations ────────────────────────────
+# RULED BROAD — CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…,
+# A1-concurred) §1. Rule 2's "deploy-time `init` allocations" covers ALL
+# deploy-time amount parameters carried in the install argument, allocation-
+# shaped or not: the safety property rule 2 blessed is the CHANNEL, not the
+# field's shape. Install arguments are settable only by the installing
+# controller and are Gate-D-defended. The two rows the builder flagged
+# (staking::init `initial_emission_rate_per_day` and
+# `governance_params.min_proposal_deposit`) stay in this class; no rows moved.
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "init"
+path     = "args::InitArgs.initial_rewards_pool: u128"
+gate     = "install argument — settable only by the installing controller at deploy time"
+reason   = "C4 §4 rule 2, as transcribed: deploy-time init allocations."
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "init"
+path     = "args::InitArgs.initial_emission_rate_per_day: u128"
+gate     = "install argument — settable only by the installing controller at deploy time"
+reason   = "C4 §4 rule 2, deploy-time init class; see the disclosed interpretation above (parameter, not allocation)."
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "init"
+path     = "args::InitArgs.governance_params::GovernanceParams.min_proposal_deposit: u128"
+gate     = "install argument — settable only by the installing controller at deploy time"
+reason   = "C4 §4 rule 2, deploy-time init class; see the disclosed interpretation above (parameter, not allocation)."
+
+[[amount]]
+krate    = "canisters/token"
+endpoint = "init"
+path     = "args::InitArgs.allocations::AllocationCategory.amount: u128"
+gate     = "install argument — the genesis allocation table, verified by the genesis manifest gate"
+reason   = "C4 §4 rule 2, as transcribed: deploy-time init allocations."
+
+[[amount]]
+krate    = "canisters/vesting"
+endpoint = "init"
+path     = "args::InitArgs.schedules::NewSchedule.total_amount: u128"
+gate     = "install argument — the genesis vesting schedule table, verified by the genesis manifest gate"
+reason   = "C4 §4 rule 2, as transcribed: deploy-time init allocations."
+
+# ── The adjudicated boundaries — CTO ruling V2 (8945c2ad…), A1-concurred ──
+# Four classes, each row carrying the gate that makes it safe. Gates are
+# identified as `crate::function`, never line numbers: `canisters/` moves under
+# this allowlist every campaign, and a line number rots into a citation that
+# points at unrelated code (A1 C2).
+#
+# The per-class counts below are the ONLY place a count is stated, and they are
+# kept current by `umc12_allowlist_header_class_counts_match_actual_rows`
+# (`scripts/verify_did_exports/tests/amount_boundary_class_counts_tests.rs`),
+# which re-counts the rows and fails if the header drifts. Do not restate a
+# total anywhere else in this file: the header used to carry a hand-maintained
+# file-level total and a Class C count, and BOTH had drifted away from the rows
+# by the time anyone recounted them (lane R-11).
+#
+#   Class A — inter-canister, caller-asserted            (6 rows)
+#   Class B — controller/operator-gated setters          (10 rows)
+#   Class C — user-facing, proof/denomination/conservation-bound (4 rows)
+#   Class D — vault admission mirrors; the authoritative gate is the executing
+#             canister's own, which the vault reaches as its operator (11 rows)
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "shield_deposit"
+path     = "args::ShieldDepositArgs.public_amount: u128"
+gate     = "`DENOMINATIONS` membership — a finite value set, checked in `shielded_pool::shield_deposit`; anonymous-caller and deployment-config gates ahead of it"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class C — user-facing, proof/denomination/conservation-bound."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "private_spend"
+path     = "args::PrivateSpendArgs.fee: u128"
+gate     = "circuit shape guards (nullifiers.len()==1, output_commitments.len()==2, encrypted_outputs.len()==output_commitments.len()), then IN-CIRCUIT conservation `in_value === out_value_1 + out_value_2 + fee + public_amount` (`circuits/spend.circom:529`) over range-checked value terms (:516-520), verified by the real groth16-bn254 verifier canister — the primary and now sole balance control after lane F1-PRIV removed the caller-declared `input_amounts`/`output_amounts` pre-check (R1-F1); `fee` and `public_amount` remain bound into spend signals [5] and [4] and are summed with `checked_add` in `private_spend_private_liability_debit` (`PoolError::SumOverflow`); zero `public_amount` rejected; the payout is additionally ledger-fee-floored and escrow-checked"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class C — user-facing, proof/denomination/conservation-bound."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "private_spend"
+path     = "args::PrivateSpendArgs.public_payout::PrivateSpendPublicPayout.public_amount: u128"
+gate     = "circuit shape guards (nullifiers.len()==1, output_commitments.len()==2, encrypted_outputs.len()==output_commitments.len()), then IN-CIRCUIT conservation `in_value === out_value_1 + out_value_2 + fee + public_amount` (`circuits/spend.circom:529`) over range-checked value terms (:516-520), verified by the real groth16-bn254 verifier canister — the primary and now sole balance control after lane F1-PRIV removed the caller-declared `input_amounts`/`output_amounts` pre-check (R1-F1); `fee` and `public_amount` remain bound into spend signals [5] and [4] and are summed with `checked_add` in `private_spend_private_liability_debit` (`PoolError::SumOverflow`); zero `public_amount` rejected; the payout is additionally ledger-fee-floored and escrow-checked"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class C — user-facing, proof/denomination/conservation-bound."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "treasury_disburse"
+path     = "args::TreasuryDisburseArgs.amount: u128"
+gate     = "caller == the configured treasury canister (`shielded_pool::treasury_disburse`); durable claim guard taken before the await (DEF-097); `checked_add` on the disbursed total with claim rollback on overflow"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class A — inter-canister, caller-asserted."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "treasury_disburse"
+path     = "args::TreasuryDisburseArgs.expected_ledger_fee: u128"
+gate     = "caller == the configured treasury canister (`shielded_pool::treasury_disburse`); durable claim guard taken before the await (DEF-097); `checked_add` on the disbursed total with claim rollback on overflow"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class A — inter-canister, caller-asserted."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "withdraw"
+path     = "args::WithdrawArgs.gross_withdraw_amount: u128"
+gate     = "`minimum_withdrawal_gross` floor and the nothing-for-recipient fee floor enforced in `fee_policy::compute_withdrawal_preview`, invoked from `shielded_pool::withdraw` with mapped typed errors; escrow/solvency checks; proof binding via `shielded_pool::reject_unbound_withdrawal_proof` with idempotency by withdrawal_id"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class C — user-facing, proof/denomination/conservation-bound."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.fee_reference_price_stsh_per_icp_e8s: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.minimum_private_credit: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.minimum_recipient_amount: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.minimum_withdrawal_gross: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.protocol_private_spend_fee_stsh: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.protocol_shielding_fee_stsh: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.protocol_unshielding_fee_stsh: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.shield_flat_minimum_fee_e8s: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "set_governance_fee_params"
+path     = "params::GovernanceFeeParams.unshield_flat_minimum_fee_e8s: u128"
+gate     = "`shielded_pool::assert_operator_controller`, then three validation layers before any store: `fee_policy::validate_split_bps`, absolute `fee_policy::validate_fee_bounds`, and (post-bootstrap) rate-of-change plus cooldown in `shielded_pool::set_governance_fee_params`. A wrapped magnitude dies at the bounds check"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "get_solvency_attestation"
+path     = "->::CertifiedSolvencyAttestation.attestation::SolvencyAttestation.public_delta_e8s: i128"
+gate     = "read-only certified query; the value is clamped to min(raw_delta, 0) BEFORE publication, so it is 0 in every healthy state and discloses only the violation magnitude when backing is broken — the raw healthy float (pending_fee_reimbursements) is never reachable through this boundary"
+reason   = "D-2+D-4 ruling (aabbf239…): the continuous solvency attestation IS the published amount — an insolvency magnitude the public must see. Privacy shape adjudicated in brief V3 (5cd256c8…) and SSA GREEN (84bdff2d…): clamp, 300 s timestamp bucket, root moves only on public-payload change. Smoke-alarm completion lane, CTO adjudication 2026-08-26."
+
+[[amount]]
+krate    = "canisters/staking"
+endpoint = "receive_fee_revenue"
+path     = "amount: u128"
+gate     = "caller == treasury asserted (`staking::receive_fee_revenue`). ROW PREMISE: the endpoint has no error channel (`-> ()`), so the downstream `saturating_add` non-saturation argument holds ONLY because the treasury-caller assert bounds the value to real protocol fee revenue — the assert is the gate, the saturation argument sits downstream of it"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class A — inter-canister, caller-asserted."
+
+[[amount]]
+krate    = "canisters/treasury"
+endpoint = "receive_fee_split"
+path     = "operations_amount: u128"
+gate     = "caller == the pool canister (`treasury::receive_fee_split`); `treasury::credit_many` pre-validates all three buckets atomically with overflow-checked arithmetic"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class A — inter-canister, caller-asserted."
+
+[[amount]]
+krate    = "canisters/treasury"
+endpoint = "receive_fee_split"
+path     = "insurance_amount: u128"
+gate     = "caller == the pool canister (`treasury::receive_fee_split`); `treasury::credit_many` pre-validates all three buckets atomically with overflow-checked arithmetic"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class A — inter-canister, caller-asserted."
+
+[[amount]]
+krate    = "canisters/treasury"
+endpoint = "receive_fee_split"
+path     = "staking_rewards_amount: u128"
+gate     = "caller == the pool canister (`treasury::receive_fee_split`); `treasury::credit_many` pre-validates all three buckets atomically with overflow-checked arithmetic"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class A — inter-canister, caller-asserted."
+
+[[amount]]
+krate    = "canisters/treasury"
+endpoint = "propose_withdrawal"
+path     = "amount: u128"
+gate     = "caller == controller asserted (`treasury::propose_withdrawal`); balance-sufficiency assert in the same function; DEF-068 timelock; execution is a separate later step"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class B — controller/operator-gated setter."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.fee_reference_price_stsh_per_icp_e8s: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.minimum_private_credit: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.minimum_recipient_amount: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.minimum_withdrawal_gross: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.protocol_private_spend_fee_stsh: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.protocol_shielding_fee_stsh: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.protocol_unshielding_fee_stsh: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.shield_flat_minimum_fee_e8s: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.PoolSetGovernanceFeeParams.0::GovernanceFeeParamsMirror.unshield_flat_minimum_fee_e8s: u128"
+gate     = "`vault::require_signer` admission, `vault::validate_action` -> `ActionRequest::validate` plus the size bound, quorum to execute. The mirrored value is inert proposal payload: on execution the vault dispatches to the real endpoint, where `shielded_pool::set_governance_fee_params` re-runs its full three-layer validation as the authoritative gate"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Application.0::ActionRequest.TreasuryProposeWithdrawal.2: u128"
+gate     = "same `vault::require_signer` / `vault::validate_action` admission chain; the authoritative gate is downstream — `treasury::propose_withdrawal`'s controller assert, balance check and timelock"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "propose"
+path     = "action::VaultActionKind.Management.0::ManagementAction.DepositCycles.cycles: u128"
+gate     = "same admission chain plus `vault::validate_management_target`; the spend is capped at execution by the vault's actual cycle balance, so a wrapped magnitude can only fail the send"
+reason   = "CTO ruling W3 3-1 amount-boundary adjudication V2 (8945c2ad…, A1-concurred), class D — vault admission mirror — authoritative gate is the executing canister's own."
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# R2-1 §2(b) — direct `-> u128` RETURN boundaries.
+#
+# These became visible only when the census was corrected to walk `sig.output`
+# (before it, a raw amount LEAVING a canister reached the boundary check through
+# no path at all, while the identical type as a parameter failed the gate).
+#
+# Authored by A1 in A1_R21_ENROLMENT_ROWS_V2.md (e652239eb19d93f8), approved by
+# SSA-1 in SSA_CHECKPOINT_TESTFOLD_R21_ROWS_GREEN_V2.md, under CTO adjudication
+# §2(b) of 2026-08-23. Enrolled mechanically by Builder-1: no additions, no
+# wildcards, no widening. Builders never enrol without that chain.
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── D-2: non-token metric — a cycle balance is not a token amount ────────────
+[[amount]]
+krate    = "canisters/merkle-tree"
+endpoint = "cycle_balance"
+path     = "->: u128"
+gate     = "not an amount boundary — the value is a CYCLE balance"
+reason   = "R2-1 §2(b), CTO adjudication 2026-08-23. The unit is IC cycles, not STSH e8s; no token quantity is reachable through this return. Operational telemetry, world-readable by design (fleet cycle monitoring, A-6/GAP-U9-1). This row is the disposition 'not a token amount', not a waiver of one."
+
+[[amount]]
+krate    = "canisters/nullifier-registry"
+endpoint = "cycle_balance"
+path     = "->: u128"
+gate     = "not an amount boundary — the value is a CYCLE balance"
+reason   = "R2-1 §2(b), CTO adjudication 2026-08-23. The unit is IC cycles, not STSH e8s; no token quantity is reachable through this return. Operational telemetry, world-readable by design (fleet cycle monitoring, A-6/GAP-U9-1). This row is the disposition 'not a token amount', not a waiver of one."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "cycle_balance"
+path     = "->: u128"
+gate     = "not an amount boundary — the value is a CYCLE balance"
+reason   = "R2-1 §2(b), CTO adjudication 2026-08-23. The unit is IC cycles, not STSH e8s; no token quantity is reachable through this return. Operational telemetry, world-readable by design (fleet cycle monitoring, A-6/GAP-U9-1). This row is the disposition 'not a token amount', not a waiver of one."
+
+[[amount]]
+krate    = "canisters/token"
+endpoint = "cycle_balance"
+path     = "->: u128"
+gate     = "not an amount boundary — the value is a CYCLE balance"
+reason   = "R2-1 §2(b), CTO adjudication 2026-08-23. The unit is IC cycles, not STSH e8s; no token quantity is reachable through this return. Operational telemetry, world-readable by design (fleet cycle monitoring, A-6/GAP-U9-1). This row is the disposition 'not a token amount', not a waiver of one."
+
+[[amount]]
+krate    = "canisters/verifier"
+endpoint = "cycle_balance"
+path     = "->: u128"
+gate     = "not an amount boundary — the value is a CYCLE balance"
+reason   = "R2-1 §2(b), CTO adjudication 2026-08-23. The unit is IC cycles, not STSH e8s; no token quantity is reachable through this return. Operational telemetry, world-readable by design (fleet cycle monitoring, A-6/GAP-U9-1). This row is the disposition 'not a token amount', not a waiver of one."
+
+[[amount]]
+krate    = "canisters/vetkeys"
+endpoint = "cycle_balance"
+path     = "->: u128"
+gate     = "not an amount boundary — the value is a CYCLE balance"
+reason   = "R2-1 §2(b), CTO adjudication 2026-08-23. The unit is IC cycles, not STSH e8s; no token quantity is reachable through this return. Operational telemetry, world-readable by design (fleet cycle monitoring, A-6/GAP-U9-1). This row is the disposition 'not a token amount', not a waiver of one."
+
+# ── D-1: reviewed token amount, canister IN the launch install set ───────────
+[[amount]]
+krate    = "canisters/token"
+endpoint = "liquid_balance"
+path     = "->: u128"
+gate     = "ICRC-style public balance surface, caller-supplied holder"
+reason   = "R2-1 §2(b). A token amount in e8s, published deliberately: ledger balances are world-readable on any ICRC ledger, and the wallet's own scan depends on them. Publishing is intended and the privacy wall does not run here — the shielded side's amounts are never reachable through this path."
+
+[[amount]]
+krate    = "canisters/token"
+endpoint = "staking_locked_balance"
+path     = "->: u128"
+gate     = "ICRC-style public balance surface, caller-supplied holder"
+reason   = "R2-1 §2(b). A token amount in e8s, published deliberately: ledger balances are world-readable on any ICRC ledger, and the wallet's own scan depends on them. Publishing is intended and the privacy wall does not run here — the shielded side's amounts are never reachable through this path."
+
+[[amount]]
+krate    = "canisters/treasury"
+endpoint = "get_subaccount_balance"
+path     = "->: u128"
+gate     = "public treasury accounting surface"
+reason   = "R2-1 §2(b). A token amount in e8s. Deliberately public: the solvency watcher calls it to verify treasury accounting (see the sibling get_subaccount_balances doc comment, 'Publicly readable. Watcher calls this to verify treasury accounting'). Concealing it would defeat the monitoring it exists for."
+
+[[amount]]
+krate    = "canisters/shielded-pool"
+endpoint = "get_denominations"
+path     = "->: u128"
+gate     = "the published denomination ladder"
+reason   = "R2-1 §2(b). Token amounts in e8s, and public BY NECESSITY: the ladder is the set of note sizes a user must choose from, so the wallet cannot construct a deposit without it. It is a protocol parameter, not a user quantity — it discloses nothing about any principal."
+
+# ── D-1/L: token amount on a canister EXCLUDED from the launch install set ───
+# The exclusion is a machine-checked CONDITION (`launch_excluded_dfx`), not a
+# sentence in `reason`: the matcher reads krate+endpoint+path and never reads
+# prose, so an exclusion carried in prose would keep the gate green the day
+# staking ships. Adding `staking` under dfx.json's canisters REDs all four.
+[[amount]]
+krate               = "canisters/staking"
+endpoint            = "claim_rewards"
+path                = "->: u128"
+launch_excluded_dfx = "staking"
+gate                = "token amount; row valid ONLY while this canister is absent from the launch install set"
+reason              = "R2-1 §2(b). These are token amounts in e8s — get_total_voting_weight is a stake-derived weight in the same units, not a dimensionless count, stated so the row is not read as a metric exemption. The canister is excluded from the launch install set (D1, ratified 2026-08-14; the ruling's own words are that staking 'is not declared in dfx.json AT ALL'), so none of these boundaries is reachable at launch. The row is written because the census walks the WORKSPACE, not the install set."
+
+[[amount]]
+krate               = "canisters/staking"
+endpoint            = "get_pending_rewards"
+path                = "->: u128"
+launch_excluded_dfx = "staking"
+gate                = "token amount; row valid ONLY while this canister is absent from the launch install set"
+reason              = "R2-1 §2(b). These are token amounts in e8s — get_total_voting_weight is a stake-derived weight in the same units, not a dimensionless count, stated so the row is not read as a metric exemption. The canister is excluded from the launch install set (D1, ratified 2026-08-14; the ruling's own words are that staking 'is not declared in dfx.json AT ALL'), so none of these boundaries is reachable at launch. The row is written because the census walks the WORKSPACE, not the install set."
+
+[[amount]]
+krate               = "canisters/staking"
+endpoint            = "get_rewards_pool_balance"
+path                = "->: u128"
+launch_excluded_dfx = "staking"
+gate                = "token amount; row valid ONLY while this canister is absent from the launch install set"
+reason              = "R2-1 §2(b). These are token amounts in e8s — get_total_voting_weight is a stake-derived weight in the same units, not a dimensionless count, stated so the row is not read as a metric exemption. The canister is excluded from the launch install set (D1, ratified 2026-08-14; the ruling's own words are that staking 'is not declared in dfx.json AT ALL'), so none of these boundaries is reachable at launch. The row is written because the census walks the WORKSPACE, not the install set."
+
+[[amount]]
+krate               = "canisters/staking"
+endpoint            = "get_total_voting_weight"
+path                = "->: u128"
+launch_excluded_dfx = "staking"
+gate                = "token amount; row valid ONLY while this canister is absent from the launch install set"
+reason              = "R2-1 §2(b). These are token amounts in e8s — get_total_voting_weight is a stake-derived weight in the same units, not a dimensionless count, stated so the row is not read as a metric exemption. The canister is excluded from the launch install set (D1, ratified 2026-08-14; the ruling's own words are that staking 'is not declared in dfx.json AT ALL'), so none of these boundaries is reachable at launch. The row is written because the census walks the WORKSPACE, not the install set."
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# R2-1 §2(c) — deliberately-published reporting surfaces, enrolled BY STRUCT.
+#
+# One class-row per struct, each stating its publication rationale and its
+# reviewed `field_count`. THE COUNT IS A DRIFT LOCK: a silently added raw-amount
+# field changes it and REDs the gate, which is what stops a class-row from
+# becoming a blanket licence. A removed field REDs too — a row that no longer
+# describes its surface is not a reviewed statement about it.
+#
+# Attribution is to the OUTERMOST struct named after `->::`, so a field on a
+# nested struct is locked twice: once under its own row, once under the page or
+# projection that carries it. Counts are therefore per-boundary-path, not per
+# distinct field, and 5/6, 12/13 and 4/17 are deliberately NOT merged.
+#
+# Same authorship chain as §2(b) above: A1 authored (e652239eb19d93f8), SSA-1
+# approved, Builder-1 enrolled mechanically.
+# ═════════════════════════════════════════════════════════════════════════════
+[[amount_struct]]
+name        = "GovernanceFeeParams"
+rationale   = "the governance fee parameter set — public by the fee model's own design (fees are f(public values)); a user cannot verify a quoted fee without it"
+field_count = 9
+
+[[amount_struct]]
+name        = "PendingWithdrawal"
+rationale   = "the caller's own in-flight withdrawal; caller-scoped operational state, needed to resume or diagnose"
+field_count = 7
+
+[[amount_struct]]
+name        = "SolvencySnapshot"
+rationale   = "aggregate solvency telemetry — the smoke-alarm/monitor surface exists to publish it. v2 (D-2+D-4, aabbf239…) adds pool_public_delta_e8s (the pool's clamped RED-source delta, adjudicated in brief V3 5cd256c8…) and treasury_stray_funds_e8s (YELLOW, display-only, deliberately absent from the healthy expression — foreign funds must not turn the alarm red). Count is per-boundary-path across the struct's return surfaces, per the tool"
+field_count = 10
+
+[[amount_struct]]
+name        = "Proposal"
+rationale   = "governance proposal state; a proposal nobody can read cannot be voted on"
+field_count = 6
+
+[[amount_struct]]
+name        = "PendingSpend"
+rationale   = "the caller's own in-flight spend (public leg only — the shielded amounts are not in this struct)"
+field_count = 6
+
+[[amount_struct]]
+name        = "ActiveSpendsPage"
+rationale   = "the paged view of the caller's own spends; same fields as PendingSpend reached through the page"
+field_count = 6
+
+[[amount_struct]]
+name        = "AccountingState"
+rationale   = "the pool's public accounting buckets — the I-02A identity is verifiable from outside only because these are published"
+field_count = 6
+
+[[amount_struct]]
+name        = "FeeLogEntry"
+rationale   = "the fee audit log; an unauditable fee log is not an audit surface"
+field_count = 5
+
+[[amount_struct]]
+name        = "VestingSchedule"
+rationale   = "genesis vesting terms — deliberately public commitment"
+field_count = 4
+
+[[amount_struct]]
+name        = "SupplyInvariantReport"
+rationale   = "the supply-boundary report; publishing it is the point of the invariant"
+field_count = 4
+
+[[amount_struct]]
+name        = "SupplyReconciliation"
+rationale   = "R-1 S4(e): the CONTROLLER-ONLY O(N) counterpart to SupplyInvariantReport. Same amounts, same units (e8s), same purpose — publishing the supply boundary is the point of the invariant — but on a strictly NARROWER surface: the endpoint traps for every non-controller caller, so unlike its sibling it is not world-readable at all. No new quantity is disclosed that verify_supply_invariant does not already publish. Gate: `reconcile_supply_invariant` is refused for every non-controller caller (`ic_cdk::api::is_controller`), bound by R-1 AC-9 / M9. Enrolled by CTO_RULING_R1_AMOUNT_BOUNDARY_SUPPLY_RECONCILIATION_2026-09-05.md."
+field_count = 5
+
+[[amount_struct]]
+name        = "PendingLockOp"
+rationale   = "in-flight staking lock operation, caller-scoped"
+field_count = 4
+
+[[amount_struct]]
+name        = "PendingDeposit"
+rationale   = "the caller's own in-flight deposit (redaction applies to the record at rest; this is the live operational view)"
+field_count = 4
+
+[[amount_struct]]
+name        = "ActiveDepositsPage"
+rationale   = "the paged view of the caller's own deposits; same fields as PendingDeposit through the page"
+field_count = 4
+
+[[amount_struct]]
+name        = "StakePosition"
+rationale   = "the holder's own stake position"
+field_count = 3
+
+[[amount_struct]]
+name        = "PoolVersionStats"
+rationale   = "pool version/telemetry aggregate"
+field_count = 3
+
+[[amount_struct]]
+name        = "TreasuryReconciliationTombstone"
+rationale   = "the operator reconciliation record — a tombstone exists to be seen"
+field_count = 2
+
+[[amount_struct]]
+name        = "ProposalView"
+rationale   = "the read projection of Proposal"
+field_count = 2
+
+[[amount_struct]]
+name        = "BucketIntegrity"
+rationale   = "bucket integrity check output — monitoring surface"
+field_count = 2
+
+[[amount_struct]]
+name        = "AllocationCategory"
+rationale   = "genesis allocation category — the distribution is a public commitment"
+field_count = 2
+
+[[amount_struct]]
+name        = "WithdrawalProposal"
+rationale   = "governance withdrawal proposal"
+field_count = 1
+
+[[amount_struct]]
+name        = "SubaccountBalance"
+rationale   = "named treasury subaccount balance; same rationale as get_subaccount_balance"
+field_count = 1
+
+[[amount_struct]]
+name        = "OutstandingClaimMarker"
+rationale   = "an outstanding-claim marker, published so a claim cannot be silently dropped"
+field_count = 1
+
+[[amount_struct]]
+name        = "HealthStatus"
+rationale   = "health/telemetry surface"
+field_count = 1
+
+[[amount_struct]]
+name        = "GovernanceParams"
+rationale   = "a governance parameter, public by the same logic as GovernanceFeeParams"
+field_count = 1
+
+[[amount_struct]]
+name        = "CertifiedSolvencySnapshot"
+rationale   = "The certified solvency read. get_certified_snapshot publishes the solvency figures together with the committed leaf bytes, the subnet certificate and the Merkle witness precisely so a client can verify them against the IC root key — the amounts are the payload the certification exists to make trustworthy, so publishing them is the endpoint's purpose, not a leak. Five raw amounts are reachable through the wrapper's snapshot field: fixed_max_supply_e8s, sum_all_balances_e8s, pool_balance_e8s, and the v2 additions pool_public_delta_e8s and treasury_stray_funds_e8s (D-2+D-4, aabbf239…; brief V3 5cd256c8…). Counted under the wrapper by outermost attribution; the SolvencySnapshot row counts the same struct on its own direct-return surfaces and is unaffected."
+field_count = 5
+
+# ── Opaque types: declared, not skipped ──────────────────────────────────────
+# The traversal terminates on primitives and follows every in-tree type. A type
+# with no in-tree definition would otherwise be a silent hole, so it must be
+# declared here with the reason it cannot carry a raw u128/i128. An undeclared
+# unfollowable type is a hard gate failure, not an omission.
+#
+# Opacity is CRATE-SCOPED: `krate` + `name` must both match the namespace in force
+# where the type is met. A bare name would be a global stop — declaring a foreign
+# type opaque for one crate would silence an identically named type everywhere,
+# which is a scope no reviewer authorised.
+
+[[opaque]]
+krate  = "canisters/smoke-alarm-monitor"
+name   = "ByteBuf"
+reason = "serde_bytes::ByteBuf, a foreign newtype whose only field is bytes: Vec<u8>, with no in-tree definition. It is a byte sequence, not a record: its element type is u8, already TERMINAL to this checker, so no u128/i128 field can be reachable as an amount boundary through it. Reached only at CertifiedSolvencySnapshot.canonical_bytes / .certificate / .witness — the certified leaf bytes, the subnet certificate, and the CBOR witness. Declared opaque, not skipped: traversal stops here BECAUSE the type cannot carry a boundary, not because following it was inconvenient. The krate key is the scope, not a comment: an identically named type in any other crate stays BOUNDARY-UNRESOLVED. R2-1 return-side census, CTO adjudication 2026-08-23; A1 authored, SSA-1 reviewed."
+
+[[opaque]]
+krate  = "canisters/shielded-pool"
+name   = "ByteBuf"
+reason = "serde_bytes::ByteBuf, a foreign newtype whose only field is bytes: Vec<u8>, with no in-tree definition. It is a byte sequence, not a record: its element type is u8, already TERMINAL to this checker, so no u128/i128 field can be reachable as an amount boundary through it. Reached only at CertifiedSolvencyAttestation.canonical_bytes / .certificate / .witness — the certified attestation leaf bytes, the subnet certificate, and the CBOR witness. Declared opaque, not skipped: traversal stops here BECAUSE the type cannot carry a boundary, not because following it was inconvenient — and the amount this attestation publishes is NOT hidden behind it: public_delta_e8s is a Candid-visible field enrolled in its own [[amount]] row (bytes-only encodings rejected, CTO disposition 04c3892f…). The krate key is the scope, not a comment: an identically named type in any other crate stays BOUNDARY-UNRESOLVED. Smoke-alarm completion lane, CTO adjudication 2026-08-26 under D-2+D-4 (aabbf239…); SSA-reviewed."
+
+# HARDENING 02 (2026-09-11): CTO/SSA-adjudicated token audit snapshot outputs.
+# Exact endpoint paths only; no blanket ControllerReadSnapshot struct enrolment.
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "get_controller_read_snapshot"
+path     = "->::ControllerReadSnapshot.response::ReadModelResponse.TokenReadSupplyReconciliation.0::SupplyReconciliation.fee_reserve: u128"
+gate     = "canisters/vault::query_gate checks current signer membership before snapshot lookup; execute_read_model resolves the receipt-authenticated governed token, whose reconcile_supply_invariant is controller-only"
+reason   = "CTO_HARDENING_AMOUNT_BOUNDARY_ADJUDICATION_V1_2026-09-11.md, with SSA concurrence: fee_reserve is an unchanged u128 e8s audit output, not an amount input or value-moving authority. Raw reply and detail bounds precede durable storage; no narrowing, arithmetic, clamping or health reinterpretation occurs in the Vault snapshot path. Full-range diagnostics preserve incomplete/drift/overflow evidence. Only this exact return path is enrolled."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "get_controller_read_snapshot"
+path     = "->::ControllerReadSnapshot.response::ReadModelResponse.TokenReadSupplyReconciliation.0::SupplyReconciliation.folded_sum_balances: u128"
+gate     = "canisters/vault::query_gate checks current signer membership before snapshot lookup; execute_read_model resolves the receipt-authenticated governed token, whose reconcile_supply_invariant is controller-only"
+reason   = "CTO_HARDENING_AMOUNT_BOUNDARY_ADJUDICATION_V1_2026-09-11.md, with SSA concurrence: folded_sum_balances is an unchanged u128 e8s audit output, not an amount input or value-moving authority. Raw reply and detail bounds precede durable storage; no narrowing, arithmetic, clamping or health reinterpretation occurs in the Vault snapshot path. Full-range diagnostics preserve incomplete/drift/overflow evidence. Only this exact return path is enrolled."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "get_controller_read_snapshot"
+path     = "->::ControllerReadSnapshot.response::ReadModelResponse.TokenReadSupplyReconciliation.0::SupplyReconciliation.folded_sum_staking_locks: u128"
+gate     = "canisters/vault::query_gate checks current signer membership before snapshot lookup; execute_read_model resolves the receipt-authenticated governed token, whose reconcile_supply_invariant is controller-only"
+reason   = "CTO_HARDENING_AMOUNT_BOUNDARY_ADJUDICATION_V1_2026-09-11.md, with SSA concurrence: folded_sum_staking_locks is an unchanged u128 e8s audit output, not an amount input or value-moving authority. Raw reply and detail bounds precede durable storage; no narrowing, arithmetic, clamping or health reinterpretation occurs in the Vault snapshot path. Full-range diagnostics preserve incomplete/drift/overflow evidence. Only this exact return path is enrolled."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "get_controller_read_snapshot"
+path     = "->::ControllerReadSnapshot.response::ReadModelResponse.TokenReadSupplyReconciliation.0::SupplyReconciliation.maintained_sum_balances: u128"
+gate     = "canisters/vault::query_gate checks current signer membership before snapshot lookup; execute_read_model resolves the receipt-authenticated governed token, whose reconcile_supply_invariant is controller-only"
+reason   = "CTO_HARDENING_AMOUNT_BOUNDARY_ADJUDICATION_V1_2026-09-11.md, with SSA concurrence: maintained_sum_balances is an unchanged u128 e8s audit output, not an amount input or value-moving authority. Raw reply and detail bounds precede durable storage; no narrowing, arithmetic, clamping or health reinterpretation occurs in the Vault snapshot path. Full-range diagnostics preserve incomplete/drift/overflow evidence. Only this exact return path is enrolled."
+
+[[amount]]
+krate    = "canisters/vault"
+endpoint = "get_controller_read_snapshot"
+path     = "->::ControllerReadSnapshot.response::ReadModelResponse.TokenReadSupplyReconciliation.0::SupplyReconciliation.maintained_sum_staking_locks: u128"
+gate     = "canisters/vault::query_gate checks current signer membership before snapshot lookup; execute_read_model resolves the receipt-authenticated governed token, whose reconcile_supply_invariant is controller-only"
+reason   = "CTO_HARDENING_AMOUNT_BOUNDARY_ADJUDICATION_V1_2026-09-11.md, with SSA concurrence: maintained_sum_staking_locks is an unchanged u128 e8s audit output, not an amount input or value-moving authority. Raw reply and detail bounds precede durable storage; no narrowing, arithmetic, clamping or health reinterpretation occurs in the Vault snapshot path. Full-range diagnostics preserve incomplete/drift/overflow evidence. Only this exact return path is enrolled."

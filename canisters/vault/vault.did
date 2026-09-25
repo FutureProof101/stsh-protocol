@@ -1,0 +1,578 @@
+// STSH Custody Vault Canister — Candid Interface (L1)
+// Hand-maintained, house convention. Mirrors canisters/vault/src/lib.rs and
+// the frozen stsh-custody-types contracts. Query-surface rulings: freeze §4
+// (signer-gated queries return indistinguishable `None` on any unauthorized
+// caller — anonymous / removed / stale-epoch / unknown).
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+type VaultInitArgs = record {
+    signers   : vec principal;
+    threshold : nat32;
+    upgrader  : principal;
+};
+
+// Durable application/read target wiring. Born-under-vault canisters do not
+// exist at Vault init — they are bound one-shot from typed creation
+// receipts (freeze §13.3), never caller-supplied.
+type VaultTargets = record {
+    shielded_pool      : opt principal;
+    treasury           : opt principal;
+    vesting            : opt principal;
+    nullifier_registry : opt principal;
+};
+
+// One governed target — the durable, manifest-derived management allowlist
+// (L1-1). Cutover entries are declared at init; born-under-vault entries are
+// appended from creation receipts.
+type GovernedTarget = record {
+    "principal"   : principal;
+    disposition : ManifestDisposition; // BornUnderVault or SetControllerAtCutover only
+    purpose     : text;
+};
+
+// Custody status of a creation receipt (L1-10): a Vault-controlled canister
+// never vanishes from the D5 surface. Orphans are discoverable but NOT
+// governed — management use fails closed pending governed resolution.
+type CreationReceiptStatus = variant { Bound; OrphanedPurposeConflict };
+
+// Typed, machine-readable D5 creation receipt (freeze §13.3): insert-once,
+// durable, written before any install against the created principal.
+type CreationReceipt = record {
+    proposal_id   : nat64;
+    "principal"     : principal;
+    purpose       : text;
+    disposition   : ManifestDisposition;
+    created_at_ns : nat64;
+    status        : CreationReceiptStatus;
+};
+
+// Bounded receipt page (L1-7): next_cursor is an audit-event id — receipts
+// alone cannot derive it, since non-receipt events interleave on the same
+// id sequence.
+type CreationReceiptPage = record {
+    items       : vec CreationReceipt;
+    next_cursor : opt nat64;
+};
+
+type VaultInit = record {
+    quorum          : VaultInitArgs;
+    cutover_targets : vec GovernedTarget;
+};
+
+// ── Frozen custody-types contracts (transcribed from stsh-custody-types) ─────
+
+// R3 (CUST-SSA-003): Cancelled/Expired are TERMINAL and reachable ONLY from
+// Pending — never from Executing/OutcomeUnknown, where the outcome is a fact
+// about a call that may have landed.
+type ActionOutcome = variant {
+    Pending; Executing; Executed; Failed; OutcomeUnknown; Cancelled; Expired;
+};
+
+type CommitmentMismatch = variant {
+    // The caller's expected_action_hash does not equal the commitment.
+    CallerMismatch;
+    // The STORED commitment does not equal the one recomputed from the
+    // retained payload. No honest sequence of operations produces this.
+    StoredVsRecomputed;
+};
+
+type LifetimeViolation = variant {
+    TooShort : record { requested_ns : nat64; min_ns : nat64 };
+    TooLong  : record { requested_ns : nat64; max_ns  : nat64 };
+    // Fail-closed: an explicit lifetime cannot be validated while the §10.5
+    // bounds are unruled, so it is refused rather than honoured.
+    BoundsNotRuled : record { requested_ns : nat64 };
+};
+
+type PruneRequest = record {
+    older_than_ns          : nat64;
+    max_records            : nat64;
+    prune_spends           : bool;
+    prune_deposits         : bool;
+    scan_legacy_spends     : bool;
+    scan_legacy_deposits   : bool;
+    max_scan_records       : nat64;
+    legacy_spend_cursor    : opt nat64;
+    legacy_deposit_cursor  : opt blob;
+};
+
+type DisburseOutcome = variant { Executed : record { block_index : nat64 }; NotExecuted };
+type PayoutOutcome   = variant { Executed : record { block_index : nat64 }; NotExecuted };
+type ClaimDecision   = variant { Executed; NotExecuted };
+
+type SpendFeeModeMirror = variant { FixedStsh; XdrPegged };
+
+type GovernanceFeeParamsMirror = record {
+    protocol_shielding_fee_stsh        : nat;
+    protocol_unshielding_fee_stsh      : nat;
+    protocol_private_spend_fee_stsh    : nat;
+    minimum_withdrawal_gross           : nat;
+    minimum_recipient_amount           : nat;
+    minimum_private_credit             : nat;
+    fee_reference_price_stsh_per_icp_e8s : nat;
+    fee_safety_margin_bps              : nat32;
+    max_fee_change_bps_per_update      : nat32;
+    fee_update_cooldown_ns             : nat64;
+    operations_split_bps               : nat32;
+    insurance_split_bps                : nat32;
+    staking_rewards_split_bps          : nat32;
+    staking_rewards_enabled            : bool;
+    minimum_treasury_runway_months     : nat32;
+    target_treasury_runway_months      : nat32;
+    shield_fee_bps                     : opt nat16;
+    unshield_fee_bps                   : opt nat16;
+    shield_flat_minimum_fee_e8s        : opt nat;
+    unshield_flat_minimum_fee_e8s      : opt nat;
+    spend_fee_mode                     : opt SpendFeeModeMirror;
+    fee_model_version                  : opt nat32;
+    params_epoch                       : opt nat64;
+};
+
+// The typed request contract of the 21 application variants (freeze §3a).
+type ActionRequest = variant {
+    PoolPruneTerminalRecords              : PruneRequest;
+    PoolReconcileDepositCommitment        : blob; // [u8; 32]
+    PoolReconcileDepositAppendUnknown     : blob;
+    PoolReconcileDepositTransferNotExecuted : blob;
+    PoolReconcileTreasuryDisburse         : record { nat64; DisburseOutcome };
+    PoolReconcileNullifierInsert          : nat64;
+    PoolReconcilePendingSpend             : nat64;
+    PoolScheduleVkActivation              : record { nat32; blob; nat64; nat64 };
+    PoolEmergencyDisableCircuitVersion    : nat32;
+    PoolEmergencyPauseDeposits;
+    PoolEmergencyPauseSpends;
+    PoolUnpauseDeposits;
+    PoolUnpauseSpends;
+    PoolSetVerifierCanister               : record { principal; blob };
+    PoolClearVerifierConfigGuard;
+    PoolSetGovernanceFeeParams            : GovernanceFeeParamsMirror;
+    PoolReconcilePrivateSpendPayout       : record { nat64; PayoutOutcome };
+    TreasuryProposeWithdrawal             : record { text; principal; nat; text };
+    TreasuryExecuteWithdrawal             : nat64;
+    TreasuryRejectProposal                : nat64;
+    VestingReconcileClaim                 : record { principal; ClaimDecision };
+    PoolInitializePayoutMemoKey;
+};
+
+type ManifestDisposition = variant {
+    BornUnderVault; SetControllerAtCutover; OutOfScope;
+};
+
+// Production management variants (freeze §3c) — structurally NO delete, NO
+// reinstall. Self/cross stop between Vault and Upgrader is FORBIDDEN.
+type ManagementAction = variant {
+    Upgrade : record {
+        target             : principal;
+        expected_wasm_hash : blob;
+        expected_arg_hash  : blob;
+        wasm_bytes         : blob;
+        arg_bytes          : blob;
+    };
+    Start          : record { target : principal };
+    Stop           : record { target : principal };
+    UpdateSettings : record { target : principal; controllers : vec principal };
+    DepositCycles  : record { target : principal; cycles : nat };
+    CreateCanister : record { manifest_purpose : text; disposition : ManifestDisposition };
+    InstallCode : record {
+        target             : principal;
+        expected_wasm_hash : blob;
+        expected_arg_hash  : blob;
+        wasm_bytes         : blob;
+        arg_bytes          : blob;
+    };
+};
+
+// C1 (freeze §3d): upgrade-mode only, hash-bound, inline-only.
+type UpgraderUpgrade = record {
+    expected_wasm_hash : blob;
+    expected_arg_hash  : blob;
+    wasm_bytes         : blob;
+    arg_bytes          : blob;
+};
+
+type ObservedCanisterStatus = variant { Running; Stopping; Stopped };
+
+type UpgradeObjectiveEvidence = record {
+    observed_upgrader_principal : principal;
+    observed_module_hash        : opt blob;
+    observed_controllers        : vec principal;
+    observed_canister_status    : ObservedCanisterStatus;
+    observed_at_ns              : nat64;
+};
+
+type ReconcileUpgraderUpgrade = record {
+    proposal_id        : nat64;
+    objective_evidence : UpgradeObjectiveEvidence;
+};
+
+// §S7 §4 — objective evidence for a START settlement: a canister_status
+// observation of the start target. The upgrade shape MINUS the module hash,
+// with the target field named for what it is. A start is mapped on observed
+// STATUS alone (§5), so no module hash exists in the shape for a later edit to
+// start consulting.
+type StartObjectiveEvidence = record {
+    observed_target_principal : principal;
+    observed_canister_status  : ObservedCanisterStatus;
+    observed_controllers      : vec principal;
+    observed_at_ns            : nat64;
+};
+
+// §S7 cell 3 — Vault-governed settlement of an outcome-unknown Vault→Upgrader
+// start. The mirror of cell 4's RecoveryAction::ReconcileVaultStart.
+type ReconcileUpgraderStart = record {
+    proposal_id        : nat64;
+    objective_evidence : StartObjectiveEvidence;
+};
+
+// §3e (CUST-L12-01): governed upgrade of THE VAULT through the Upgrader's
+// FIXED trigger_vault_upgrade endpoint. Ring-internal: no target, no method.
+// request_id must be 0 at propose; the Vault binds it to the proposal id at
+// the quorum boundary (the Upgrader replays on request_id).
+type VaultUpgradeViaUpgrader = record {
+    request_id         : nat64;
+    expected_wasm_hash : blob;
+    expected_arg_hash  : blob;
+    wasm_bytes         : blob;
+    arg_bytes          : blob;
+};
+
+// §3e reconciliation via the Upgrader's FIXED reconcile_vault_upgrade
+// endpoint; request_id is the target Vault proposal id. Legal source state
+// OutcomeUnknown ONLY; never retries/reinstalls.
+type ReconcileVaultUpgradeViaUpgrader = record {
+    request_id         : nat64;
+    objective_evidence : UpgradeObjectiveEvidence;
+};
+
+type BoundedCursor = blob;
+
+type PageRequest = record { cursor : opt BoundedCursor; limit : nat32 };
+
+type ReadModelRequest = variant {
+    PoolReadAccountingState                 : PageRequest;
+    PoolReadTreasuryReconciliationTombstone : PageRequest;
+    PoolReadAppendLeaseOwner                : PageRequest;
+    PoolReadPendingOutputPromotions         : PageRequest;
+    NullifierReadSpentAt : record { nullifier : blob; page : PageRequest };
+    PoolReadPayoutMemoKeyReady;
+    TokenReadSupplyReconciliation : record { receipt_audit_id : nat64 };
+};
+
+// The Vault's action envelope (propose argument).
+type VaultActionKind = variant {
+    Application               : ActionRequest;
+    Management                : ManagementAction;
+    UpgraderUpgrade           : UpgraderUpgrade;
+    ReconcileUpgraderUpgrade  : ReconcileUpgraderUpgrade;
+    ReadModel                 : ReadModelRequest;
+    UpdateSignerSet           : record { signers : vec principal; threshold : nat32 };
+    VaultUpgradeViaUpgrader          : VaultUpgradeViaUpgrader;
+    ReconcileVaultUpgradeViaUpgrader : ReconcileVaultUpgradeViaUpgrader;
+    // §S7 cell 3 — the retrofit's missing exit: settlement of an
+    // outcome-unknown Vault->Upgrader start. Governed at Vault quorum, the
+    // same quorum as any other action.
+    ReconcileUpgraderStart           : ReconcileUpgraderStart;
+};
+
+// ── Read-model / snapshot shapes (freeze §3b/§9) ─────────────────────────────
+
+type BoundedItem = blob;
+
+type PageResponse = record { items : vec BoundedItem; next_cursor : opt BoundedCursor };
+
+type NullifierSpentAtItem = record { nullifier : blob; spent_at : opt nat64 };
+
+type SupplyReconciliation = record {
+    maintained_sum_balances : nat;
+    folded_sum_balances : nat;
+    maintained_sum_staking_locks : nat;
+    folded_sum_staking_locks : nat;
+    fee_reserve : nat;
+    rows_examined : nat64;
+    totals_consistent : bool;
+    folded_first_law_holds : bool;
+    detail : opt text;
+};
+
+type ReadModelResponse = variant {
+    PoolReadAccountingState                 : PageResponse;
+    PoolReadTreasuryReconciliationTombstone : PageResponse;
+    PoolReadAppendLeaseOwner                : PageResponse;
+    PoolReadPendingOutputPromotions         : PageResponse;
+    NullifierReadSpentAt : record { items : vec NullifierSpentAtItem; next_cursor : opt BoundedCursor };
+    PoolReadPayoutMemoKeyReady : opt bool;
+    TokenReadSupplyReconciliation : SupplyReconciliation;
+};
+
+type ReadModelAction = variant {
+    PoolReadAccountingState;
+    PoolReadTreasuryReconciliationTombstone;
+    PoolReadAppendLeaseOwner;
+    PoolReadPendingOutputPromotions;
+    NullifierReadSpentAt;
+    PoolReadPayoutMemoKeyReady;
+    TokenReadSupplyReconciliation;
+};
+
+type SnapshotSource = variant { ReadModel : ReadModelAction };
+
+type ReconcileTerminalOutcome = variant { Executed; Failed };
+
+type ControllerReadSnapshot = record {
+    snapshot_id             : nat64;
+    source                  : SnapshotSource;
+    source_canister         : principal;
+    request                 : ReadModelRequest;
+    request_hash            : blob;
+    response                : ReadModelResponse;
+    originating_proposal_id : nat64;
+    governance_epoch        : nat64;
+    observed_at_ns          : nat64;
+    completed_at_ns         : nat64;
+    terminal_outcome        : ReconcileTerminalOutcome;
+};
+
+// ── Vault-local view/result types ────────────────────────────────────────────
+
+type GuardTarget = variant { Vault; Upgrader };
+
+type GuardViolation = variant {
+    ControllerInvariantBroken : record { target : GuardTarget };
+    StopForbidden             : record { target : GuardTarget };
+};
+
+type VaultError = variant {
+    NotAuthorized;
+    UnknownProposal        : record { proposal_id : nat64 };
+    StaleEpoch             : record { expected : nat64; found : nat64 };
+    AlreadyApproved;
+    HashMismatch;
+    IllegalSourceState;
+    AlreadyTerminal;
+    // R3.7: caller IS a signer but is not this proposal's proposer. Typed
+    // distinctly from NotAuthorized — the defect is scope, not authority.
+    NotProposer;
+    LifetimeOutOfBounds : LifetimeViolation;
+    // R1.5 — typed apart deliberately: a caller mismatch and durable
+    // stored-vs-recomputed corruption are different events.
+    CommitmentMismatch : CommitmentMismatch;
+    ThresholdViolation;
+    SizeLimitExceeded      : record { encoded_bytes : nat64; limit_bytes : nat64 };
+    GuardRejected          : GuardViolation;
+    ReadLimitExceeded      : record { limit : nat32; max : nat32 };
+    ReadBoundExceeded      : record { what : text; bytes : nat64; max : nat64 };
+    // §S7 §7c — a start reconcile against an ALREADY-SETTLED proposal. Replay
+    // is NEVER success-shaped; the settled outcome rides in the payload rather
+    // than being denied to the caller. Typed apart from AlreadyTerminal: this
+    // additionally asserts a §8a SettlementRecord exists and names its outcome.
+    AlreadySettled         : record { outcome : ReconcileTerminalOutcome };
+    // S11-1 (P1-A) — approval refused at ADMISSION because the proposal's
+    // IMMUTABLE committed expires_at_ns has elapsed. CTO ruling (S11 packet
+    // V2): ZERO MUTATION — this does NOT terminalize the proposal and does NOT
+    // release accounted capacity. The bounded R3.8 sweep stays the SOLE
+    // terminalizer and SOLE releaser. Never success-shaped; carries the
+    // deadline and the observed time so the refusal is externally checkable.
+    ProposalExpired        : record { expires_at_ns : nat64; now_ns : nat64 };
+};
+
+// R1.7 — TYPED, EXHAUSTIVE redacted view of a ManagementAction. Replaces the
+// former `Management : text`, which was the Rust `Debug` of the whole action
+// and rendered wasm_bytes/arg_bytes in full: a multi-megabyte view of a
+// ~1.9 MiB artifact, far past READ_RESPONSE_MAX_BYTES. Install-vs-upgrade
+// mode is carried by the VARIANT, not a field.
+type ManagementActionView = variant {
+    // upgrade-mode, hash-bound.
+    Upgrade : record {
+        target             : principal;
+        expected_wasm_hash : blob;
+        expected_arg_hash  : blob;
+        // CURRENTLY RETAINED artifact lengths — 0 once the bytes are cleared.
+        wasm_bytes_len     : nat64;
+        arg_bytes_len      : nat64;
+        bytes_retained     : bool;
+    };
+    Start  : record { target : principal };
+    Stop   : record { target : principal };
+    // Controller set shown IN FULL (R1.6).
+    UpdateSettings : record {
+        target      : principal;
+        controllers : vec principal;
+    };
+    DepositCycles : record { target : principal; cycles : nat };
+    CreateCanister : record {
+        manifest_purpose : text;
+        disposition      : ManifestDisposition;
+    };
+    // install-mode only, against a not-yet-installed allocated principal.
+    InstallCode : record {
+        target             : principal;
+        expected_wasm_hash : blob;
+        expected_arg_hash  : blob;
+        wasm_bytes_len     : nat64;
+        arg_bytes_len      : nat64;
+        bytes_retained     : bool;
+    };
+};
+
+type ActionView = variant {
+    Application  : text;
+    Management   : ManagementActionView;
+    UpgraderUpgrade : record {
+        expected_wasm_hash : blob;
+        expected_arg_hash  : blob;
+        bytes_retained     : bool;
+    };
+    // R1.6 — objective evidence shown IN FULL on BOTH reconcile classes,
+    // resolving the redacted-vs-unredacted divergence with the Upgrader's
+    // recovery plane (which already returns its reconcile action unredacted)
+    // toward disclosure. Reconciliation is the only state-changing path out
+    // of OutcomeUnknown and it is terminal; the evidence is an objective
+    // on-chain observation carrying no secret, and it is the entire basis of
+    // the decision a signer is being asked to approve.
+    ReconcileUpgraderUpgrade : record {
+        target_proposal_id : nat64;
+        objective_evidence : UpgradeObjectiveEvidence;
+    };
+    VaultUpgradeViaUpgrader : record {
+        request_id         : nat64;
+        expected_wasm_hash : blob;
+        expected_arg_hash  : blob;
+        bytes_retained     : bool;
+    };
+    ReconcileVaultUpgradeViaUpgrader : record {
+        target_proposal_id : nat64;
+        objective_evidence : UpgradeObjectiveEvidence;
+    };
+    // §S7 cell 3 — start evidence shown IN FULL, on the same R1.6 disclosure
+    // reasoning as the two reconcile classes above.
+    ReconcileUpgraderStart : record {
+        target_proposal_id : nat64;
+        objective_evidence : StartObjectiveEvidence;
+    };
+    ReadModel      : text;
+    // R1.6 — the PROPOSED SIGNER PRINCIPALS in full, not a count. A count
+    // alone made a membership change unreviewable: substituting an attacker
+    // principal for a peer was invisible on the view a signer approves from.
+    // The count is deliberately not retained alongside — two representations
+    // of one fact can disagree.
+    UpdateSignerSet : record { signers : vec principal; threshold : nat32 };
+};
+
+type ProposalView = record {
+    proposal_id   : nat64;
+    proposer      : principal;
+    created_at_ns : nat64;
+    epoch         : nat64;
+    outcome       : ActionOutcome;
+    result        : opt text;
+    snapshot_id   : opt nat64;
+    action        : ActionView;
+    approvals     : vec principal;
+    // R1.2 property 8 / R1.3 — the IMMUTABLE stored commitment hash a signer
+    // must supply to `approve`. Returned on EVERY signer-facing view, terminal
+    // ones included, AFTER artifact clearing: the byte-free canonical form
+    // exists so this stays available and unchanged once the bytes are gone.
+    commitment_hash : vec nat8;
+};
+
+type ApprovalOutcome = variant {
+    Approved    : record { approvals : nat32; threshold : nat32 };
+    Executing;
+    PriorResult : record { outcome : ActionOutcome; result : opt text };
+};
+
+type AuditKind = variant {
+    ProposalCreated; ApprovalAdded; QuorumReached; Executed; Failed;
+    OutcomeUnknown; GovernanceTransition; Reconciled; ReconcileConflict;
+    SnapshotStored;
+    CanisterCreated;
+    // R3.7/R3.8 — a client missing these cannot decode an audit page that
+    // contains one, so they are part of the wire contract, not commentary.
+    ProposalCancelled; ProposalExpired;
+    // §S7 §3c.3 — a late reply/reject callback was FENCED (zero state and zero
+    // lock change; the event makes the fence observable). §7d.1 — the FIRST
+    // §4-valid semantic discordance against a settled proposal, at most one
+    // per proposal ever.
+    LateCallbackFenced; SettlementEvidenceConflict;
+};
+
+type AuditEvent = record {
+    id                : nat64;
+    at_ns             : nat64;
+    epoch             : nat64;
+    kind              : AuditKind;
+    proposal_id       : opt nat64;
+    actor             : principal;
+    // F-4 (freeze §10): recorded on every execution / reconciliation event.
+    approving_signers : opt vec principal;
+    // Typed D5 creation receipt — present exactly on CanisterCreated events.
+    creation_receipt  : opt CreationReceipt;
+    // §S7 §7d.1 — the FROZEN eight-field conflict payload, present exactly on
+    // SettlementEvidenceConflict events. Typed rather than stringified: because
+    // every later discordance is deliberately silent, this is the ONLY forensic
+    // record that will ever exist for that proposal, and a stringified
+    // rendering would be the "forensically thin event" CUST-SSA-V3-01 rejects.
+    settlement_conflict : opt SettlementEvidenceConflict;
+    detail            : text;
+};
+
+// §S7 §7d.1 — FROZEN AT EXACTLY EIGHT FIELDS. Fields 2-4 are read from the
+// stored §8a SettlementRecord (never recomputed); fields 5-8 are derived from
+// the replay under the §4a canonical encoding. No field is optional, none may
+// be truncated, and the payload may not carry the §3c callback payload or any
+// value not listed here. The hashes BIND the two observations; they do not
+// EXPOSE them — the event is a binding, not a transcript.
+type SettlementEvidenceConflict = record {
+    proposal_id                : nat64;
+    stored_outcome             : ReconcileTerminalOutcome;
+    stored_semantic_key        : blob;
+    stored_evidence_commitment : blob;
+    replay_mapped_outcome      : ReconcileTerminalOutcome;
+    replay_semantic_key        : blob;
+    replay_evidence_commitment : blob;
+    replay_observed_at_ns      : nat64;
+};
+
+// PUBLIC, conscious (freeze §4) — no principals.
+type GovernanceSummary = record {
+    threshold        : nat32;
+    signer_count     : nat32;
+    governance_epoch : nat64;
+};
+
+service : (VaultInit) -> {
+    // ── Updates (quorum plane; single deny-by-default authorization path) ────
+    // R3.1 — the optional argument is the CALLER-REQUESTED lifetime in ns.
+    // null takes the ruled default. A caller cannot choose an effectively
+    // permanent expiry: an explicit request is bounds-checked, and refused
+    // outright while the bounds are unruled.
+    propose : (VaultActionKind, opt nat64) -> (variant { Ok : nat64; Err : VaultError });
+    // R1.5 — the second argument is the EXPECTED COMMITMENT HASH, read from
+    // the proposal view. Approving by id alone, with nothing binding the
+    // approval to a payload, is CUST-SSA-001. A mismatch rejects with ZERO
+    // writes and the proposal stays Pending.
+    approve : (nat64, vec nat8) -> (variant { Ok : ApprovalOutcome; Err : VaultError });
+    // R3.7 (V7 §3): withdraw your OWN pending proposal. Signer-gated then
+    // PROPOSER-scoped — no signer may veto a peer's proposal.
+    cancel_proposal : (nat64) -> (variant { Ok : null; Err : VaultError });
+    // R3.8: bounded expiry sweep. Work per call is bounded so the sweep can
+    // never itself become the DoS it exists to prevent. Returns the ids
+    // reaped; repeat until empty.
+    sweep_expired_proposals : (nat32) -> (variant { Ok : vec nat64; Err : VaultError });
+
+    // ── SIGNER-GATED queries (freeze §4): unauthorized → indistinguishable
+    //    None (anonymous / removed / stale-epoch / unknown all identical) ────
+    get_controller_read_snapshot : (nat64) -> (opt ControllerReadSnapshot) query;
+    get_proposal                 : (nat64) -> (opt ProposalView) query;
+    list_proposals               : (opt nat64, nat32) -> (opt vec ProposalView) query;
+    get_audit_events             : (opt nat64, nat32) -> (opt vec AuditEvent) query;
+    get_signers                  : () -> (opt vec principal) query;
+    get_governed_targets         : () -> (opt record { VaultTargets; vec GovernedTarget }) query;
+    get_creation_receipts        : (opt nat64, nat32) -> (opt CreationReceiptPage) query;
+
+    // ── PUBLIC queries (freeze §4) ───────────────────────────────────────────
+    get_governance_summary : () -> (GovernanceSummary) query;
+    get_action_catalogue   : () -> (vec text) query;
+    get_build_info         : () -> (text) query;
+}

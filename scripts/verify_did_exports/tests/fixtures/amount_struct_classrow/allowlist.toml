@@ -1,0 +1,4 @@
+[[amount_struct]]
+name        = "Report"
+rationale   = "fixture: a reporting surface that publishes amounts by design"
+field_count = 2

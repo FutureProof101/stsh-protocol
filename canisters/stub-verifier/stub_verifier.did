@@ -1,0 +1,44 @@
+// Test-only stub verifier — Candid interface.
+//
+// Mirrors the production verifier's callable surface (verify_spend_canister + vk_hash)
+// but always accepts proofs and reports a CONFIGURABLE vk_hash, so the shielded-pool's
+// set-time VK attestation (DEF-003/#155) can be exercised in integration tests.
+//
+// NOT a production canister (publish = false; absent from dfx.json). The optional init
+// arg is the 32-byte VK hash the stub will report; installing with no init arg reports
+// [0u8; 32].
+//
+// P-VK (POOL-04) harness expansion — TEST SCAFFOLDING ONLY: a configurable one-shot
+// nested action inside verify_spend_canister (controller-authorized pause/unpause,
+// verifier replacement, fee-params mutation, and the clock-boundary backdate
+// injection). Default behavior (no configured action) is unchanged.
+
+type NestedAction = variant {
+    // (b) elevated fixture: pause then unpause during the parked await.
+    PauseThenUnpause : record { pool : principal };
+    // (c) elevated fixture: set_verifier(other) then set_verifier(self).
+    VerifierRoundTrip : record { pool : principal; other : principal };
+    // Fee/params mid-flight change (must NOT be a security-epoch event).
+    MutateFeeParams : record { pool : principal };
+    // (a″) elevated fixture: testing-only clock-boundary injection — make the
+    // scheduled VK activation "due now" (no activation, no pin/epoch change),
+    // then reply. The parked spend's own C2a forces the overdue activation.
+    BackdateOnly : record { pool : principal };
+    // (a′) elevated fixture: backdate, then a nested wrong-version spend whose
+    // C1a applies the now-overdue activation and rejects with
+    // CircuitVersionMismatch{expected = new version}.
+    BackdateAndTriggerActivation : record {
+        pool : principal;
+        spend_id : nat64;
+        expected_new_version : nat32;
+    };
+    // kill-switch regression: emergency_disable_circuit_version pauses spends —
+    // a ruled security-epoch event (exactly one increment).
+    DisableCircuitVersion : record { pool : principal; version : nat32 };
+};
+
+service : (opt blob) -> {          // opt [u8;32] — configured vk_hash (default [0u8;32])
+    verify_spend_canister : (blob, vec blob) -> (variant { Ok; Err : text });
+    vk_hash               : ()              -> (blob) query;
+    configure_nested_action : (opt NestedAction) -> ();
+};

@@ -1,0 +1,188 @@
+# =============================================================================
+# STSH — GENESIS PRINCIPAL RECORD
+# Remediation lane R-3 (H-3, HOLD-LAUNCH).
+# BRIEF_R3_GENESIS_PRINCIPAL_BINDING_V7_2026-09-04.md
+# =============================================================================
+#
+# THE INDEPENDENT SECOND SOURCE for genesis principal IDENTITY.
+#
+# Every other control over these principals is a COHERENCE check: the artifact
+# is compared to the manifest (D10/D11/D13/D14/D15/V1/V2), the manifest to the
+# hardcoded approved schema (DP0/DP1), and every site to the placeholder
+# predicate (DP3). All of that catches an INCONSISTENT RR-1 and is structurally
+# incapable of catching a CONSISTENT one: a substituted, typo'd or
+# attacker-chosen principal written identically into genesis_manifest.toml,
+# stsh_token_init.did and vesting_init.did passed the entire gate GREEN.
+#
+# This file is the source of truth those three inputs are checked AGAINST. It is
+# consumed by `scripts/verify_genesis_manifest` and by NOTHING ELSE — no deploy
+# path, no install path, no canister reads it. That separation is the whole
+# mechanism: the file that SETS the principals cannot also CERTIFY them.
+#
+# Its exact committed bytes are pinned by `GENESIS_PRINCIPAL_RECORD_SHA256` in
+# `scripts/verify_genesis_manifest/src/lib.rs` (check `GP6-record-pin`). Every
+# edit here is therefore PAIRED with a reviewed source edit, on purpose. When
+# you change this file, regenerate that constant LAST, after every other edit:
+#
+#   sha256sum deployment/mainnet/genesis_principals.toml
+#
+# Line endings are LF (.gitattributes: `*.toml text eol=lf`, core.autocrlf
+# false). The pin is over exact bytes; a CRLF checkout would move it.
+#
+# WHAT THIS DOES NOT PROVE (the honest residual, brief §3.3/§6.2): a coherent
+# FIVE-artifact edit — the three genesis inputs, this record, and the source pin
+# — that retains a pinned attestation digest is NOT detected here. `provenance`
+# is a POINTER to a reviewed attestation, not a proof of provenance. That
+# residual sits behind review capture, the same bar the Vault quorum sits
+# behind, and is asserted as an executable GREEN fact by
+# `ac4c_five_artifact_coherent_edit_is_not_detected`.
+#
+# ── Entry grammar ────────────────────────────────────────────────────────────
+#   principal  = "<principal>"  a resolved, literal value
+#   principal  = "PENDING"      unresolved: the role's production principal is
+#                               not yet ruled. FAIL-CLOSED, never a wildcard —
+#                               a PENDING role fires GP1-pending-<ROLE>, and
+#                               fires GP1-pending-input-populated-<ROLE> too if
+#                               any of its install-input sites has already been
+#                               populated with a non-placeholder value.
+#   binding    = "vault_authorities"
+#                               CROSS-BOUND: the value is READ from
+#                               deployment/mainnet/vault_authorities.toml's
+#                               `vault` key, never copied here. A role carries
+#                               `principal` OR `binding`, never both.
+#   provenance = "<sha256>"     names an accepted attestation digest
+#                               (GENESIS_ATTESTATION_DIGESTS in the verifier).
+#
+# CENSUS — REGENERATED FROM THIS FILE BY LANE A-2, 2026-09-09. Never inherited
+# from a previous revision; recount by parsing (`grep -c '^\[role\.'`) whenever
+# this file changes.
+#
+# 17 entries: 15 base roles — the 11 allocation `principal_role`s of the V4 D-0
+# table, plus STAKING_CANISTER, NEUTRAL_FEE_COLLECTOR, STSH_TOKEN_CANISTER and
+# VESTING_CONTROLLER_MULTISIG — and 2 schedule beneficiaries
+# (FOUNDER_1_BENEFICIARY, LEGAL_COUNSEL_BENEFICIARY). At land time 16 are
+# PENDING; the 17th, STAKING_CANISTER, is cross-bound and resolved from day one.
+#
+# Delta from the pre-A-2 record (19 entries): retired DEV_HOLDING_MULTISIG,
+# ZK_HOLDING_MULTISIG, INCENTIVES_EMISSION, FOUNDER_2_BENEFICIARY,
+# FOUNDER_3_BENEFICIARY; added STRATEGIC_GRANTS_MULTISIG,
+# CAPITAL_RESERVE_MULTISIG, EXTERNAL_LP_INCENTIVES.
+#
+# NOTE (D-5 / OPEN-1, ruled B-1): the day-one 3% Protocol-Owned Liquidity deploy
+# target is NOT a separate role entry. Bucket 9 mints to LIQUIDITY_MULTISIG and
+# the deploy happens afterwards from that account; the AMM/operator target
+# resolves at J-18/A8. Adding an entry here would fire GP1-role-extra.
+# =============================================================================
+
+schema_version = 1      # THIS RECORD's own schema. NOT the genesis manifest's
+                        # schema_version (3) — the two are independent and
+                        # AC-11 asserts they are never conflated.
+rr1_performed  = true   # DECLARED POSTURE, enforced by run_gate.sh's genesis
+                        # posture stage (brief §6.1). This is not a licence:
+                        # flipping it to `true` makes the stage STRICTER — the
+                        # observed failing set must then be EXACTLY EMPTY.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The one role with a ruled, pinned value today (custody freeze §14).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# STAKING EXCLUDED FROM THE LAUNCH INSTALL SET (D1, ratified 2026-08-14). This
+# is the token's required, fail-closed stored staking principal, and at RR-1 it
+# is replaced with the VAULT principal, never with a staking-canister principal.
+# The Vault's value already has an independent in-repo source, so this role is
+# CROSS-BOUND to it rather than duplicated here — a second copy is a second
+# thing that can drift.
+[role.STAKING_CANISTER]
+binding    = "vault_authorities"
+provenance = "c9f7400c9f771baf2f7417fc9933eab9132b3f3cdca32d14de1d9a94de6c3670"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Base roles with no in-repo value at base (14). Each lands PENDING and each
+# fires GP1-pending-<ROLE> until RR-1 fills it.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[role.TREASURY_MULTISIG]
+principal  = "7aacs-7ky4d-2f7wg-rq4yh-c6us4-gmzow-inzyz-mdglq-ov72c-hx4zc-gae"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.INSURANCE_MULTISIG]
+principal  = "txsc4-jhhef-eqw7h-tdqpd-7eior-6zbfc-r3o6e-7gi7q-jja7q-dpgij-vqe"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.FOUNDERS_VESTING_CANISTER]
+principal  = "cfxs7-4qaaa-aaaar-qchga-cai"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+# Lane A-2 (2026-09-09): DEV_HOLDING_MULTISIG and ZK_HOLDING_MULTISIG are
+# RETIRED — the `dev` (3%) and `zk_advisors` (4%) buckets have no counterpart in
+# the V4 D-0 table (SSoT V8 K-23). NEW: STRATEGIC_GRANTS_MULTISIG holds the
+# bucket-4 remainder (D-4 §D-4.1).
+[role.STRATEGIC_GRANTS_MULTISIG]
+principal  = "pkoxa-o2yit-x7c2q-6ieoo-bnufi-klbv3-4ni7h-nb4x6-izc7q-253zk-mae"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.CEREMONY_HOLDING]
+principal  = "fawds-fyajw-qyebo-yh6t2-y2rcz-hpsnj-xg5k5-v4fyq-ifzak-mfd7s-rqe"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.BOUNTY_MULTISIG]
+principal  = "bxvrd-77pon-b64bm-5vqbk-xt75z-vifyx-7luh6-sflc5-4s4iu-ugodi-xqe"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.AIRDROP_PROGRAM]
+principal  = "bzjh2-c7pd6-hfu7b-ujbrf-lmk4e-gmrfm-4qkr4-3il2k-qyuli-shkhk-6ae"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+# Lane A-2: INCENTIVES_EMISSION is RETIRED with the 8% `shielded_incentives`
+# row (Addendum C Q2 — ONE incentives row at 5%, the surviving `airdrop`).
+# NEW: the V4 D-0 bucket 8 and bucket 10 holders.
+[role.CAPITAL_RESERVE_MULTISIG]
+principal  = "3yg5n-bdw5c-ojcoo-fljhl-t35xe-kogrv-myblj-3eft2-wolaq-f762e-nqe"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.EXTERNAL_LP_INCENTIVES]
+principal  = "gxdbk-hjr2c-q4wcn-d6l6p-r5ud5-zvmjh-6yxfm-7wdd3-2ge6q-q6vjj-uqe"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.LIQUIDITY_MULTISIG]
+principal  = "2u4ds-eexxk-d4e2u-7bbtc-sbv5l-qt62h-mqtzf-yb4bm-gwcfj-yqsql-uqe"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+# D-4 V2: this role and FOUNDERS_VESTING_CANISTER legitimately share ONE
+# principal — the genesis vesting canister is the schedule authority for both
+# rows. That is the ENUMERATED GP4-distinct exemption, named never wildcarded;
+# any THIRD role joining that value still fails.
+[role.LEGAL_COUNSEL_VESTING]
+principal  = "cfxs7-4qaaa-aaaar-qchga-cai"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.NEUTRAL_FEE_COLLECTOR]
+principal  = "jdc4c-utkoi-nekq7-h7fod-ewtgg-jqeak-tde3m-t7v7j-m5hq3-lnaoz-yae"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.STSH_TOKEN_CANISTER]
+principal  = "clv7x-haaaa-aaaar-qchha-cai"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+[role.VESTING_CONTROLLER_MULTISIG]
+principal  = "fshhc-2gwwz-ppjrt-3kzea-xt3l6-oemkp-6vkjz-soogu-e5y55-qolw4-wae"
+provenance = "f27472f8cc4c2b3cd62153cdb8bd09ce3cfda1038a4d5c404648c367dd6f9930"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# D-6 (SSA NOTE-1, retained): the vesting SCHEDULE BENEFICIARIES are record
+# entries in their own right (4). They are principal sites like any other — the
+# DP3 scan already covers them — and leaving them out of the record would leave
+# four genesis principals bound by nothing but coherence, which is the exact
+# defect this lane closes.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[role.FOUNDER_1_BENEFICIARY]
+principal  = "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae"
+provenance = "987805a1e9b6fcd2678255baa8710c61f4ad6a9e5a952926cc6eb41d3ae65ab9"
+
+# Lane A-2 / DRIFT-1: FOUNDER_2_BENEFICIARY and FOUNDER_3_BENEFICIARY are
+# RETIRED. V4 D-0 bucket 3 is "Founder (single, Owner)" — one schedule.
+
+[role.LEGAL_COUNSEL_BENEFICIARY]
+principal  = "7edga-wl3vz-46g37-jaog6-amxwd-bgfjh-36hnf-we7up-3sfju-ual6g-fqe"
+provenance = "e9d4a04ea78af7cc2c30e1a962683e396498b34f89298f93dd3150fbb86c12b3"

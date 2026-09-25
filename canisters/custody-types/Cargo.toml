@@ -1,0 +1,46 @@
+[package]
+name    = "stsh-custody-types"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+# W6-EVIDENCE-01 — the reachability gate is GATE MACHINERY, not canister code.
+#
+# It is a source analyser used only by the two planes' test modules. Left
+# ungated it is dead code in every canister build and SHOULD be eliminated —
+# but "should be eliminated" is not "cannot be present", and the S8B dispatch
+# constrains this lane to zero canister-source movement. Measured gate-to-gate,
+# adding it ungated moved the vault production payload by +104 B, with none of
+# its symbols present in the artifact — i.e. codegen shift from a changed
+# dependency crate, not retained behaviour. Rather than argue that 104 B is
+# harmless, the feature makes the constraint true BY CONSTRUCTION: production
+# builds do not compile the analyser at all.
+#
+# Enabled through each plane's DEV-dependencies, so `cargo build` (which does
+# not resolve dev-dependencies) never turns it on.
+[features]
+gate-machinery = []
+
+# ── L0 custody-vault contracts crate ─────────────────────────────────────────
+# Frozen types for the Custody Vault campaign (CUSTODY_VAULT_INTERFACE_FREEZE_V6):
+# the typed action enum, outcome policies, error enums, ControllerReadSnapshot,
+# recovery types, and the VaultSelfControlGuard validator types.
+#
+# Deliberately has NO ic-cdk / ic-stable-structures dependency (fee-policy
+# precedent) so it can be used as a plain library crate from the vault and
+# upgrader canisters AND from integration-tests / native unit tests without
+# pulling in canister machinery. Per the MemoryId lint's confinement rule this
+# crate must never construct or hold a MemoryId — those live in the
+# vault/upgrader canister crates.
+[dependencies]
+candid = { workspace = true }
+serde  = { workspace = true }
+# R1.2 (CUST-SSA-001): ApprovalCommitmentV1 hashing. Pure computation — still
+# no ic-cdk / ic-stable-structures, so the crate stays usable from native tests.
+sha2   = { workspace = true }
+
+[dev-dependencies]
+# Committed-DID conformance checks (R3-D2) — dev-only, never in the lib.
+candid_parser = "0.1"

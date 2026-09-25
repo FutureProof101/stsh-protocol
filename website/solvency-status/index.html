@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" />
+    <title>STSH Reserves</title>
+    <!--
+      RESERVES-UI (2026-09): strip-back and face-lift, aligned with stsh.fi and
+      the wallet. Markup and styling only: main.ts, verify.ts and canister.ts are
+      untouched, and every id they write is kept. The pool holdings cell
+      (#pool-balance) and the age line (#last-updated) moved out of the table
+      into the hero; the remaining rows and the full explanation are folded.
+      Fonts are the wallet's two OFL faces, served from this canister
+      (public/fonts, with their OFL.txt beside them).
+    -->
+    <style>
+      @font-face {
+        font-family: "DM Sans";
+        src: url("/fonts/DMSans.woff2") format("woff2");
+        font-weight: 100 900;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("/fonts/JetBrainsMono.woff2") format("woff2");
+        font-weight: 100 700;
+        font-display: swap;
+      }
+      :root {
+        --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --bg: oklch(0.05 0 0);
+        --panel: oklch(0.1 0 0);
+        --panel-2: oklch(0.14 0 0);
+        --fg: oklch(0.98 0 0);
+        --fg-soft: oklch(0.86 0 0);
+        --muted: oklch(0.64 0 0);
+        --label: oklch(0.74 0 0);
+        --border: oklch(0.23 0 0);
+        --accent: oklch(0.75 0.098 65);
+        --good: oklch(0.74 0.16 150);
+        --bad: oklch(0.68 0.19 25);
+        --warn: oklch(0.8 0.14 80);
+        color-scheme: dark;
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--fg);
+        font-size: 15px;
+        line-height: 1.6;
+        background:
+          radial-gradient(1100px 480px at 50% -220px, oklch(0.75 0.098 65 / 0.08), transparent 70%),
+          var(--bg);
+        background-attachment: fixed;
+      }
+      a { color: var(--fg); text-underline-offset: 3px; }
+      a:hover { color: var(--accent); }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      code { font-family: var(--font-mono); font-size: 0.88em; color: var(--fg); }
+
+      .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 64px; }
+
+      header.top {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 20px 0 40px;
+      }
+      .brand { font-weight: 700; letter-spacing: 0.02em; text-decoration: none; font-size: 1.05rem; }
+      .brand span { color: var(--muted); font-weight: 500; margin-left: 10px; }
+      .top-link { font-size: 0.9rem; color: var(--label); text-decoration: none; }
+
+      .eyebrow {
+        margin: 0 0 14px; font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent);
+      }
+      h1 { margin: 0 0 24px; font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.15; letter-spacing: -0.02em; }
+
+      .card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 16px; padding: 24px;
+      }
+      .card + .card { margin-top: 16px; }
+
+      /* Status pill. The class is three-valued (green / red / unknown) and set
+         by main.ts; unknown reads amber. */
+      .badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 6px 14px; border-radius: 999px; border: 1px solid currentColor;
+        font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+        letter-spacing: 0.1em;
+      }
+      .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      .badge.green { color: var(--good); background: oklch(0.74 0.16 150 / 0.1); }
+      .badge.red { color: var(--bad); background: oklch(0.68 0.19 25 / 0.1); }
+      .badge.unknown { color: var(--warn); background: oklch(0.8 0.14 80 / 0.08); }
+      ul#reasons { margin: 14px 0 0; padding-left: 18px; color: var(--bad); font-size: 0.92rem; }
+      ul#reasons:empty { display: none; }
+
+      .hero-label { margin: 28px 0 4px; color: var(--label); font-size: 0.92rem; }
+      .hero-figure {
+        margin: 0; font-family: var(--font-mono); font-weight: 600;
+        font-size: clamp(2rem, 8vw, 3rem); line-height: 1.1; letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+      }
+      .hero-note { margin: 12px 0 0; color: var(--fg-soft); }
+      .updated { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; }
+
+      details.fold { margin-top: 20px; border-top: 1px solid var(--border); }
+      details.fold > summary {
+        cursor: pointer; list-style: none; padding: 16px 0 0;
+        color: var(--label); font-size: 0.92rem;
+      }
+      details.fold > summary::-webkit-details-marker { display: none; }
+      details.fold > summary::after { content: " +"; color: var(--accent); }
+      details.fold[open] > summary::after { content: " −"; }
+      details.card.fold { margin-top: 16px; border-top: 1px solid var(--border); }
+      details.card.fold > summary { padding: 0; color: var(--fg); font-weight: 600; font-size: 1rem; }
+      details.card.fold[open] > summary { margin-bottom: 8px; }
+
+      table { border-collapse: collapse; margin-top: 12px; width: 100%; }
+      td, th {
+        text-align: left; padding: 10px 12px 10px 0; vertical-align: top;
+        border-bottom: 1px solid var(--border); font-size: 0.92rem;
+      }
+      tr:last-child td, tr:last-child th { border-bottom: 0; }
+      th { font-weight: 500; color: var(--label); width: 45%; }
+      td { font-family: var(--font-mono); font-size: 0.86rem; overflow-wrap: anywhere; }
+
+      /* ROW-level yellow (L08-01). Deliberately NOT a badge state: the badge is
+         three-valued and stray treasury funds must never move it. */
+      td.yellow { color: var(--warn); font-weight: 600; }
+
+      .scope p { color: var(--fg-soft); margin: 14px 0 0; }
+      .scope strong { color: var(--fg); }
+      .scope h2 { margin: 24px 0 0; font-size: 0.95rem; }
+
+      /* J-25 release panel. The build-source value is a full commit id and the
+         reader must be able to copy it exactly, so the row is monospace and
+         wraps rather than truncating. */
+      #release td { font-family: var(--font-mono); font-size: 0.82rem; overflow-wrap: anywhere; }
+      #release td.release-unavailable { opacity: 0.7; font-style: italic; }
+      #release td.release-stale { color: var(--warn); font-weight: 600; }
+
+      footer { margin-top: 32px; font-size: 0.82rem; color: var(--muted); overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <a class="brand" href="https://stsh.fi">STSH<span>Reserves</span></a>
+        <a class="top-link" href="https://stsh.fi">stsh.fi ↗</a>
+      </header>
+
+      <main>
+        <p class="eyebrow">Public solvency signals · Proof of reserve</p>
+        <h1>Every private note, backed on the public ledger.</h1>
+
+        <section class="card" aria-live="polite">
+          <span id="badge" class="badge unknown">CHECKING…</span>
+          <ul id="reasons"></ul>
+
+          <div id="detail" hidden>
+            <p class="hero-label">Held in pool escrow</p>
+            <p class="hero-figure" id="pool-balance">—</p>
+            <p class="hero-note">
+              Green means the pool has certified that this covers every private
+              note.
+            </p>
+            <p class="updated">Updated <span id="last-updated">—</span></p>
+
+            <details class="fold">
+              <summary>All figures</summary>
+              <table>
+                <tr><th>Token supply invariant</th><td id="supply-invariant">—</td></tr>
+                <tr><th>Fixed max supply</th><td id="fixed-max-supply">—</td></tr>
+                <tr><th>Sum of all balances</th><td id="sum-balances">—</td></tr>
+                <tr><th>Treasury stray funds</th><td id="treasury-stray">—</td></tr>
+                <tr><th>Monitor status</th><td id="monitor-status">—</td></tr>
+              </table>
+            </details>
+          </div>
+        </section>
+
+        <details class="card fold scope">
+          <summary>How this is proven</summary>
+          <p><strong>What this page proves — and what it doesn't.</strong>
+          Every figure above is read from a standalone monitor canister via
+          <em>certified queries</em>: the response carries a subnet signature that
+          this page verifies in your browser against the Internet Computer root of
+          trust, so neither the monitor nor this website can fabricate it. A stale
+          or unverifiable response always renders as red/unknown, never as a stale
+          green.</p>
+          <p>These signals prove <strong>token supply integrity</strong> (no tokens
+          minted after genesis), the <strong>pool's on-ledger holdings</strong>,
+          <strong>freshness</strong>, and — since the pool attestation landed — the
+          <strong>full solvency delta is proven</strong>: the shielded pool
+          continuously certifies that its escrow backing plus in-flight
+          reimbursements covers every outstanding private note.</p>
+          <p><strong>What the delta figure shows, and why it is usually zero.</strong>
+          The pool publishes <code>min(delta, 0)</code>, so a healthy pool always
+          reads exactly <strong>0</strong> — deliberately, because a live healthy
+          figure would leak how much is moving through the pool and when. A
+          <strong>negative</strong> value is a real shortfall and is shown in full.
+          Timestamps are coarse to 5 minutes for the same reason. If the attestation
+          cannot be read, is malformed, or is stale, this page renders red or
+          unknown — never a green it could not verify.</p>
+          <p><strong>Stray funds in the treasury account are shown in yellow on
+          their own row and do not affect backing.</strong> The
+          <em>Treasury stray funds</em> row above reads <code>0 STSH</code> when
+          there are none, the amount in yellow when there are some, and
+          <strong>UNKNOWN in yellow</strong> when the treasury balance could not be
+          read at all. None of those three outcomes changes the badge: stray funds
+          are foreign by definition — excluded from the pool's custody accounting
+          and from the solvency delta — so a yellow row means "someone sent tokens
+          to the treasury address", or "we could not check", never "the pool is
+          short".</p>
+          <p><strong>VIOLATED is not the same as UNAVAILABLE.</strong>
+          <em>Token supply invariant</em> reads <code>VIOLATED</code> when the
+          ledger computed the supply invariant and it did not hold, and
+          <code>UNAVAILABLE</code> when the ledger could not compute it at all
+          (an arithmetic error); both render red, because an invariant that was
+          never computed has not been proven, but they are different claims and the
+          page states which one it is.</p>
+          <p><strong>Schema transition.</strong> This page currently accepts both
+          monitor snapshot schema 2 and schema 3, and the transition is deployed
+          page-first — this page goes live before the monitor is switched to emit
+          schema 3, never the other way round. Schema 2 has no
+          <code>UNAVAILABLE</code> signal and cannot report it, so while the monitor
+          still emits schema 2 an uncomputable invariant reads as VIOLATED; once the
+          monitor emits schema 3 the two are told apart.</p>
+
+          <h2>Release</h2>
+          <table id="release">
+            <tr><th>Canister build source</th><td id="release-build-source">&mdash;</td></tr>
+            <tr><th>Monitor snapshot schema</th><td id="release-snapshot-schema">&mdash;</td></tr>
+            <tr><th>Circuit version / VK hash</th><td id="release-circuit">&mdash;</td></tr>
+          </table>
+        </details>
+      </main>
+
+      <footer>
+        Monitor canister: <code id="monitor-id"></code>
+        <script>document.getElementById('monitor-id').textContent =
+          new URLSearchParams(location.search).get('monitor') ?? '(configure ?monitor=…)';</script>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

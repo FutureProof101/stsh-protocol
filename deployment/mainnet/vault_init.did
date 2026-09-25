@@ -1,0 +1,92 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  deployment/mainnet/vault_init.did — Vault deployment init payload
+//  Produced at L4 (custody-finalization) to satisfy the deploy-time gate:
+//      verify_custody_manifest --deploy-time
+//  which requires this artifact to exist, parse, and carry cutover_targets equal
+//  to the Vault's source REQUIRED_CUTOVER and the manifest's
+//  set_controller_at_cutover rows (see scripts/verify_custody_manifest).
+//
+//  GATE-VERIFIED (determined, do NOT edit without repinning source+manifest):
+//    cutover_targets — EXACTLY the two ruled pairs, matching
+//      canisters/vault/src/lib.rs REQUIRED_CUTOVER and
+//      deployment/mainnet/custody_manifest.toml set_controller_at_cutover rows:
+//        solvency_status  → pyeop-7yaaa-aaaam-ajfja-cai  (reserves.stsh.fi)
+//        wallet_frontend  → s3tyu-aaaaa-aaaab-qhdjq-cai  (app.stsh.fi)
+//
+//  AUTHORITY BINDING (L4-01, SSA HOLD) — validated fail-closed by
+//    `verify_custody_manifest --deploy-time` against the independently-pinned
+//    record `deployment/mainnet/vault_authorities.toml` (structural rules +
+//    forbidden-principal denylist + set equality).
+//    • signers: REAL mainnet 2-of-3, pinned 2026-08-04; II pair RE-PINNED 2026-09-12 (J-17f, app.stsh.fi origin). ✅
+//    • upgrader: PINNED 2026-08-05 (below). ✅ Born_under_vault principal allocated
+//      by the human bootstrap ceremony. CREATE-ONLY — no code installed, no
+//      ring/controller wiring yet (that is a separate, later phase).
+//      Creation and the resulting principals are attributed to the office-
+//      authoritative CTO record, which is NOT committed in this repository:
+//        CTO_CEREMONY_RESULT_ADDENDUM_2026-08-05.md
+//        SHA-256 c9f7400c9f771baf2f7417fc9933eab9132b3f3cdca32d14de1d9a94de6c3670
+//      Parent ruling: RULING_UPGRADER_CEREMONY_PARAMS_2026-08-05.md.
+//    threshold is the ruled minimum (INITIAL_THRESHOLD = 2). No deployment until
+//    SSA verifies the authority-only delta AND a separate explicit launch
+//    authorization is given (install / controller change are a distinct decision).
+// ─────────────────────────────────────────────────────────────────────────────
+(
+  record {
+    quorum = record {
+      // REAL mainnet signers (2-of-3), pinned 2026-08-04 from Owner via A1; the two II
+      // principals RE-PINNED 2026-09-12 (J-17f) from the app.stsh.fi #/operator page —
+      // byte-matched against source, must equal deployment/mainnet/vault_authorities.toml:
+      //   Owner (human II)        : 5jmfd-...-qae
+      //   STSHProtocol (2nd II)   : lwiax-...-oqe
+      //   dfx (machine identity)  : 4f6wg-...-cae
+      signers = vec {
+        principal "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae";
+        principal "lwiax-bc6fp-osh2p-jhbyc-tpxjl-ir24x-o5pde-gtzl2-4ht56-ikt6h-oqe";
+        principal "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae";
+      };
+      threshold = 2 : nat32;
+      // UPGRADER — PINNED 2026-08-05, byte-identical to the independently-pinned
+      // record deployment/mainnet/vault_authorities.toml. Evidence by source:
+      //   [Builder-verified] anonymous `dfx canister info`, 2026-08-05 — principal,
+      //     module hash None (no code installed, CREATE-ONLY), and controller list
+      //     exactly [4f6wg-…-cae].
+      //   [Owner device attestation] controller-authenticated `dfx canister status`,
+      //     supplied 2026-08-05, NOT independently builder-verified — freeze
+      //     threshold 7_776_000 s (90 days), balance 3_679_196_741_732 cycles,
+      //     idle burn 2_260_543_031 cycles/day.
+      //   [Public dashboard evidence, 2026-08-05] subnet pzp6e-…-yae.
+      // The parent ruling's 5T figure was a provisioning TARGET, formally superseded
+      // by the accepted actuals; no top-up required. 4f6wg-…-cae is presently both
+      // sole controller of the two empty canisters and a future quorum member — an
+      // exception limited to codeless, authority-less canisters that must terminate
+      // at ring closure; "no unilateral controller authority" is a POST-CUTOVER
+      // claim only.
+      // [APPENDED 2026-09-14 — 34-node re-cut, T0-DOCS lane; append, not rewrite.]
+      // Subnet pzp6e-…-yae is a 34-NODE app subnet (CTO handoff 2026-09-13 item 2;
+      // SSoT V9 §1 D9-4), so 13-node-derived cycle figures understate cost ×≈2.6
+      // (34 ÷ 13 = 2.615). The balance and idle burn above are MEASURED on this
+      // subnet and stand (2_260_543_031/day × 365 ≈ 0.825 T/yr; 3.679 T ≈ 4.46 yr
+      // idle). What does NOT stand is "no top-up required" as a FORWARD claim: it
+      // is idle-only and excludes 34-node creation (≈1.3 T, which is why #10 was
+      // rejected out of cycles) and install/operating cost. Owner sizing under
+      // 34-node prices: 1 T per canister before each install, 2 T for the pool
+      // (cxrfg). CREATE_CANISTER_CYCLES itself is out of scope here (canisters/
+      // under freeze 2297a6c) — roadmap item PL-7. PRE-INSTALL: reverify principal, module hash None, and
+      // controllers == [4f6wg-…-cae] via anonymous `dfx canister info` immediately
+      // before any install. Nothing here authorizes a mainnet mutation.
+      upgrader = principal "cgal5-eiaaa-aaaar-qca3a-cai";
+    };
+    cutover_targets = vec {
+      record {
+        "principal" = principal "pyeop-7yaaa-aaaam-ajfja-cai";
+        disposition = variant { SetControllerAtCutover };
+        purpose = "solvency_status";
+      };
+      record {
+        "principal" = principal "s3tyu-aaaaa-aaaab-qhdjq-cai";
+        disposition = variant { SetControllerAtCutover };
+        purpose = "wallet_frontend";
+      };
+    };
+  },
+)

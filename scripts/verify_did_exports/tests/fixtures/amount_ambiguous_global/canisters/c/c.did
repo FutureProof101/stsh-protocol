@@ -1,0 +1,3 @@
+service : {
+  submit : (record { harmless : nat64 }) -> ();
+}

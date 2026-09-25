@@ -1,0 +1,90 @@
+// PINNED FIXTURE — repinned by lane LAUNCH-HARDEN-04 (O-7 Vault reconcile authority).
+// Repin reason: O-7 made `list_outstanding_claim_markers` anonymous-readable and added the
+// one-shot rebind_controller upgrade arg to canisters/vesting/vesting.did (CoS ruling C4, 2026-09-24);
+// fixture must equal the committed DID byte-exactly after this 4-line header.
+type VestingSchedule = record {
+    beneficiary    : principal;
+    total_amount   : nat;
+    cliff_end_ns   : nat64;
+    vesting_end_ns : nat64;
+    claimed        : nat;
+    start_ns       : nat64;
+};
+
+// DEF-051 / QA-DEF-005: controller decision for reconcile_claim on a claim whose
+// transfer outcome is transport-unknown. Executed = transfer landed (settle, no
+// token movement); NotExecuted = transfer did not land (revert claimed so the
+// beneficiary can re-claim).
+type ClaimDecision = variant { Executed; NotExecuted };
+
+// Lane L3b (custody-vault freeze V6 §6): canonical read-back payload for the
+// canister's two stored authority principals (CANISTER_REFS eager cell,
+// MemoryId 3 — vesting/src/lib.rs storage :180-181).
+type CanisterRefsReadback = record {
+    token_canister : principal;
+    controller     : principal;
+};
+
+// ── W2 2-5R: outstanding claim-marker visibility (DEF-096) ──────────────────
+// Typed state discriminator rather than the raw internal `unknown` bool, whose
+// polarity an operator under time pressure will misread.
+type ClaimMarkerState = variant {
+    InFlight;   // unknown == false — a claim is in flight
+    Stuck;      // unknown == true  — awaiting reconcile_claim
+};
+
+type OutstandingClaimMarker = record {
+    beneficiary        : principal;
+    state              : ClaimMarkerState;
+    // Returned EXACTLY as stored; opt is preserved because the marker stores
+    // them that way. Never default-filled — that would invent data.
+    pending_amount     : opt nat;
+    claim_seq          : opt nat64;
+    created_at_time_ns : opt nat64;
+};
+
+// RETAINED for decode compatibility; no longer returned (LAUNCH-HARDEN-04 O-7
+// made list_outstanding_claim_markers anonymous-readable).
+type OutstandingClaimMarkerError = variant {
+    NotController;
+    // Fails closed. Never degrades into an empty-success list, which would read
+    // as "nothing outstanding" — a lie when authority is simply unknown.
+    ControllerNotConfigured;
+};
+
+// LAUNCH-HARDEN-04 O-7 — UPGRADE argument (not an init argument; read RAW by
+// post_upgrade, so the service init signature below is unchanged):
+//   (opt record { rebind_controller : opt principal })  // VestingUpgradeArg
+// `rebind_controller = opt p` re-binds the reconcile_claim controller to p — p
+// must be a non-anonymous IC controller of this canister, distinct from itself
+// and the token, or the upgrade TRAPS. Empty bytes / () / (null) preserve.
+service : (record {
+    token_canister : principal;
+    controller     : principal;
+    schedules      : vec record {
+        beneficiary   : principal;
+        total_amount  : nat;
+        cliff_months  : nat32;
+        linear_months : nat32;
+    };
+}) -> {
+    claimable_amount : (principal) -> (nat)                query;
+    get_schedule     : (principal) -> (opt VestingSchedule) query;
+    list_schedules   : ()          -> (vec VestingSchedule) query;
+    claim            : ()          -> (variant { Ok : nat; Err : text });
+    // DEF-051 / QA-DEF-005: controller-only recovery for a transport-unknown claim.
+    reconcile_claim  : (principal, ClaimDecision) -> (variant { Ok; Err : text });
+    // Lane L3b (freeze V6 §6): PUBLIC canonical read-back of the STORED token +
+    // controller; fails closed (Err) on sentinel/uninitialised/corrupt state.
+    get_canister_refs_readback : () -> (variant { Ok : CanisterRefsReadback; Err : text }) query;
+    // W2 2-5R. Read-only; ANONYMOUS-READABLE since LAUNCH-HARDEN-04 O-7 (every
+    // field is already public via the schedule queries and the ledger), so it
+    // always returns Ok — the Err type is retained for decode compatibility
+    // only. ORDER IS DETERMINISTIC: rows are
+    // returned in stable-map key order, i.e. ascending by the beneficiary
+    // principal's raw bytes, so an operator diffing two readings sees real
+    // change and not reordering. An empty result is an EMPTY VECTOR, never an
+    // error.
+    list_outstanding_claim_markers : ()
+        -> (variant { Ok : vec OutstandingClaimMarker; Err : OutstandingClaimMarkerError }) query;
+};

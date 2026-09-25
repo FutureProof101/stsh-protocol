@@ -1,0 +1,24 @@
+[package]
+name    = "smoke_alarm_monitor"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ic-cdk               = { workspace = true }
+ic-cdk-macros        = { workspace = true }
+ic-stable-structures = { workspace = true }
+candid               = { workspace = true }
+serde                = { workspace = true }
+serde_bytes          = { workspace = true }
+# Witness CBOR serialization (self-describing, per IC certification spec).
+serde_cbor           = { workspace = true }
+num-traits           = { workspace = true }
+
+# Crate-local (not workspace) deps — used only by this canister.
+# Periodic refresh loop; 0.10.x is the ic-cdk 0.16 pairing.
+ic-cdk-timers        = "0.10"
+# Merkle tree + witness construction for certified queries.
+ic-certified-map     = "0.4"

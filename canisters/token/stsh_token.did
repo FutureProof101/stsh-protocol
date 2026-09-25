@@ -1,0 +1,404 @@
+// STSH Token Canister — Candid Interface
+// ICRC-1 + ICRC-2 + ICRC-10 + ICRC-21 + staking lock/unlock + supply invariant
+// Generated from canisters/token/src/lib.rs
+// Last regenerated: 2026-07-09 (ICRC remediation lane — F-001/002/007 Candid-
+// breaking changes: named supported_standards records, TransferFromError with
+// InsufficientAllowance, spec-shaped ICRC-21, icrc10_supported_standards)
+// Amended 2026-08-04 (Custody Vault lane L3f): additive PUBLIC query
+// get_authority_refs + AuthorityRefs type — no existing method changed.
+
+// ── Common account type ───────────────────────────────────────────────────────
+
+type Account = record {
+    owner      : principal;
+    subaccount : opt blob;
+};
+
+// ── ICRC-1 transfer types ─────────────────────────────────────────────────────
+
+type TransferArgs = record {
+    from_subaccount : opt blob;
+    to              : Account;
+    amount          : nat;
+    fee             : opt nat;
+    memo            : opt blob;
+    created_at_time : opt nat64;
+};
+
+type TransferError = variant {
+    BadFee             : record { expected_fee : nat };
+    BadBurn            : record { min_burn_amount : nat };
+    InsufficientFunds  : record { balance : nat };
+    TooOld;
+    CreatedInFuture    : record { ledger_time : nat64 };
+    Duplicate          : record { duplicate_of : nat };
+    TemporarilyUnavailable;
+    GenericError       : record { error_code : nat; message : text };
+};
+
+// ── ICRC-2 types ──────────────────────────────────────────────────────────────
+
+type ApproveArgs = record {
+    from_subaccount    : opt blob;
+    spender            : Account;
+    amount             : nat;
+    expected_allowance : opt nat;
+    expires_at         : opt nat64;
+    fee                : opt nat;
+    memo               : opt blob;
+    created_at_time    : opt nat64;
+};
+
+type ApproveError = variant {
+    BadFee              : record { expected_fee : nat };
+    InsufficientFunds   : record { balance : nat };
+    AllowanceChanged    : record { current_allowance : nat };
+    Expired             : record { ledger_time : nat64 };
+    TooOld;
+    CreatedInFuture     : record { ledger_time : nat64 };
+    Duplicate           : record { duplicate_of : nat };
+    TemporarilyUnavailable;
+    GenericError        : record { error_code : nat; message : text };
+};
+
+type TransferFromArgs = record {
+    spender_subaccount : opt blob;
+    from               : Account;
+    to                 : Account;
+    amount             : nat;
+    fee                : opt nat;
+    memo               : opt blob;
+    created_at_time    : opt nat64;
+};
+
+// ICRC-2 spec error type (F-002): TransferError + InsufficientAllowance.
+// An expired approval spends as InsufficientAllowance { allowance = 0 } (F-003).
+type TransferFromError = variant {
+    BadFee                : record { expected_fee : nat };
+    BadBurn               : record { min_burn_amount : nat };
+    InsufficientFunds     : record { balance : nat };
+    InsufficientAllowance : record { allowance : nat };
+    TooOld;
+    CreatedInFuture       : record { ledger_time : nat64 };
+    Duplicate             : record { duplicate_of : nat };
+    TemporarilyUnavailable;
+    GenericError          : record { error_code : nat; message : text };
+};
+
+type AllowanceArgs = record {
+    account : Account;
+    spender : Account;
+};
+
+type Allowance = record {
+    allowance  : nat;
+    expires_at : opt nat64;
+};
+
+// ── ICRC-21 consent types — SPEC shapes (F-007/DEV-008) ──────────────────────
+// Per dfinity/wg-identity-authentication ICRC-21.did (fetched 2026-07-09).
+
+type icrc21_consent_message_metadata = record {
+    language           : text;
+    utc_offset_minutes : opt int16;
+};
+
+type icrc21_consent_message_spec = record {
+    metadata    : icrc21_consent_message_metadata;
+    device_spec : opt variant {
+        GenericDisplay;
+        FieldsDisplay;
+    };
+};
+
+type icrc21_consent_message_request = record {
+    method           : text;
+    arg              : blob;
+    user_preferences : icrc21_consent_message_spec;
+};
+
+type icrc21_value = variant {
+    TokenAmount      : record { decimals : nat8; amount : nat64; symbol : text };
+    TimestampSeconds : record { amount : nat64 };
+    DurationSeconds  : record { amount : nat64 };
+    Text             : record { content : text };
+};
+
+type icrc21_fields_display = record {
+    intent : text;
+    fields : vec record { text; icrc21_value };
+};
+
+type icrc21_consent_message = variant {
+    GenericDisplayMessage : text; // markdown — the shape STSH produces
+    FieldsDisplayMessage  : icrc21_fields_display;
+};
+
+type icrc21_consent_info = record {
+    consent_message : icrc21_consent_message;
+    metadata        : icrc21_consent_message_metadata;
+};
+
+type icrc21_error_info = record { description : text };
+
+type icrc21_error = variant {
+    UnsupportedCanisterCall   : icrc21_error_info;
+    ConsentMessageUnavailable : icrc21_error_info;
+    InsufficientPayment       : icrc21_error_info;
+    GenericError              : record { error_code : nat; description : text };
+};
+
+type icrc21_consent_message_response = variant {
+    Ok  : icrc21_consent_info;
+    Err : icrc21_error;
+};
+
+// ── Genesis allocation types ──────────────────────────────────────────────────
+
+type LockPolicy = variant {
+    ImmediatelyLiquid;
+    LockedUntil  : nat64;   // nanoseconds timestamp; governance can extend, not shorten
+    Vested;                 // see VestingPolicy
+    GovernanceLocked;       // movements require governance proposal
+};
+
+type VestingPolicy = record {
+    cliff_end_ns   : nat64;
+    vesting_end_ns : nat64;
+};
+
+type AllocationCategory = record {
+    category_id         : text;         // machine-readable; unique; non-empty
+    category_name       : text;         // human-readable
+    amount              : nat;          // base units
+    recipient           : principal;
+    subaccount          : opt blob;
+    lock_policy         : LockPolicy;
+    vesting_policy      : opt VestingPolicy;
+    created_at_genesis  : bool;
+    genesis_timestamp_ns: nat64;
+};
+
+// ── Supply invariant report ───────────────────────────────────────────────────
+
+type SupplyInvariantReport = record {
+    fixed_max_supply     : nat;
+    sum_all_balances     : nat;
+    staking_locked_total : nat;
+    fee_reserve_total    : nat;
+    invariant_holds      : bool;
+    checked_at_ns        : nat64;
+    violation_detail     : opt text;
+    // K3-002b (P-ARITH): additive, wire-compatible per-site overflow
+    // attribution. null if and only if every checked calculation succeeded.
+    // Any arithmetic error forces invariant_holds = false; an unavailable
+    // total is exactly 0 (never wrapped, never saturated). Consumers treat a
+    // non-null record as UNHEALTHY regardless of invariant_holds.
+    arithmetic_error : opt record {
+        balances_overflow          : bool;
+        staking_locks_overflow     : bool;
+        balances_plus_fee_overflow : bool;
+    };
+};
+
+// ── Supply reconciliation (R-1, controller-only) ─────────────────────────────
+//
+// The O(N) audit counterpart to the O(1) verify_supply_invariant query. Two
+// INDEPENDENT results of two independent computations, neither derived from the
+// other: folded_first_law_holds is computed from the FOLD (never from the
+// maintained total), and totals_consistent compares maintained vs folded for
+// BOTH pairs. Over the pinned row budget it returns both booleans false,
+// rows_examined = 0 and a detail string — honest incompleteness, never a trap
+// and never a healthy-looking answer. Writes nothing.
+
+type SupplyReconciliation = record {
+    maintained_sum_balances      : nat;
+    folded_sum_balances          : nat;
+    maintained_sum_staking_locks : nat;
+    folded_sum_staking_locks     : nat;
+    fee_reserve                  : nat;
+    rows_examined                : nat64;
+    totals_consistent            : bool;
+    folded_first_law_holds       : bool;
+    detail                       : opt text;
+};
+
+// ── Build info ────────────────────────────────────────────────────────────────
+
+type BuildInfo = record {
+    canister_name       : text;
+    version             : text;
+    governance_canister : opt principal;
+    staking_canister    : opt principal;
+    treasury            : opt principal;
+    mint_done           : bool;
+};
+
+// ── Custody Vault authority read-back (freeze v6 §6, lane L3f) ────────────────
+
+// Canonical stored authority principals. PUBLIC: each is public post-launch and
+// the endpoint exists as externally verifiable proof of the born-under-vault
+// wiring. Fails closed (traps) if treasury or staking_canister is
+// uninitialised/corrupt — never substitutes a default. fee_collector is
+// legitimately null on pre-DEF-080 state (fees fall back to treasury).
+type AuthorityRefs = record {
+    treasury         : principal;
+    fee_collector    : opt principal;
+    staking_canister : principal;
+};
+
+// ── HARDEN-03-SETTLEMENT: deposit receipts ────────────────────────────────────
+//
+// The durable evidence that a qualifying deposit transfer executed — or was
+// fenced — which OUTLIVES the ledger's own 24-hour dedup window. Reachable by
+// the configured pool and by nothing else; exposed by NO query (P-1).
+
+// The exact transfer identity as the pool submitted it. Everything derived from
+// it is RECOMPUTED by the token from the caller and its own principal; nothing
+// the pool asserts about the identity is trusted.
+type DepositAttemptArgs = record {
+    from               : Account;
+    spender_subaccount : opt blob;
+    to                 : Account;
+    amount             : nat;
+    fee                : opt nat;
+    memo               : opt blob;
+    created_at_time    : opt nat64;
+};
+
+// The WIRE form of a receipt. Two variants, deliberately: `Cancelled` IS the
+// cancellation fence, which is why this lane allocates one token MemoryId
+// rather than two.
+//
+// Amounts are `nat`, matching every other public money field on this canister
+// (TransferArgs, TransferFromArgs, Allowance, icrc1_balance_of, icrc1_fee). The
+// STORED receipt is a separate, fixed-width type with u128 fields — that layout
+// is what makes its declared max_size exact and the capacity measurement
+// reproducible, and it is deliberately not the type on this boundary. The
+// amount-boundary census (C4 rule 3) is what enforces the separation.
+type DepositReceiptView = variant {
+    Applied : record {
+        block_index   : nat64;
+        amount        : nat;
+        fee_charged   : nat;
+        request_hash  : blob;
+        applied_at_ns : nat64;
+    };
+    Cancelled : record {
+        request_hash : blob;
+        closed_at_ns : nat64;
+    };
+};
+
+type ReceiptLookup = variant {
+    Found : DepositReceiptView;
+    // No receipt and no dedup entry. PROVISIONAL ONLY — absence of evidence is
+    // never evidence of non-execution.
+    Unrecorded;
+    // A pre-protocol execution: the ledger still remembers the transfer but no
+    // receipt was written. Must NEVER be read as `Cancelled`.
+    RetiredOrUnavailable;
+};
+
+type CloseOutcome = variant {
+    Applied : DepositReceiptView;
+    Cancelled : DepositReceiptView;
+    RetiredOrUnavailable;
+};
+
+type ReceiptError = variant {
+    // Identical in shape and code path whether or not a receipt exists, so a
+    // wrong caller cannot distinguish "no receipt" from "not allowed to ask".
+    Unauthorized;
+    // The same operation id with a different request hash: a conflict, not a
+    // new attempt. Nothing is written.
+    RequestMismatch;
+    UnsupportedProtocol;
+};
+
+// ── Service ───────────────────────────────────────────────────────────────────
+
+service : (record {
+    allocations     : vec AllocationCategory;
+    treasury        : principal;
+    staking_canister: principal;
+    // DEF-080: neutral spendable II fee-collection account, NOT the treasury
+    // canister. opt for backward compatibility (None → fees fall back to treasury).
+    // Mainnet manifest requires Some(...) with fee_collector != treasury.
+    fee_collector   : opt principal;
+    // HARDEN-03-SETTLEMENT (D-3): the shielded pool whose qualifying deposit
+    // transfers receive a durable receipt. INIT-TIME ONLY — there is no setter.
+    // opt for decode compatibility (None → no receipts are ever written, which
+    // is the fail-SAFE degraded mode, not a fail-open). Mainnet manifest
+    // requires Some(pool_principal); readback via
+    // get_deposit_settlement_authority.
+    pool_canister   : opt principal;
+}) -> {
+    // ── ICRC-1 ────────────────────────────────────────────────────────────────
+    icrc1_name                : ()             -> (text)      query;
+    icrc1_symbol              : ()             -> (text)      query;
+    icrc1_decimals            : ()             -> (nat8)      query;
+    icrc1_fee                 : ()             -> (nat)       query;
+    icrc1_total_supply        : ()             -> (nat)       query;
+    icrc1_minting_account     : ()             -> (opt Account) query;
+    icrc1_balance_of          : (Account)      -> (nat)       query;
+    icrc1_transfer            : (TransferArgs) -> (variant { Ok : nat; Err : TransferError });
+    // F-001: NAMED record (ICRC-1 spec shape) — was vec record { text; text }.
+    icrc1_supported_standards : ()             -> (vec record { name : text; url : text }) query;
+    // ICRC-10: standalone supported-standards discovery method (same list).
+    icrc10_supported_standards: ()             -> (vec record { name : text; url : text }) query;
+    icrc1_metadata            : ()             -> (vec record { text; variant { Nat : nat; Int : int; Text : text; Blob : blob } }) query;
+
+    // ── ICRC-2 ────────────────────────────────────────────────────────────────
+    icrc2_approve       : (ApproveArgs)      -> (variant { Ok : nat; Err : ApproveError });
+    icrc2_transfer_from : (TransferFromArgs) -> (variant { Ok : nat; Err : TransferFromError });
+    icrc2_allowance     : (AllowanceArgs)    -> (Allowance) query;
+
+    // ── HARDEN-03-SETTLEMENT: pool-only deposit settlement surface ────────────
+    //
+    // Both are UPDATES, not queries, and that is deliberate: P-1 requires the
+    // receipt map be readable by no query at all, and an update also guarantees
+    // replicated, authoritative execution for a read a money decision rests on.
+    // Both reject a non-pool caller BEFORE any existence-sensitive read.
+    get_deposit_receipt   : (DepositAttemptArgs) -> (variant { Ok : ReceiptLookup; Err : ReceiptError });
+    close_deposit_attempt : (DepositAttemptArgs) -> (variant { Ok : CloseOutcome;  Err : ReceiptError });
+    // D-3's mandatory authority readback — named in the install kit's read_back
+    // command for the token row.
+    get_deposit_settlement_authority : () -> (opt principal) query;
+
+    // ── ICRC-21 ───────────────────────────────────────────────────────────────
+    // UPDATE method per the spec (DEV-008) — the consent reply is certified.
+    // Anonymous callers allowed (spec: no authentication).
+    icrc21_canister_call_consent_message : (icrc21_consent_message_request) -> (icrc21_consent_message_response);
+
+    // governance_set_fee REMOVED (DEF-085): it was uncallable (self-only gate,
+    // QA-DEF-014) and the per-transfer fee model is not active at launch.
+
+    // ── Supply invariant / genesis audit ──────────────────────────────────────
+    verify_supply_invariant   : ()       -> (SupplyInvariantReport) query;
+    // R-1: controller-only O(N) reconciliation. Rejected for every other caller.
+    reconcile_supply_invariant : ()      -> (SupplyReconciliation);
+    get_genesis_allocations   : ()       -> (vec AllocationCategory) query;
+    get_allocation_by_category: (text)   -> (opt AllocationCategory) query;
+
+    // ── Staking lock/unlock (staking canister only) ───────────────────────────
+    // Reconciled to (principal, nat) to match the Rust impl, the live staking
+    // caller, and all integration tests. Staking locks are main-account-only
+    // (impl hardcodes subaccount: None); subaccount-scoped locks are intentionally
+    // out of scope. Callable only by the staking canister (assert_staking_canister).
+    lock_for_staking    : (principal, nat) -> (variant { Ok; Err : text });
+    unlock_from_staking : (principal, nat) -> (variant { Ok; Err : text });
+
+    // ── Liquid / staking-locked balance queries ───────────────────────────────
+    staking_locked_balance : (principal) -> (nat) query;
+    liquid_balance         : (principal) -> (nat) query;
+
+    // ── Build info ────────────────────────────────────────────────────────────
+    get_build_info : () -> (BuildInfo) query;
+
+    // ── Custody Vault authority read-back (freeze v6 §6) — PUBLIC, additive ──
+    get_authority_refs : () -> (AuthorityRefs) query;
+
+    // ── Fleet cycle monitor (A-6/A-6b, GAP-U9-1) — PUBLIC, additive ──────────
+    cycle_balance : () -> (nat) query;
+};

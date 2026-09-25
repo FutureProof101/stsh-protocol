@@ -1,0 +1,53 @@
+diff --git a/canisters/vault/src/lib.rs b/canisters/vault/src/lib.rs
+index f6a0a25..232ee93 100644
+--- a/canisters/vault/src/lib.rs
++++ b/canisters/vault/src/lib.rs
+@@ -13099,6 +13099,48 @@ mod tests {
+         }
+     }
+ 
++
++    #[test]
++    fn emit_d068_canonical_v1_goldens() {
++        fn emit(name: &str, action: VaultActionKind) {
++            let bytes = canonical_action_bytes(&action);
++            let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
++            println!("D068_GOLDEN|{name}|{hex}");
++        }
++        for kind in ApplicationAction::ALL {
++            emit(&format!("application::{kind:?}"), VaultActionKind::Application(dummy_request(kind)));
++        }
++        let page_none = PageRequest { cursor: None, limit: 1 };
++        for (name, request) in [
++            ("read::PoolReadAccountingState", ReadModelRequest::PoolReadAccountingState(page_none.clone())),
++            ("read::PoolReadTreasuryReconciliationTombstone", ReadModelRequest::PoolReadTreasuryReconciliationTombstone(page_none.clone())),
++            ("read::PoolReadAppendLeaseOwner", ReadModelRequest::PoolReadAppendLeaseOwner(page_none.clone())),
++            ("read::PoolReadPendingOutputPromotions", ReadModelRequest::PoolReadPendingOutputPromotions(page_none.clone())),
++            ("read::NullifierReadSpentAt", ReadModelRequest::NullifierReadSpentAt { nullifier: [0xA5; 32], page: PageRequest { cursor: Some(stsh_custody_types::BoundedCursor::new(vec![1,2,3]).unwrap()), limit: MAX_READ_PAGE_LIMIT } }),
++        ] {
++            emit(name, VaultActionKind::ReadModel(request));
++        }
++        let target = p(77);
++        let wasm = vec![1,2,3];
++        let arg = vec![4,5];
++        let management = vec![
++            ("management::Upgrade", ManagementAction::Upgrade { target, expected_wasm_hash: sha256(&wasm), expected_arg_hash: sha256(&arg), wasm_bytes: wasm.clone(), arg_bytes: arg.clone() }),
++            ("management::Start", ManagementAction::Start { target }),
++            ("management::Stop", ManagementAction::Stop { target }),
++            ("management::UpdateSettings", ManagementAction::UpdateSettings { target, controllers: vec![p(78), p(79)] }),
++            ("management::DepositCycles", ManagementAction::DepositCycles { target, cycles: u128::MAX }),
++            ("management::CreateCanister", ManagementAction::CreateCanister { manifest_purpose: "stsh_token".into(), disposition: ManifestDisposition::BornUnderVault }),
++            ("management::InstallCode", ManagementAction::InstallCode { target, expected_wasm_hash: sha256(&wasm), expected_arg_hash: sha256(&arg), wasm_bytes: wasm, arg_bytes: arg }),
++        ];
++        for (name, action) in management { emit(name, VaultActionKind::Management(action)); }
++        emit("outer::UpgraderUpgrade", VaultActionKind::UpgraderUpgrade(good_upgrade()));
++        emit("outer::ReconcileUpgraderUpgrade", VaultActionKind::ReconcileUpgraderUpgrade(ReconcileUpgraderUpgrade { proposal_id: 9, objective_evidence: evidence_with_controllers(2) }));
++        emit("outer::UpdateSignerSet", VaultActionKind::UpdateSignerSet { signers: vec![p(S1),p(S2),p(S3)], threshold: 2 });
++        emit("outer::VaultUpgradeViaUpgrader", VaultActionKind::VaultUpgradeViaUpgrader(good_vault_upgrade()));
++        emit("outer::ReconcileVaultUpgradeViaUpgrader", VaultActionKind::ReconcileVaultUpgradeViaUpgrader(ReconcileVaultUpgradeViaUpgrader { request_id: 10, objective_evidence: evidence_with_controllers(1) }));
++        emit("outer::ReconcileUpgraderStart", VaultActionKind::ReconcileUpgraderStart(ReconcileUpgraderStart { proposal_id: 11, objective_evidence: start_evidence(ObservedCanisterStatus::Stopped, u64::MAX) }));
++    }
++
+     /// Table-driven across ALL 21 bindings: ceiling+1 bytes → deterministic
+     /// Failed, no decode, never left Executing.
+     #[test]

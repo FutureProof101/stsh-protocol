@@ -1,0 +1,32 @@
+[package]
+name    = "stsh_token"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+# B1: test-only balance seed hook (debug_credit_balance_for_test). Mirrors the
+# treasury/pool `--features testing` inject-endpoint pattern. NEVER enabled in the
+# production build — the endpoint is #[cfg(feature = "testing")] and is dead-code-
+# eliminated from the plain `cargo build -p stsh_token` Wasm.
+testing = []
+
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+# H-01 (HARDEN-02): the canister-owned allowance-maintenance timer. Version
+# REUSED from the two crates that already depend on it — canisters/shielded-pool
+# and canisters/smoke-alarm-monitor both pin "0.10". A second timer-library
+# version in one workspace is the drift this deliberately avoids.
+ic-cdk-timers      = "0.10"
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+serde_bytes        = { workspace = true }
+num-traits         = { workspace = true }
+sha2               = { workspace = true }
+# DEV-003: icrc1:logo metadata — base64-encode the committed SVG asset
+# (assets/stsh-logo.svg, include_str!) into a data URL at query time.
+base64             = "0.22"

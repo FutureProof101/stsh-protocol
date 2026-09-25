@@ -1,0 +1,6 @@
+# Declared for crate a ONLY. Crate b uses an identically named type and must
+# still be BOUNDARY-UNRESOLVED — a bare-name declaration would have silenced it.
+[[opaque]]
+krate  = "canisters/a"
+name   = "ForeignBytes"
+reason = "fixture: declared for canisters/a only"

@@ -1,0 +1,378 @@
+# =============================================================================
+# STSH — CANONICAL GENESIS MANIFEST (approved template: P-ARITH brief §0.3 V1.5)
+# =============================================================================
+#
+# THE single source of truth for genesis token distribution + init wiring.
+# MAINNET_DEPLOYMENT.md points here; Gate-D (scripts/verify_genesis_manifest)
+# verifies the canonical init artifacts (stsh_token_init.did /
+# vesting_init.did) against THIS file, field by field, before any deploy.
+#
+# PRINCIPALS RESOLVED AT RR-1a (2026-09-12) AND RE-BOUND AT RR-1b REDO
+# (2026-09-21). Every principal below is the ruled PRODUCTION principal, bound to
+# deployment/mainnet/genesis_principals.toml. The allocation holders are dfx
+# identities attested by reviews/RECORD_GENESIS_HOLDER_PRINCIPALS_2026-09-12.md
+# (f27472f8…); the TWO Internet-Identity beneficiary roles are attested
+# PER ROLE — FOUNDER_1_BENEFICIARY by
+# reviews/RECORD_FOUNDER_1_BENEFICIARY_NATIVE_2026-09-21.md (987805a1…) and
+# LEGAL_COUNSEL_BENEFICIARY by
+# reviews/RECORD_LEGAL_COUNSEL_BENEFICIARY_NATIVE_2026-09-21.md (e9d4a04e…),
+# both carrying their CANISTER-ROOTED (s3tyu native-origin) values after the
+# WT-1 derivationOrigin cutover. The pre-cutover `app.stsh.fi` values are
+# ALIASES and are retired. The record declares `rr1_performed = true`. NO placeholder principal remains
+# in this file; Gate-D certifies this set and its posture stage is the STRICT
+# one, satisfied only by an EXACTLY EMPTY failing set. The retired placeholder set kept every role
+# DISTINCT so the cross-artifact binding checks were provable at fixture level
+# (Builder DoD AR-5/AR-6); GP4-distinct now proves it over the real values.
+#
+# Locked decisions transcribed here (no builder discretion):
+# - Σ = 1,000,000,000 STSH = 100,000,000,000,000,000 (10^17) base units.
+#   UNCHANGED by D-4: the legal-counsel grant is funded from bucket 4
+#   (Strategic Contributors), not minted, and NOT from treasury — see the
+#   `legal_counsel` row.
+# - Row percentages are BASIS POINTS (`percent_bps`), summing to 10,000 — NOT
+#   integer percent. The D-4 legal-counsel grant is 0.5% (50 bps) and the
+#   bucket-4 remainder is 4.5% (450 bps); neither is representable as an integer
+#   percent, which is why the field moved. `percent_bps` is AUDIT METADATA ONLY: it appears in
+#   no init artifact and in no canister — minting is driven by
+#   `amount_base_units` alone. Where the two could ever disagree, THE AMOUNT WINS
+#   and the discrepancy is a defect.
+# - `subaccount = null` on every allocation (single canonical form).
+# - `created_at_genesis = false`, `genesis_timestamp_ns = 0` in the artifact
+#   (the canister overwrites both during init).
+# - `lock_policy` is AUDIT METADATA; enforcement = custody principal/controller
+#   (founders: the external vesting canister + Gate-V).
+# - `vesting_policy = null` on EVERY row incl. founders — the vesting canister
+#   + Gate-V are the authoritative schedule (no second source of truth).
+# - Vesting custody at genesis = `founders` ONLY; `ceremony_rewards` funds
+#   CEREMONY_HOLDING (post-ceremony grants), NOT genesis vesting.
+# - THE ALLOCATION TABLE IS V4 D-0 AS AMENDED BY D-4/D-5 (lane A-2, 2026-09-09,
+#   Owner ruling C-15 = GO). Its authority is
+#   CANONICAL/STSH_TOKENOMICS_V4_RULINGS_2026-07-28.md §D-0, never this file and
+#   never scripts/verify_genesis_manifest's APPROVED_ALLOCATIONS: that constant
+#   is re-typed FROM the rulings, not FROM here (the E-6 self-inheritance defect).
+# - Founder schedules: ONE (DRIFT-1). Founders shape LOCKED (§0.4 Option A): cliff 6 + linear 30 (fully vested
+#   month 36), continuous linear on fixed 30-day months.
+
+schema_version = 3
+
+[token]
+ticker = "STSH"
+decimals = 8
+total_supply_base_units = 100000000000000000   # 10^17
+
+[token_init]
+# Top-level stsh_token init fields (token/lib.rs:495) — Gate-D validates:
+# treasury == the `treasury` allocation recipient; fee_collector non-null AND
+# != treasury; each value == its production principal-manifest entry at RR-1.
+treasury         = "7aacs-7ky4d-2f7wg-rq4yh-c6us4-gmzow-inzyz-mdglq-ov72c-hx4zc-gae"   # TREASURY_MULTISIG (RR-1a)
+# STAKING EXCLUDED FROM THE LAUNCH INSTALL SET (D1, ratified 2026-08-14).
+# The staking canister is NOT installed at launch — it has no manifest entry
+# here and no mainnet principal. This field is NOT an install declaration: it is
+# the token's required, fail-closed stored staking principal, and at RR-1 it is
+# replaced with the VAULT principal, never with a staking-canister principal
+# (freeze §14; see deployment/mainnet/custody_manifest.toml, stsh_token
+# STAKING_CANISTER authority_field and the `staking` out_of_scope entry).
+# Introducing staking is a post-launch governance upgrade (freeze §15).
+staking_canister = "cpdab-saaaa-aaaar-qca2q-cai"   # the VAULT principal, pinned at RR-1a (freeze §14)
+fee_collector    = "jdc4c-utkoi-nekq7-h7fod-ewtgg-jqeak-tde3m-t7v7j-m5hq3-lnaoz-yae"   # NEUTRAL_FEE_COLLECTOR (RR-1a)
+
+[vesting_init]
+# Top-level vesting init fields (vesting/lib.rs:167) — Gate-D validates:
+# token_canister == the token being deployed; controller == the approved
+# production controller manifest; founders_vesting_canister == the principal
+# receiving the `founders` allocation. Every founder schedule uses
+# cliff_months = 6, linear_months = 30 (§0.4 Option A, LOCKED).
+token_canister            = "clv7x-haaaa-aaaar-qchha-cai"   # STSH_TOKEN_CANISTER (RR-1a)
+controller                = "fshhc-2gwwz-ppjrt-3kzea-xt3l6-oemkp-6vkjz-soogu-e5y55-qolw4-wae"   # VESTING_CONTROLLER_MULTISIG (RR-1a)
+founders_vesting_canister = "cfxs7-4qaaa-aaaar-qchga-cai"   # FOUNDERS_VESTING_CANISTER (RR-1a)
+founder_cliff_months  = 6
+founder_linear_months = 30
+
+[pool_init]
+# W-VKGATE (AR1-05 CRITICAL / register C-27). The shielded pool's init trust
+# roots, so Gate-D verifies them FIELD-BY-FIELD exactly as it already does for
+# token_init and vesting_init. Before this section the pool's verifying-key pin
+# — the root of its whole soundness story — was verified by nothing, and the
+# only protection against installing against the dev key was runbook prose.
+#
+# ARMED at lane A-4 (2026-09-12). This is the LAUNCH verifying key: the P0-3
+# all-zeros placeholder is gone, and this field is now the pool's PINNED_VK_HASH
+# at init (seeded through InitArgs::initial_vk_hash — the pool has no VK source
+# constant of its own).
+#
+# Provenance, generation `mainnet-v2`:
+#   phase 1  PUBLIC Hermez powers-of-tau, powersOfTau28_hez_final_15.ptau
+#            (54 named contributors + beacon), pinned on the publisher-attested
+#            blake2b-512 AND its sha256.
+#   phase 2  ONE operator contribution ("FutureProof operator 2026-09-12")
+#            finalized by the pre-announced public drand beacon, mainnet chain
+#            round 6460200 (iterationsExp 10) — the LAST contribution.
+# Evidence: docs/ceremony/CEREMONY_RECORD_v3.md (pinned byte-for-byte by
+# VK_PIN.toml.record_transcript, checked by DPOOL-8b).
+#
+# This value MUST equal sha256(circuits/verification_key.json) == the verifier's
+# compiled_vk_sha256() == VK_PIN.toml.sha256 == the wallet's PINNED_VK_HASH_D2.
+# DPOOL-9 hashes the VK file and requires that equality, so a drift here fails
+# the gate before any wallet leg runs.
+#
+# ARMING THIS FIELD FLIPS A POSTURE: DPOOL-9b is gated on DPOOL-1b, so with the
+# placeholder gone VK_PIN.toml must now declare label = "PRODUCTION", not "DEV".
+#
+# DPOOL-2 still REFUSES the M5 single-participant dev hash
+# (fc73ca4dcdcfd5a2eb0dd6165c5cf2b1e039c3acdad2d360258c5d42ba530dc8) in this
+# field — the manifest-side counterpart of the pool's DENY_VK_HASH init trap.
+# Refusing one known-bad value is not provenance: any other hash passes. NOTE
+# the disclosed residual (record §8): that deny literal is the PRE-A-3 dev VK and
+# no longer names the live dev key, so the deny list would not catch an
+# accidental arming with the A-3 dev VK (081e9e9b…). The protections that DO
+# catch it are E14 and the C5/DPOOL-9 equality chain above.
+vk_hash         = "84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914"
+proof_system    = "groth16-bn254"
+ceremony_record = "docs/ceremony/CEREMONY_RECORD_v3.md"
+# Trust roots, cross-checked against the record that already owns each one.
+#
+# AMENDED 2026-09-13 by RULING_RECORD_POOL_TRUST_ROOTS_2026-09-13 (A-7 REBASE).
+# RR-1a wrote treasury_canister and controller to the sources the PRE-amendment
+# DPOOL-5/7 named — token_init.treasury and vesting_init.controller. Those two
+# equalities were a GATE DEFECT: they conflated the ledger's treasury ACCOUNT
+# holder with the treasury CANISTER, and the VESTING controller multisig with
+# the POOL's controller. The pool's own code settles both — treasury_disburse
+# requires `caller == TREASURY_CANISTER` and the pool CALLS that canister
+# (shielded-pool/src/lib.rs:6235, :13113), and `controller` gates the pool's
+# reconcile endpoints (:8909), which custody_manifest.toml binds to the VAULT.
+#
+#   token_canister    == vesting_init.token_canister          (DPOOL-4)
+#   treasury_canister == a7_install_kit.toml [treasury].target (DPOOL-5, amended)
+#                        — the treasury CANISTER's D5 born-under-vault principal.
+#                        token_init.treasury (the TREASURY_MULTISIG holder) is
+#                        now REFUSED here by name.
+#   staking_canister  == token_init.staking_canister          (DPOOL-6 — pinned
+#                        to the VAULT at RR-1, never to a staking canister;
+#                        freeze §14. Unchanged.)
+#   controller        == vault_authorities.toml [recovery].vault (DPOOL-7,
+#                        amended) — the Vault. vesting_init.controller is now
+#                        REFUSED here by name.
+#   DPOOL-5b additionally refuses any P0-3 placeholder literal in all four
+#   fields: they are not principal_sites, so the DP3 family never scans them and
+#   DPOOL-4..7 are their only coverage.
+#
+# [token_init].treasury STAYS the TREASURY_MULTISIG holder and
+# vesting_init.controller stays the VESTING_CONTROLLER multisig — neither moved
+# (ruling §2; CUSTODY_DECISION.md Option 2 keeps the treasury canister out of
+# custody of real STSH, so the allocation recipient is the multisig).
+token_canister    = "clv7x-haaaa-aaaar-qchha-cai"
+treasury_canister = "cqqds-5yaaa-aaaar-qchfq-cai"
+staking_canister  = "cpdab-saaaa-aaaar-qca2q-cai"
+controller        = "cpdab-saaaa-aaaar-qca2q-cai"
+
+# ── Allocation table (§0.3 — exact Candid LockPolicy variants) ───────────────
+#
+# LANE A-2 (2026-09-09) — REBUILT TO THE V4 D-0 TABLE.
+# Row order below IS canonical (Addendum C Q6 / brief D-7): V4 D-0 bucket order
+# with `legal_counsel` immediately after `strategic_contributors_locked`.
+# DP1/D11 row checks are POSITIONAL against APPROVED_ALLOCATIONS, which was
+# re-typed from the rulings documents in the same change.
+#
+# Source of every bps/amount below (never this file, never the checker):
+#   CANONICAL/STSH_TOKENOMICS_V4_RULINGS_2026-07-28.md §D-0 lines 22-31
+#   CANONICAL/STSH_TOKENOMICS_V4_ADDENDUM_D4_2026-07-29.md §D-4.1 lines 18-19
+#   CANONICAL/STSH_TOKENOMICS_V4_ADDENDUM_D5_2026-07-31.md lines 21-22, 37
+# Σ bps = 10,000; on every row amount_base_units == percent_bps * 10^13.
+#
+# SURVIVING `category_id` AND `principal_role` VALUES ARE IMMUTABLE
+# (RULING_RECORD_LAUNCH_WEEK_2026-09-09.md Addendum E Q5). Only `category_name`
+# text changed on the relabelled rows. New ids exist ONLY for the three genuinely
+# new rows.
+
+[[allocation]]
+# D-0 bucket 1 "Protocol Treasury" 27% (:22). D-4 :13 "No bucket sizes change";
+# Addendum D (Owner): "tresury stay @ 27%" — the counsel grant comes from
+# bucket 4, NOT from treasury (that was the superseded V2-era phrasing).
+# AMENDED to 30% (3000 bps) by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+# (a14beef1, Owner): +3% of the 6% released by the founders 18% -> 12% reduction.
+category_id = "treasury"
+category_name = "Protocol Treasury"
+amount_base_units = 30000000000000000
+percent_bps = 3000
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "TREASURY_MULTISIG"
+principal = "7aacs-7ky4d-2f7wg-rq4yh-c6us4-gmzow-inzyz-mdglq-ov72c-hx4zc-gae"
+
+[[allocation]]
+# D-0 bucket 2 "Security & Recovery Reserve" 12% (:23). Name relabel only —
+# the id `insurance` and role INSURANCE_MULTISIG survive (Addendum E Q5).
+category_id = "insurance"
+category_name = "Security & Recovery Reserve"
+amount_base_units = 12000000000000000
+percent_bps = 1200
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "INSURANCE_MULTISIG"
+principal = "txsc4-jhhef-eqw7h-tdqpd-7eior-6zbfc-r3o6e-7gi7q-jja7q-dpgij-vqe"
+
+[[allocation]]
+# D-0 bucket 3 "Founder (single, Owner)" 18%, "6mo cliff + 30mo linear, m36" (:24).
+# SINGLE founder from this lane (DRIFT-1): one [[founder_schedule]] below.
+# The id `founders` is load-bearing — FOUNDERS_CATEGORY_ID resolves Gate-V
+# through it; renaming it is a silent Gate-V miss, not a loud RED.
+# AMENDED to 12% (1200 bps) by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+# (a14beef1, Owner): founders 18% -> 12%; the released 6% goes to treasury (+3%),
+# liquidity (+1%) and external LP incentives (+2%). Sigma stays 10,000 bps.
+category_id = "founders"
+category_name = "founder"
+amount_base_units = 12000000000000000
+percent_bps = 1200
+lock_policy = "Vested"
+vesting_policy = "null"
+principal_role = "FOUNDERS_VESTING_CANISTER"
+principal = "cfxs7-4qaaa-aaaar-qchga-cai"
+
+[[allocation]]
+# NEW ROW. D-0 bucket 4 "Strategic Contributors (service grants)" 5% (:25),
+# SPLIT by D-4 §D-4.1 (:19) into "0.5% allocated (legal counsel) · 4.5%
+# unallocated, multisig-locked". This row is that 4.5% remainder.
+# Split ruled by RULING_RECORD_LAUNCH_WEEK_2026-09-09.md Addendum C Q1.
+category_id = "strategic_contributors_locked"
+category_name = "Strategic Contributors — unallocated"
+amount_base_units = 4500000000000000
+percent_bps = 450
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "STRATEGIC_GRANTS_MULTISIG"
+principal = "pkoxa-o2yit-x7c2q-6ieoo-bnufi-klbv3-4ni7h-nb4x6-izc7q-253zk-mae"
+
+[[allocation]]
+# D-4 §D-4.1 (:18) "NEW GRANT: Legal Counsel — 0.5% (5,000,000 STSH)".
+# PARENTAGE IS BUCKET 4, not treasury: Addendum C Q3 → Owner CONFIRMED,
+# Addendum D. The 2026-08-23 "treasury 30 -> 29.5" phrasing was written against
+# the V2-era table and is superseded by the Owner's C-15 adoption of V4.
+#
+# Schedule shape: cliff 0 / linear 12 — OWNER_RULING_D4_LEGAL_COUNSEL_V2
+# 2026-08-23 §1 (OPERATIVE), restated by Addendum E Q1, which STRIKES
+# Addendum C's "50/25/25 @ m6/12/18". `canisters/vesting` NewSchedule carries
+# cliff_months + linear_months only (lib.rs:402-408) — a step curve is not
+# expressible without a canisters/ change, which freeze 5ae6b0ff forbids.
+# The schedule itself is the [[counsel_schedule]] entry below; `vesting_policy`
+# stays "null" as on every row (no second source of truth).
+#
+# `principal` is the genesis vesting canister — deliberately the SAME principal
+# the `founders` row carries, because that canister is the schedule authority
+# for both. The roles stay DISTINCT (LEGAL_COUNSEL_VESTING vs
+# FOUNDERS_VESTING_CANISTER); only the principals collide, under the ENUMERATED
+# D16/GP4 exemption (that pair and nothing else).
+category_id = "legal_counsel"
+category_name = "Strategic Contributors — legal counsel"
+amount_base_units = 500000000000000
+percent_bps = 50
+lock_policy = "Vested"
+vesting_policy = "null"
+principal_role = "LEGAL_COUNSEL_VESTING"
+principal = "cfxs7-4qaaa-aaaar-qchga-cai"
+
+[[allocation]]
+# D-0 bucket 5 "Ceremony Participants" 2% (:26). Name relabel only.
+# ceremony_rewards funds CEREMONY_HOLDING (post-ceremony grants), NOT genesis
+# vesting — unchanged manifest law.
+category_id = "ceremony_rewards"
+category_name = "Ceremony Participants"
+amount_base_units = 2000000000000000
+percent_bps = 200
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "CEREMONY_HOLDING"
+principal = "fawds-fyajw-qyebo-yh6t2-y2rcz-hpsnj-xg5k5-v4fyq-ifzak-mfd7s-rqe"
+
+[[allocation]]
+# D-0 bucket 6 "Security, Audit & Bounties" 10% (:27). Was 800 bps here.
+category_id = "audit_bounty"
+category_name = "Security, Audit & Bounties"
+amount_base_units = 10000000000000000
+percent_bps = 1000
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "BOUNTY_MULTISIG"
+principal = "bxvrd-77pon-b64bm-5vqbk-xt75z-vifyx-7luh6-sflc5-4s4iu-ugodi-xqe"
+
+[[allocation]]
+# D-0 bucket 7 "Shield Adoption Incentives" 5% (:28), "retroactive,
+# public-shield-fee-volume-weighted". Addendum C Q2: keep ONE incentives row at
+# 5% and delete the 8% `shielded_incentives` row. Addendum E Q5 keeps the
+# surviving id `airdrop` and role AIRDROP_PROGRAM; only the name changes.
+category_id = "airdrop"
+category_name = "Shield Adoption Incentives"
+amount_base_units = 5000000000000000
+percent_bps = 500
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "AIRDROP_PROGRAM"
+principal = "bzjh2-c7pd6-hfu7b-ujbrf-lmk4e-gmrfm-4qkr4-3il2k-qyuli-shkhk-6ae"
+
+[[allocation]]
+# NEW ROW. D-0 bucket 8 "Capital & Contributor Reserve" 5% (:29) — "NEW
+# (replaces Genesis Capital). Released ONLY by treasury multisig → DAO named
+# proposal." D-4 §D-4.2 closed its inbound window.
+category_id = "capital_reserve"
+category_name = "Capital & Contributor Reserve"
+amount_base_units = 5000000000000000
+percent_bps = 500
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "CAPITAL_RESERVE_MULTISIG"
+principal = "3yg5n-bdw5c-ojcoo-fljhl-t35xe-kogrv-myblj-3eft2-wolaq-f762e-nqe"
+
+[[allocation]]
+# D-0 bucket 9 "Protocol-Owned Liquidity" 13% (:30). D-5 :21 "Stands: ...
+# bucket 9 size (13% / 130M)"; D-5 :37 "Task #60 manifest: NO bucket change;
+# POL treasury simply deploys less at genesis" — the day-one deploy is 3%
+# (30,000,000 STSH, D-5 :15), which per Addendum D IS the K-5 "3%": a deploy
+# out of this bucket, NOT a separate allocation row and NOT a personal tranche.
+# ImmediatelyLiquid is the only such row in the table (invariant I-10).
+# AMENDED to 14% (1400 bps) by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+# (a14beef1, Owner): +1% of the 6% released by the founders reduction.
+category_id = "liquidity"
+category_name = "Protocol-Owned Liquidity"
+amount_base_units = 14000000000000000
+percent_bps = 1400
+lock_policy = "ImmediatelyLiquid"
+vesting_policy = "null"
+principal_role = "LIQUIDITY_MULTISIG"
+principal = "2u4ds-eexxk-d4e2u-7bbtc-sbv5l-qt62h-mqtzf-yb4bm-gwcfj-yqsql-uqe"
+
+[[allocation]]
+# NEW ROW. D-0 bucket 10 "External LP Incentives" 3% (:31), "V3 R-7 stands
+# (30/90/180d tiers, 180d step-down)".
+# AMENDED to 5% (500 bps) by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+# (a14beef1, Owner): +2% of the 6% released by the founders reduction.
+category_id = "external_lp_incentives"
+category_name = "External LP Incentives"
+amount_base_units = 5000000000000000
+percent_bps = 500
+lock_policy = "GovernanceLocked"
+vesting_policy = "null"
+principal_role = "EXTERNAL_LP_INCENTIVES"
+principal = "gxdbk-hjr2c-q4wcn-d6l6p-r5ud5-zvmjh-6yxfm-7wdd3-2ge6q-q6vjj-uqe"
+
+# ── Counsel schedule (D-4 V2) ───────────────────────────────────────────────
+#    Deliberately an ADJACENT NAMED SECTION, not a [[founder_schedule]] row: this
+#    beneficiary is not a founder and must not be labelled as one. Gate-V binds it
+#    through the generalised schedule list (V5) and the widened sums (V6/VP1/VP2).
+#    Shape is pinned SEPARATELY from founders: cliff 0 + linear 12 (APPROVED_COUNSEL_*),
+#    a straight 12-month continuous release with no cliff.
+#    Σ(counsel_schedule) MUST equal the `legal_counsel` allocation amount.
+
+[[counsel_schedule]]
+beneficiary = "7edga-wl3vz-46g37-jaog6-amxwd-bgfjh-36hnf-we7up-3sfju-ual6g-fqe"   # LEGAL_COUNSEL_BENEFICIARY — RE-BOUND at RR-1b REDO to the canister-rooted value (record: [role.LEGAL_COUNSEL_BENEFICIARY])
+total_amount_base_units = 500000000000000
+
+# ── Founder schedule (DRIFT-1: ONE founder; Σ MUST equal the `founders`
+#    allocation amount — Gate-V phase 1 enforces this) ────────────────────────
+#    V4 D-0 bucket 3 is "Founder (single, Owner)" (rulings :24) and V4
+#    §Sequencing (:54) names the deliverable: "vesting `.did` single-founder fix
+#    — one rebuild". The former three-way P0-3 split (9e15/6e15/3e15) and roles
+#    FOUNDER_2_BENEFICIARY / FOUNDER_3_BENEFICIARY are RETIRED by lane A-2.
+#    `role_for_beneficiary` indexing is len()-driven, so the role set follows.
+
+[[founder_schedule]]
+beneficiary = "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae"   # FOUNDER_1_BENEFICIARY — RE-BOUND at RR-1b REDO to the canister-rooted value (record: [role.FOUNDER_1_BENEFICIARY])
+total_amount_base_units = 12000000000000000

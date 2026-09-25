@@ -1,0 +1,984 @@
+// STSH Shielded Pool — Candid Interface
+// Generated from canisters/shielded-pool/src/lib.rs
+// Last updated: 2026-08-18 (W3 3-3 field drift — PendingSpend fee snapshot,
+// PendingPublicPayout ledger identity, init verifier_canister)
+
+// ── Governance fee parameters (A2-2) ─────────────────────────────────────────
+
+// Spend-fee pricing mode (fee-build lane). FixedStsh is the only active mode;
+// XdrPegged fails closed until the price-oracle lane wires inputs.
+type SpendFeeMode = variant {
+    FixedStsh;
+    XdrPegged;
+};
+
+type GovernanceFeeParams = record {
+    // Protocol action fees. NOTE: protocol_shielding_fee_stsh /
+    // protocol_unshielding_fee_stsh are SUPERSEDED for sizing by the value-fee
+    // fields below (shield/unshield are max(flat_min, amount*bps/10_000)); they
+    // are retained for upgrade compatibility. protocol_private_spend_fee_stsh
+    // remains the FixedStsh spend fee.
+    protocol_shielding_fee_stsh          : nat;
+    protocol_unshielding_fee_stsh        : nat;
+    protocol_private_spend_fee_stsh      : nat;
+    // Minimums / dust protection
+    minimum_withdrawal_gross             : nat;
+    minimum_recipient_amount             : nat;
+    minimum_private_credit               : nat;
+    // Fee sizing inputs
+    fee_reference_price_stsh_per_icp_e8s : nat;
+    fee_safety_margin_bps                : nat32;
+    max_fee_change_bps_per_update        : nat32;
+    fee_update_cooldown_ns               : nat64;
+    // Reserve split
+    operations_split_bps                 : nat32;
+    insurance_split_bps                  : nat32;
+    staking_rewards_split_bps            : nat32;
+    // Staking / runway
+    staking_rewards_enabled              : bool;
+    minimum_treasury_runway_months       : nat32;
+    target_treasury_runway_months        : nat32;
+    // Value fees (fee-build lane). opt for upgrade-safe decode of pre-fee-build
+    // records; absent => launch defaults.
+    shield_fee_bps                       : opt nat16;
+    unshield_fee_bps                     : opt nat16;
+    shield_flat_minimum_fee_e8s          : opt nat;
+    unshield_flat_minimum_fee_e8s        : opt nat;
+    spend_fee_mode                       : opt SpendFeeMode;
+    fee_model_version                    : opt nat32;
+    params_epoch                         : opt nat64;
+};
+
+// RB-SWARM-A1: the canister-owned fee-governance control state. Persisted in
+// the eager cell at MemoryId 18 and restored fail-closed at post_upgrade.
+// W2 2-3-C (CTO ruling W2 2-3 §3(4)): the three treasury-notification
+// quantities, reported distinctly. They are NOT interchangeable and must never
+// be summed: in_flight is a live gauge, returned_failures counts COMPLETED
+// calls that answered Err, upgrade_dropped counts calls that never ran at all.
+type TreasuryNotificationStats = record {
+    // Spawned but not yet resolved, right now. The maintenance-window gate
+    // proceeds on this reading zero. Reset to zero by every post_upgrade.
+    in_flight         : nat64;
+    // Cumulative count of calls that completed with an Err result. Persisted
+    // across upgrades — an upgrade does NOT reset it, so consume it as a delta
+    // between readings. The same quantity get_treasury_notification_failures
+    // returns.
+    returned_failures : nat64;
+    // Cumulative notifications discarded by an upgrade before they ran.
+    // Survives upgrades; non-zero obliges the post-upgrade reconciliation duty.
+    upgrade_dropped   : nat64;
+};
+
+// W2 2-3-D: the two admitted-operation quantities, reported distinctly. An
+// operation is ADMITTED once it passes its entry checks and stops being
+// admitted at its first durable write — the window in which an operation
+// suspended at an await has no state anywhere. DISTINCT from
+// TreasuryNotificationStats; neither field may ever be summed with a
+// notification counter.
+type AdmittedOperationStats = record {
+    // Admitted but not yet durable, right now. The maintenance-window gate
+    // proceeds on this AND TreasuryNotificationStats.in_flight both reading
+    // zero — two distinct readings, never a sum. Reset by every post_upgrade.
+    admitted        : nat64;
+    // Cumulative admitted operations discarded by an upgrade before their
+    // first durable write. Survives upgrades; non-zero obliges an immediate
+    // reconciliation duty STRONGER than the treasury-notification one.
+    upgrade_dropped : nat64;
+};
+
+type FeeGovernanceState = record {
+    // Time of the last ACCEPTED fee update — the cooldown clock. Canister-owned;
+    // never caller-supplied.
+    last_fee_update_ns     : nat64;
+    // Monotonic epoch, derived by the canister as current + 1 on each accepted
+    // update. The caller cannot choose the stored value.
+    params_epoch           : nat64;
+    // One-shot bootstrap marker. False only before the FIRST accepted fee set;
+    // once true it is permanently true, closing the bootstrap exemption from
+    // the per-call change cap and the cooldown.
+    launch_fee_activated   : bool;
+    // The cooldown actually enforced, so tooling need not hardcode it.
+    fee_update_cooldown_ns : nat64;
+};
+
+// ── Error type ────────────────────────────────────────────────────────────────
+
+type PoolError = variant {
+    InvalidDenomination;
+    InvalidProof;
+    NullifierAlreadySpent;
+    NullifierReserved;
+    AnchorNotFound;
+    EscrowUnderfunded                : record { required: nat; available: nat };
+    InsufficientEscrowCoverage       : record { requested: nat; available: nat }; // deprecated compat
+    CircuitVersionMismatch           : record { expected: nat32; got: nat32 };
+    VerifyingKeyMismatch;
+    PoolVersionMismatch;
+    ProofSystemMismatch;                                                          // DEF-114
+    TransferFailed                   : text;
+    AmountBelowLedgerFee             : record { amount: nat; fee: nat };          // deprecated compat
+    BelowMinimumDeposit              : record { public_amount: nat; minimum: nat };
+    InsufficientOperationsReserve    : record { needed: nat; available: nat };
+    InvariantViolationDuplicateNullifier;
+    Paused;
+    // FU1-1 (lane A-5): recovery-scan closure, distinct from operator Paused.
+    // Text carries the remaining-work count, recomputed after each call's chunk.
+    RecoveryInProgress               : text;
+    SolvencyCheckFailed;
+    DuplicateWithdrawalId;
+    NotInitialised;
+    CommitmentAppendFailed           : text;
+    DepositCommitmentPending;
+    SumMismatch                      : record { inputs: nat; outputs: nat };
+    SumOverflow;
+    MalformedSpendArgs;
+    // DEF-046: output-commitment validation (private_spend, pre-mutation)
+    DuplicateOutputCommitment;
+    InvalidOutputCommitment;
+    DuplicateSpendId;
+    DeploymentConfigMismatch;   // P-DOM (C-DOM-2): expected vs live deployment-config hash mismatch
+    SpendFeeNotSupported;
+    VerifierUnavailable              : text;
+    ProofRejected                    : text;
+    // DEF-003/#155: set-time verifier VK attestation (set_verifier_canister)
+    InvalidVerifierKeyHashLength     : record { len: nat64 };
+    VerifierKeyHashMismatch;
+    VerifierKeyHashChangedDuringAttestation;
+    VerifierConfigInProgress;
+    PrivateSpendFeeMismatch          : record { expected: nat; got: nat };
+    InsufficientPrivateLiability     : record { required: nat; available: nat };
+    WithdrawalBelowMinimum           : record { withdraw_gross_amount: nat; minimum_withdrawal_gross: nat };
+    GrossAmountBelowFees             : record { withdraw_gross_amount: nat; total_fee: nat };
+    RecipientBelowMinimum            : record { recipient_net_amount: nat; minimum_recipient_amount: nat };
+    IdempotencyKeyConflict;
+    // QA-DEF-008/009: public input size caps
+    EncryptedPayloadTooLarge         : record { len: nat64; max: nat64 };
+    EncryptedOutputTooLarge          : record { index: nat32; len: nat64; max: nat64 };
+    InvalidProofLength               : record { len: nat64; expected: nat64 };
+    // QA-DEF-017: deposit state-machine guards
+    DepositTransferNotConfirmed;
+    DepositAppendInProgress;
+    DepositAppendUnknown;
+    DepositAlreadyCompleted;
+    // QA-DEF-025: private-spend payout guards
+    PayoutNotPending;
+    PayoutOutcomeUnknown;
+    PayoutOutcomePrivate; // R-15: uniform foreign retry response
+    PayoutExecutorBusy;
+    PayoutMemoKeyNotReady;
+    PayoutLegacyHold;
+    PayoutStateInvalid;
+    SpendNotFound;
+    WrongSpendStatus;
+    // QA-DEF-027: treasury disbursement reconcile guards
+    DisbursementNotFound;
+    DisbursementNotReconcilable;
+    // RB-SWARM-A2: proposal_id permanently reserved by a reconciliation tombstone.
+    DisbursementProposalIdRetired;
+    // QA-DEF-028: nullifier-insert reconcile guard
+    PartialNullifierInsert : record { present: nat32; absent: nat32; total: nat32 };
+    // A2 (QA-DEF-034/036): active-Merkle promotion / recovery
+    OutputAppendUnknown;
+    OutputAppendRejected : text;
+    AmbiguousMerkleState;
+    StagedOutputsMissing;
+    // DEF-041: non-canonical note_commitment (bytes >= BN254 Fr modulus)
+    InvalidCommitment;
+    // DEF-040: deposit accepted-root reconcile guards
+    DepositNotFound;
+    DepositNotReconcilable;
+    AnonymousCaller;  // DEF-069/070/071: anonymous rejected on private_spend/shield_deposit creation
+    // WRL (DEF-030/042/053/071): withdrawal state-machine guards
+    WithdrawalNotFound;
+    WrongWithdrawalStatus;
+    Unauthorized;                // resume / reconcile: not submitter and not controller
+    WithdrawalPayoutObligation;  // post-registry payout unresolved → PayoutObligationPending
+    // P-VK (POOL-04): security config changed mid-flight; aborted pre-mutation,
+    // record + locator removed — typed, retryable under the new epoch.
+    SecurityEpochChanged;
+};
+
+// HARDEN-03-SETTLEMENT (CTO ruling 2026-09-17, Option B): the error
+// `settle_deposit_transfer` returns — its OWN type, deliberately NOT new
+// variants on `PoolError` above. Widening `PoolError` breaks the drift-locked
+// mirrors in `canisters/custody-types` (a path dependency of `vault` and
+// `upgrader`) and `canisters/treasury`, re-pinning three Wasms beyond the two
+// this lane was costed for. A NEW method carries a NEW error type instead.
+// `Pool` wraps `PoolError` unchanged for pass-through conditions, so the
+// mirrors' variant SET is untouched.
+type SettlementError = variant {
+    Pool                : PoolError;       // pass-through: Paused, RecoveryInProgress, DepositNotFound, TransferFailed, …
+    NotSettleable;                          // not TransferPending — every other status has its own path
+    Unavailable;                            // no sidecar (legacy record), or the token has no pool authority bound
+    TooEarly;                               // younger than SETTLEMENT_MIN_AGE_NS — do not race a live shield_deposit
+    InProgress;                             // another settlement holds a live claim
+    IdentityMismatch;                       // same operation id, different request hash — NEVER delete
+    EvidenceAmbiguous;                      // the evidence does not decide — NEVER delete
+};
+
+// HARDEN-03-SETTLEMENT: what settle_deposit_transfer resolved the deposit to.
+// Every credit variant NAMES THE LEDGER FACT that authorised it — never an
+// assertion. DepositStatus itself is deliberately unchanged by this lane, so no
+// wallet file is touched.
+type DepositSettlementOutcome = variant {
+    // A durable Applied receipt resolved it. This is the branch that still works
+    // past the ledger's 24-hour dedup window, where nothing else can answer.
+    CreditedFromReceipt   : nat;
+    // The byte-identical resubmission executed now — Ok(block).
+    CreditedFromExecution : nat;
+    // The resubmission returned Duplicate{block} — proof the escrow moved.
+    CreditedFromDuplicate : nat;
+    // A durable Cancelled fence made later execution impossible, so the record
+    // was closed and the commitment is reusable.
+    FencedNotExecuted;
+};
+
+type DisburseOutcome = variant {
+    Executed    : record { block_index: nat64 };
+    NotExecuted;
+};
+
+type ReconcileDisburseResult = variant {
+    Recorded        : record { block_index: nat };
+    Reverted;
+    AlreadyExecuted : record { block_index: nat };
+};
+
+// ── RB-SWARM-A2: immutable reconciliation tombstone ───────────────────────────
+// Written on ANY reconciliation of an ambiguous (debited, outcome-unknown)
+// treasury disbursement. Insert-once; no update / delete / prune endpoint exists.
+
+// DEF-097 disbursement lifecycle. `Pending` is legacy decode-only (pre-DEF-097,
+// ambiguous debit state); new code never writes it.
+type TreasuryDisbursementStatus = variant {
+    Pending;
+    PendingValidation;
+    PendingTransfer;
+    Executed         : record { block_index: nat };
+    TransportUnknown;
+};
+
+type ReconciliationDecision = variant {
+    Executed;
+    NotExecuted;
+};
+
+type TreasuryReconciliationTombstone = record {
+    proposal_id               : nat64;
+    bucket                    : TreasuryReserveBucket;
+    recipient                 : principal;
+    recipient_subaccount      : opt blob;
+    amount                    : nat;
+    expected_ledger_fee       : nat;
+    memo                      : blob;
+    ledger_created_at_time_ns : opt nat64;
+    pre_reconcile_status      : TreasuryDisbursementStatus;
+    decision                  : ReconciliationDecision;
+    asserted_block_index      : opt nat64;
+    reconciler                : principal;
+    reconciled_at_ns          : nat64;
+};
+
+// ── Proof envelope ────────────────────────────────────────────────────────────
+
+type ProofEnvelope = record {
+    circuit_version    : nat32;
+    proof_system_id    : text;    // "groth16-bn254"
+    verifying_key_hash : blob;    // [u8;32] SHA-256 of VK bytes — must match pinned value
+    root_reference     : blob;    // [u8;32] Merkle root this proof anchors to
+    pool_version       : nat32;
+    proof_bytes        : blob;    // raw proof bytes
+};
+
+// ── Deposit types ─────────────────────────────────────────────────────────────
+
+type DepositStatus = variant {
+    CommitmentPending;                     // QA-DEF-017: deprecated, decode-compat only
+    TransferPending;                       // QA-DEF-017
+    TransferConfirmedCommitmentPending;    // QA-DEF-017
+    CommitmentAppendInFlight;              // QA-DEF-017
+    CommitmentAppended : record { leaf_index: nat64 };
+    CommitmentAppendUnknown;               // QA-DEF-017
+    // DEF-098: transient claim marker — reconcile_deposit_append_unknown in flight;
+    // never terminal (restored to CommitmentAppendUnknown on uncertainty/upgrade)
+    CommitmentReconcileInFlight;
+    // DEF-040: terminal — leaf appended AND resulting root accepted (note spendable)
+    CommitmentRootAccepted : record { leaf_index: nat64; root: blob };
+};
+
+type PendingDeposit = record {
+    note_commitment   : blob;    // [u8;32]
+    private_balance   : nat;
+    ops_amount        : nat;
+    insurance_amount  : nat;
+    staking_amount    : opt nat;       // W4 4-1: the third reserve bucket, no longer discarded
+    encrypted_payload : blob;
+    depositor         : opt principal;  // F2-REDACT: None once redacted (R1-F2)
+    status            : DepositStatus;
+    created_at_ns     : nat64;
+    expected_leaf_index : opt nat64;   // DEF-050A: set just before the Merkle append
+    finalized_at_ns   : opt nat64;     // DEF-072: set once at the terminal transition
+};
+
+// ── Spend types ───────────────────────────────────────────────────────────────
+
+type SpendStatus = variant {
+    Requested;
+    OutputsStaged;                                       // A2 (was OutputsCommitted)
+    Finalized;
+    FailedBeforeStateChange     : record { reason: text };
+    FailedAfterOutputsStaged    : record { reason: text }; // A2 (was FailedAfterOutputsCommitted)
+    VerificationPending;
+    NullifierReserved;
+    PayoutPending               : record { reason: text };
+    PayoutSubmitting;                                     // QA-DEF-025
+    PayoutUnknown               : record { reason: text }; // QA-DEF-025
+    NullifierInsertUnknown      : record { reason: text }; // QA-DEF-028
+    // DEF-099: transient claim marker — reconcile_nullifier_insert in flight;
+    // never terminal (restored to NullifierInsertUnknown on uncertainty/upgrade)
+    NullifierReconcileInFlight;
+    // A2 (QA-DEF-034/036): active-only Merkle promotion states
+    NullifierFinalizedOutputsPending;
+    ActiveAppendInFlight;
+    ActiveAppendUnknown         : record { reason: text };
+    ActiveAppendRejected        : record { reason: text };
+    ActiveRootPending;
+    RootAccepted;
+};
+
+type ReconcileNullifierResult = variant {
+    CommittedFinalized;
+    CommittedPayoutPending;
+    NotCommittedFailed;
+};
+
+// A2 (QA-DEF-034/036)
+type ReconcilePendingSpendResult = variant {
+    PromotedFinalized;
+    PromotedPayoutPending;
+    AppendRetryScheduled;
+};
+
+// DEF-050A: outcome of reconcile_deposit_append_unknown.
+type DepositAppendReconcileResult = variant {
+    Finalized;          // get_leaf matched the commitment -> credited once
+    RevertedRetryable;  // commitment absent -> reverted to TransferConfirmedCommitmentPending
+};
+
+type RecommendedAction = variant {
+    ReconcileNullifierInsert;
+    ReconcilePendingSpend;
+    RetryPrivateSpendPayout;
+    ReconcilePrivateSpendPayout;
+};
+
+type PendingPromotionRecord = record {
+    spend_id                  : nat64;
+    status                    : SpendStatus;
+    created_at_ns             : nat64;
+    output_commitment_count   : nat32;
+    expected_first_leaf_index : opt nat64;
+    resulting_root            : opt blob;
+    recommended_action        : RecommendedAction;
+};
+
+type PayoutOutcome = variant {
+    Executed    : record { block_index: nat64 };
+    NotExecuted;
+};
+
+type ReconcilePayoutResult = variant {
+    Finalized       : record { block_index: nat };
+    RevertedToPending;
+    AlreadyExecuted : record { block_index: nat };
+};
+
+type PayoutPhase = variant { PreDispatch; MayHaveDispatched };
+type FrozenPayout = record {
+    ledger : principal;
+    from_subaccount : opt blob;
+    destination : principal;
+    destination_subaccount : opt blob;
+    amount : nat;
+    fee : opt nat;
+    memo : opt blob;
+    created_at_time : opt nat64;
+};
+type PayoutRetryState = record {
+    memo_sequence : nat;
+    generation : nat64;
+    boot : nat64;
+    phase : PayoutPhase;
+    prior_ambiguity : bool;
+    dispatched : bool;
+    frozen : opt FrozenPayout;
+};
+
+type PendingPublicPayout = record {
+    destination            : principal;
+    destination_subaccount : opt blob; // opt [u8;32]
+    public_amount          : nat;
+    protocol_fee           : nat;
+    block_index            : opt nat;
+    // Legacy timestamp retained as evidence; retry freezes the complete request.
+    ledger_created_at_time_ns : opt nat64;
+    retry : opt PayoutRetryState; // absent on predecessor records: no invented replay
+};
+
+type PendingSpend = record {
+    spend_id           : nat64;
+    nullifiers         : vec blob;   // vec [u8;32]
+    output_commitments : vec blob;   // vec [u8;32]
+    public_payout      : opt PendingPublicPayout;
+    outputs_committed  : nat32;
+    fee                : opt nat;    // A2: persisted protocol spend fee (opt for decode-compat)
+    status             : SpendStatus;
+    created_at_ns      : nat64;
+    submitter          : opt principal;  // DEF-069: set at creation; gates get_spend_status
+    finalized_at_ns    : opt nat64;       // DEF-072: set once at the terminal transition
+    // ── Fee snapshot (fee-build lane §3.5, #122) — published by W3 3-3 ───────
+    // Captured from the governance params BEFORE the first await in
+    // private_spend; reconcile/finalization books the reserve split from THESE
+    // values, not from live params. A reader reconstructing pool accounting
+    // from this interface needs them. All opt: records written before the
+    // fields existed decode as null.
+    fee_model_version   : opt nat32;
+    params_epoch        : opt nat64;
+    spend_fee_mode      : opt SpendFeeMode;
+    fee_split_ops       : opt nat;
+    fee_split_insurance : opt nat;
+    fee_split_staking   : opt nat;
+};
+
+// ── P-ROOT (C-ROOT-1): pool-wide append lease + finality-bound root head ──────
+
+// The CLOSED five-variant lease phase enum — a sixth state is a design change
+// requiring re-review.
+type LeasePhase = variant {
+    Snapshotting;
+    AppendInFlight;
+    AppendUnknown;
+    ReconcileInFlight;
+    AppendConfirmedRootPending;
+};
+
+type AppendLeaseOwner = variant {
+    Deposit : record { commitment : blob };   // [u8;32]
+    Spend   : record { spend_id : nat64 };
+};
+
+// The LAST accepted root and the tree size it covers, read atomically
+// (get_scan_head) under the append lease. Advisory — private_spend re-checks
+// is_accepted_spend_root separately.
+type AcceptedRootHead = record {
+    root       : blob;    // [u8;32]
+    leaf_count : nat64;
+};
+
+// P-ROOT R2: coarse public lease-age bucket. The public surface exposes no
+// exact timestamps and no generation counter (privacy ruling); precise data
+// lives only in the controller-gated owner view below.
+type LeaseAgeBucket = variant {
+    UnderMinute;
+    UnderTenMinutes;
+    UnderHour;
+    OverHour;
+};
+
+// Public, non-identifying lease observability — ONLY {held, phase, age_bucket}.
+type AppendLeaseStatus = record {
+    held       : bool;
+    phase      : opt LeasePhase;
+    age_bucket : opt LeaseAgeBucket;
+};
+
+// Controller-gated lease view including the owner.
+type AppendLeaseOwnerView = record {
+    owner               : AppendLeaseOwner;
+    phase               : LeasePhase;
+    generation          : nat64;
+    acquired_at_ns      : nat64;
+    phase_started_at_ns : nat64;
+};
+
+// ── P-REC (L0-G): device-loss recovery pagination pages ───────────────────────
+// One page of the caller's recovery-required records (full authoritative record)
+// + an exclusive cursor for the next page (null on the last page).
+type ActiveDepositsPage = record {
+    deposits    : vec PendingDeposit;
+    next_cursor : opt blob;   // opt [u8;32] commitment
+};
+type ActiveSpendsPage = record {
+    spends      : vec PendingSpend;
+    next_cursor : opt nat64;  // opt spend_id
+};
+
+// ── Withdrawal types ──────────────────────────────────────────────────────────
+
+// WRL Decision 4/5: registry-before-payout state machine. New variants appended;
+// FeeReimbursementPending / FailedRetryable retained for decode-compat (never written).
+type WithdrawalStatus = variant {
+    Requested;
+    ProofVerified;
+    NullifierReserved;
+    SolvencyBlocked             : record { required: nat; available: nat };
+    EscrowCoverageChecked;
+    RegistryInsertPending;       // WRL: insert_nullifier submitted
+    RegistryInsertUnknown;       // WRL: registry transport-unknown; reconcile
+    RegistryInserted;            // WRL: nullifier permanently burned; payout obligation begins
+    LedgerTransferPending;
+    LedgerTransferUnknown;       // WRL: transfer transport-unknown; idempotent reconcile
+    LedgerTransferConfirmed;     // WRL: ledger Ok or dedup-Duplicate
+    AccountingApplied;           // WRL: accounting applied once (after confirmed payout)
+    PayoutObligationPending;     // WRL: post-registry, payout unresolved; NON-terminal, recoverable
+    FeeReimbursementPending     : record { ledger_fee: nat }; // legacy decode-only
+    Finalized;
+    FailedRetryable;             // legacy decode-only (never written by WRL)
+    FailedTerminalUserError     : record { reason: text };    // pre-registry terminal only
+};
+
+type PendingWithdrawal = record {
+    withdrawal_id             : nat64;
+    nullifier                 : blob;          // [u8;32]
+    destination               : principal;
+    gross_withdraw_amount     : nat;
+    recipient_net_amount      : nat;
+    ledger_fee                : nat;
+    protocol_unshielding_fee  : nat;
+    status                    : WithdrawalStatus;
+    created_at_ns             : nat64;
+    finalized_at_ns           : opt nat64;
+    ledger_memo               : opt blob;
+    // DEF-071 (WRL): submitter-or-controller read gate; null = legacy record
+    // (controller-only readable)
+    submitter                 : opt principal;
+    // WRL Decision 1/2: frozen deterministic ledger args, reused on every retry
+    ledger_created_at_time_ns : opt nat64;
+    destination_subaccount    : opt blob;      // [u8;32]
+};
+
+// ── Pool version stats ────────────────────────────────────────────────────────
+
+type PoolVersionStats = record {
+    version         : nat32;
+    total_deposited : nat;
+    total_withdrawn : nat;
+    max_liability   : nat;
+    active_at_ns    : nat64;
+    retired_at_ns   : opt nat64;
+};
+
+// ── Accounting snapshot ───────────────────────────────────────────────────────
+
+type AccountingState = record {
+    private_liability          : nat;
+    escrow_backing             : nat;
+    operations_reserve         : nat;
+    insurance_reserve          : nat;
+    governance_rewards_reserve : nat;
+    pending_fee_reimbursements : nat;
+};
+
+// ── Method argument types ─────────────────────────────────────────────────────
+
+type ShieldDepositArgs = record {
+    note_commitment   : blob;   // [u8;32] Poseidon commitment
+    encrypted_payload : blob;
+    public_amount     : nat;    // must be in DENOMINATIONS
+    // P-DOM (C-DOM-2): opt [u8;32] expected deployment-config hash (pool self +
+    // token/merkle/nullifier). Verified before the first await; mismatch =>
+    // DeploymentConfigMismatch. opt for decode-compat; production wallet always sends it.
+    expected_deployment_config_hash : opt blob;
+};
+
+type PrivateSpendPublicPayout = record {
+    destination            : principal;
+    destination_subaccount : opt blob; // opt [u8;32]
+    public_amount          : nat;      // proof-bound pool ledger debit
+};
+
+type PrivateSpendArgs = record {
+    spend_id           : nat64;         // idempotency key — must be unique per spend
+    envelope           : ProofEnvelope;
+    nullifiers         : vec blob;      // vec [u8;32]
+    output_commitments : vec blob;      // vec [u8;32]
+    encrypted_outputs  : vec blob;
+    fee                : nat;
+    public_payout      : opt PrivateSpendPublicPayout;
+    // P-DOM (C-DOM-2): opt [u8;32] expected deployment-config hash; verified before
+    // the first await / any durable write; mismatch => DeploymentConfigMismatch.
+    expected_deployment_config_hash : opt blob;
+};
+
+// P-DOM (C-DOM-2): advisory deployment attestation — immutable wiring (bound into
+// config_hash) + mutable security state (VK/verifier/circuit, NOT in config_hash).
+// Advisory (L0-H); the authoritative gate is the pool update, not this getter.
+type DeploymentAttestation = record {
+    pool           : principal;
+    token          : principal;
+    merkle         : principal;
+    nullifier      : principal;
+    config_version : nat32;
+    config_hash    : blob;      // [u8;32] SHA-256 over the immutable wiring
+    verifier       : opt principal;
+    vk_hash        : blob;      // [u8;32]
+    circuit_version: nat32;
+    pool_version   : nat32;
+    proof_system   : text;
+};
+
+type WithdrawArgs = record {
+    withdrawal_id          : nat64;     // idempotency key — must be unique per withdrawal
+    envelope               : ProofEnvelope;
+    nullifier              : blob;      // [u8;32]
+    destination            : principal;
+    destination_subaccount : opt blob;  // opt [u8;32]
+    gross_withdraw_amount  : nat;
+};
+
+type TreasuryReserveBucket = variant {
+    Operations;
+    Insurance;
+    StakingRewards;
+};
+
+type TreasuryDisburseArgs = record {
+    proposal_id          : nat64;
+    bucket               : TreasuryReserveBucket;
+    recipient            : principal;
+    recipient_subaccount : opt blob; // opt [u8;32]
+    amount               : nat;
+    expected_ledger_fee  : nat;
+};
+
+type TreasuryDisburseResult = variant {
+    Executed        : record { block_index: nat };
+    AlreadyExecuted : record { block_index: nat };
+};
+
+// ── DEF-072: terminal-record pruning ──────────────────────────────────────────
+
+type PruneRequest = record {
+    older_than_ns         : nat64;      // retention cutoff (finalized_at_ns / created_at_ns)
+    max_records           : nat64;      // indexed-removal budget (shared spends+deposits)
+    prune_spends          : bool;
+    prune_deposits        : bool;
+    scan_legacy_spends    : bool;       // scan PENDING_SPENDS for unindexed terminal records
+    scan_legacy_deposits  : bool;       // scan PENDING_DEPOSITS for unindexed terminal records
+    max_scan_records      : nat64;      // legacy examined-budget (shared, spends first)
+    legacy_spend_cursor   : opt nat64;  // resume strictly after this spend_id
+    legacy_deposit_cursor : opt blob;   // [u8;32]: resume strictly after this commitment
+};
+
+type PruneResult = record {
+    spends_pruned                : nat64;
+    deposits_pruned              : nat64;
+    legacy_spends_pruned         : nat64;
+    legacy_deposits_pruned       : nat64;
+    stopped_due_to_record_limit  : bool;     // index batch budget hit (continuation hint)
+    next_legacy_spend_cursor     : opt nat64;
+    legacy_spend_scan_complete   : bool;     // None+true = done; None+false = not reached
+    next_legacy_deposit_cursor   : opt blob;
+    legacy_deposit_scan_complete : bool;
+};
+
+// ── Custody Vault (lane L3c, freeze V6 §6/§3b) ──────────────────────────────
+//
+// Wire mirrors of the frozen stsh-custody-types read-model shapes. The custody
+// types BoundedCursor / BoundedItem are Candid-transparent newtypes over blob,
+// so plain blob fields below are wire-identical. The pool crate does not depend
+// on stsh-custody-types (Cargo.lock is L0-owned, freeze §2).
+type ControllerReadPageRequest = record {
+    cursor : opt blob;  // opaque; u64 map key as 8-byte LE for paged variants
+    limit  : nat32;     // frozen range 1..=128 (MAX_READ_PAGE_LIMIT)
+};
+type ControllerReadPage = record {
+    items       : vec blob; // each item a Candid-encoded target-typed record
+    next_cursor : opt blob;
+};
+type PoolControllerReadRequest = variant {
+    PoolReadAccountingState                 : ControllerReadPageRequest;
+    PoolReadTreasuryReconciliationTombstone : ControllerReadPageRequest;
+    PoolReadAppendLeaseOwner                : ControllerReadPageRequest;
+    PoolReadPendingOutputPromotions         : ControllerReadPageRequest;
+};
+type PoolControllerReadResponse = variant {
+    PoolReadAccountingState                 : ControllerReadPage;
+    PoolReadTreasuryReconciliationTombstone : ControllerReadPage;
+    PoolReadAppendLeaseOwner                : ControllerReadPage;
+    PoolReadPendingOutputPromotions         : ControllerReadPage;
+};
+
+// Freeze V6 §6: the pool's seven stored authority principals, returned by the
+// public get_authority_refs read-back.
+type PoolAuthorityRefs = record {
+    token_canister      : principal;
+    nullifier_canister  : principal;
+    merkle_canister     : principal;
+    treasury_canister   : principal;
+    staking_canister    : principal;
+    controller          : principal;
+    verifier_canister   : principal;
+};
+
+// ── Service ───────────────────────────────────────────────────────────────────
+
+// ── Solvency attestation (D-2 + D-4) ─────────────────────────────────────────
+// Internal:  raw_delta = escrow_backing + pending_fee_reimbursements
+//                        - private_liability   (i128, checked, fail-closed)
+//            healthy   = raw_delta >= 0
+// Published: public_delta_e8s = min(raw_delta, 0)
+//
+// The clamp is load-bearing: EVERY healthy state publishes exactly 0, so the
+// field cannot be differenced over time to recover pending_fee_reimbursements.
+// A negative value is a real violation magnitude, which the public must see.
+// i128::MIN is the distinguished fail-closed value (invariant not soundly
+// evaluable) — never a panic in a query.
+type SolvencyAttestation = record {
+    public_delta_e8s : int;    // <= 0 always; 0 whenever healthy
+    healthy          : bool;   // computed on the RAW delta, not the clamp
+    attested_at_ns   : nat64;  // floored to a 300 s bucket — never an exact time
+    schema_version   : nat32;
+};
+
+// canonical_bytes: the exact 53-byte domain-separated leaf committed under the
+// certified tree key "solvency_attestation" (layout: see
+// docs/SOLVENCY_ATTESTATION_SPEC.md).
+// certificate: null when read in replicated context — treat as unverifiable.
+type CertifiedSolvencyAttestation = record {
+    attestation     : SolvencyAttestation;
+    canonical_bytes : blob;
+    certificate     : opt blob;
+    witness         : blob;
+};
+
+service : (record {
+    token_canister       : principal;
+    nullifier_canister   : principal;
+    merkle_canister      : principal;
+    treasury_canister    : principal;
+    staking_canister     : principal;
+    controller           : principal;
+    initial_vk_hash      : blob;        // [u8;32] all-zeros until real circuit delivered
+    initial_proof_system : text;        // "groth16-bn254"
+    // W3 3-3: A2-2 dedicated verifier canister. opt for Candid-subtyping
+    // compat with pre-A2-2 callers (absent decodes as null, and private_spend
+    // then fails closed until the controller calls set_verifier_canister).
+    // Declared init-writable in deployment/mainnet/custody_manifest.toml
+    // (authority_field VERIFIER_CANISTER); the interface could not express it.
+    verifier_canister    : opt principal;
+}) -> {
+    // ── Deposits ──────────────────────────────────────────────────────────────
+    shield_deposit           : (ShieldDepositArgs) -> (variant { Ok: nat; Err: PoolError });
+    retry_deposit_commitment : (blob)              -> (variant { Ok: nat; Err: PoolError });
+    // DEF-040: controller-gated reconcile for a CommitmentAppended deposit whose
+    // resulting Merkle root was never recorded in the accepted-anchor allow-list.
+    reconcile_deposit_commitment : (blob)          -> (variant { Ok; Err: PoolError });
+    // DEF-050A: controller-gated Merkle-verified recovery for a CommitmentAppendUnknown
+    // deposit — verifies get_leaf(expected_leaf_index) before crediting (never trusts
+    // a controller-supplied outcome, never scans the tree).
+    reconcile_deposit_append_unknown : (blob)      -> (variant { Ok: DepositAppendReconcileResult; Err: PoolError });
+    // DEF-050B-2: controller-gated cancellation of a transport-unknown TransferPending
+    // deposit. NotExecuted decision only — operator-asserted, solvency-safe, no Merkle
+    // append, no outbound transfer; no Executed path (see lib.rs RECONCILE TRUST note).
+    // HARDEN-03-SETTLEMENT (D-10): now FAIL-CLOSED for every deposit a post-lane
+    // pool created — a record whose settlement sidecar survives cannot be
+    // destroyed on a bare assertion. Sidecar-absent legacy records keep today's
+    // behaviour unchanged (the §3.8 quarantine).
+    reconcile_deposit_transfer_not_executed : (blob) -> (variant { Ok; Err: PoolError });
+    // HARDEN-03-SETTLEMENT: settle a TransferPending deposit whose transfer
+    // callback was lost, on OBJECTIVE EVIDENCE — a durable token-side receipt, a
+    // Duplicate{block}, or a durable cancellation fence.
+    //
+    // OPEN (caller-agnostic), and deliberately so: the gap being closed is "a
+    // user's funds are stranded until a human acts", and an endpoint requiring a
+    // human to act would not close it. The bound that makes open access safe is
+    // that THE MONEY-MOVING WINDOW IS SELF-LIMITING TO <=24 h BY CONSTRUCTION —
+    // created_at_time derives from the record's own created_at_ns, and the token
+    // rejects TooOld before it reaches its dedup lookup, so past the window this
+    // endpoint cannot originate a debit under any branch. The transfer it may
+    // re-submit is byte-identical and built entirely from frozen state; the
+    // caller supplies one 32-byte commitment and can redirect nothing.
+    //
+    // Pause-matrix ROW 2 (with retry_deposit_commitment), not row 7 — it
+    // originates an outbound token call from the deposit path.
+    settle_deposit_transfer : (blob) -> (variant { Ok: DepositSettlementOutcome; Err: SettlementError });
+
+    // ── Private spend ─────────────────────────────────────────────────────────
+    private_spend              : (PrivateSpendArgs)  -> (variant { Ok; Err: PoolError });
+    retry_private_spend_payout : (nat64)             -> (variant { Ok: nat; Err: PoolError });
+    // QA-DEF-025: controller-gated reconciliation for transport-unknown payouts.
+    initialize_payout_memo_key : () -> (variant { Ok: bool; Err: PoolError });
+    payout_memo_key_ready : () -> (opt bool) query;
+    payout_memo_key_ready_for_controller_update : () -> (opt bool); // controller only; no key material
+    reconcile_private_spend_payout : (nat64, PayoutOutcome) -> (variant { Ok: ReconcilePayoutResult; Err: PoolError });
+    // QA-DEF-028: controller-gated reconciliation for transport-unknown nullifier inserts.
+    reconcile_nullifier_insert : (nat64) -> (variant { Ok: ReconcileNullifierResult; Err: PoolError });
+    // A2 (QA-DEF-034/036): controller-gated reconciliation for interrupted output promotion.
+    reconcile_pending_spend : (nat64) -> (variant { Ok: ReconcilePendingSpendResult; Err: PoolError });
+    // DEF-072: controller-gated terminal-record pruning (bounded index prune + legacy scan).
+    prune_terminal_records : (PruneRequest) -> (PruneResult);
+    // A2 (QA-DEF-034/036): accepted-anchor + promotion observability queries.
+    is_accepted_spend_root        : (blob) -> (bool) query;
+    accepted_spend_root_count     : ()     -> (nat64) query;
+    list_pending_output_promotions : ()    -> (vec PendingPromotionRecord) query;
+    // P-ROOT (C-ROOT-1): finality-bound accepted-root head (advisory; None only
+    // before the first acceptance).
+    get_accepted_root_head        : ()     -> (opt AcceptedRootHead) query;
+    // P-ROOT R2: public non-identifying append-lease observability — only
+    // {held, phase, age_bucket}; exact timestamps/generation are controller-only.
+    get_append_lease_status       : ()     -> (AppendLeaseStatus) query;
+    // P-ROOT: controller-gated lease view including the owner.
+    get_append_lease_owner        : ()     -> (opt AppendLeaseOwnerView) query;
+    // P-VK (POOL-04): advisory read of the durable security epoch (VK
+    // activation / verifier replacement / spend pause-unpause; never fees).
+    get_security_epoch            : ()     -> (nat64) query;
+
+    // ── Treasury disbursement ─────────────────────────────────────────────────
+    treasury_disburse : (TreasuryDisburseArgs) -> (variant { Ok: TreasuryDisburseResult; Err: PoolError });
+    // QA-DEF-027: controller-gated reconciliation for transport-unknown disbursements.
+    reconcile_treasury_disburse : (nat64, DisburseOutcome) -> (variant { Ok: ReconcileDisburseResult; Err: PoolError });
+    // RB-SWARM-A2: read-only, controller-gated. No mutating counterpart exists.
+    get_treasury_reconciliation_tombstone : (nat64) -> (opt TreasuryReconciliationTombstone) query;
+
+    // ── Withdrawal (WRL: registry-before-payout, submitter+controller recovery) ─
+    withdraw                  : (WithdrawArgs) -> (variant { Ok: nat; Err: PoolError });
+    // resume_blocked_withdrawal / reconcile_* are submitter-or-controller (Option C);
+    // legacy submitter=null records are controller-only.
+    resume_blocked_withdrawal : (nat64)        -> (variant { Ok: nat; Err: PoolError });
+    // WRL Decision 6: RegistryInsertUnknown → query contains_nullifier, advance+pay or cancel.
+    reconcile_withdrawal_registry_insert  : (nat64) -> (variant { Ok: nat; Err: PoolError });
+    // WRL Decision 6: LedgerTransferUnknown → deterministic idempotent retry (dedup-safe).
+    reconcile_withdrawal_ledger_transfer  : (nat64) -> (variant { Ok: nat; Err: PoolError });
+
+    // ── Circuit / VK management ───────────────────────────────────────────────
+    // #201: returns the schedule outcome (was declared as returning nothing —
+    // drift vs the Rust Result<(), String> signature).
+    schedule_vk_activation            : (nat32, blob, nat64, nat64) -> (variant { Ok; Err: text });
+    emergency_disable_circuit_version : (nat32) -> (variant { Ok; Err: text });
+
+    // ── Emergency controls ────────────────────────────────────────────────────
+    emergency_pause_deposits : () -> ();
+    emergency_pause_spends   : () -> (variant { Ok; Err: text });
+    unpause_deposits         : () -> ();
+    unpause_spends           : () -> ();
+
+    // ── Verifier canister (A2-2) ──────────────────────────────────────────────
+    // DEF-003/#155: BREAKING — set-time VK attestation. Second arg is the 32-byte
+    // expected VK hash (blob); it and the proposed verifier's vk_hash() must both equal
+    // the pool's current PINNED_VK_HASH, else Err. PINNED_VK_HASH is not mutated here.
+    set_verifier_canister    : (principal, blob)       -> (variant { Ok; Err : PoolError });
+    // P15-006: controller-only recovery — force-clears SET_VERIFIER_IN_PROGRESS (guard
+    // flag ONLY; never the verifier principal or PINNED_VK_HASH). Returns the pre-clear
+    // value. Emergency use; under Model R the guard cannot stick in current code.
+    clear_verifier_config_guard : ()                   -> (bool);
+    get_verifier_canister    : ()                      -> (opt principal)          query;
+    // LAUNCH-HARDEN-04 O-1(b): the vetkeys canister the private_spend device gate
+    // calls (pool MemoryId 28), or null (gate skipped). Written ONLY by
+    // post_upgrade from a raw `(opt record { vetkeys_canister : opt principal })`
+    // upgrade arg; no callable setter. Read-only, non-sensitive.
+    get_vetkeys_canister     : ()                      -> (opt principal)          query;
+
+    // ── Governance fee parameters (A2-2; guardrails RB-SWARM-A1) ──────────────
+    get_governance_fee_params : ()                     -> (GovernanceFeeParams)    query;
+    // Controller-only. Guarded by the RULED numeric policy: rates in [1, 500]
+    // bps (>10 000 rejected outright), shield/unshield flat minimum in
+    // [1 000, 5 000] STSH, private-spend fee in [0.1, 5] STSH, <=100 ABSOLUTE
+    // bps of rate movement and a [0.5x, 2x] ratio on STSH amounts per call, and
+    // a 24h canister-owned cooldown. `params_epoch` on the argument is an
+    // ASSERTION only — it must equal the canister-computed next epoch or the
+    // call is rejected; the canister always stores its own value.
+    set_governance_fee_params : (GovernanceFeeParams)  -> (variant { Ok; Err: text });
+    // P15-002, programmatic. True iff the LIVE params are exactly
+    // mainnet_launch_config(). An INITIAL-LAUNCH predicate, not a permanent
+    // health check: it legitimately goes false after the first tuning call.
+    fee_params_match_mainnet_launch_config : ()        -> (bool)                   query;
+    // Canister-owned fee-governance control state (cooldown clock, monotonic
+    // epoch, one-shot bootstrap marker). Read-only; nothing here is settable.
+    get_fee_governance_state  : ()                     -> (FeeGovernanceState)     query;
+
+    // ── Status queries ────────────────────────────────────────────────────────
+    get_deposit_status    : (blob)  -> (opt PendingDeposit)    query;
+    get_spend_status      : (nat64) -> (opt PendingSpend)      query;
+    // DEF-071 (WRL): submitter-or-controller readable (legacy submitter=null
+    // records stay controller-only; all other callers get null)
+    get_withdrawal_status : (nat64) -> (opt PendingWithdrawal) query;
+
+    // ── P-REC (L0-G): caller-gated device-loss recovery listing ─────────────────
+    // Page the CALLING principal's active (recovery-required) deposits / spends
+    // from the principal-scoped locator index. Advisory reads (L0-H); anonymous
+    // callers get an empty page (fail closed). start_after is an EXCLUSIVE cursor;
+    // limit is clamped to [1, 100]. Status is derived from the authoritative record.
+    list_my_active_deposits : (opt blob, nat64)  -> (ActiveDepositsPage) query;
+    list_my_active_spends   : (opt nat64, nat64) -> (ActiveSpendsPage)   query;
+
+    // ── Pool state queries ────────────────────────────────────────────────────
+    get_accounting_state      : ()    -> (AccountingState)         query;
+    get_pool_version_stats    : ()    -> (vec PoolVersionStats)    query;
+    get_denominations         : ()    -> (vec nat)                 query;
+    get_pinned_vk_hash        : ()    -> (blob)                    query;
+    get_circuit_version       : ()    -> (nat32)                   query;
+    get_pool_version          : ()    -> (nat32)                   query;
+    // F-B3-1: preview_shielding_reserve / get_reserve_params removed (dead M3
+    // reserve model; returned a stale 20-bps figure the live path never charged).
+    // Use get_governance_fee_params + the FeeQuote crate math instead.
+    is_deposits_paused        : ()    -> (bool)                    query;
+    is_spends_paused          : ()    -> (bool)                    query;
+    get_build_info            : ()    -> (text)                    query;
+    get_treasury_notification_failures : () -> (nat64)             query;
+    // W2 2-3-C: in-flight / returned-Err / upgrade-dropped, distinctly.
+    get_treasury_notification_stats : () -> (TreasuryNotificationStats) query;
+    // W2 2-3-D: live admitted gauge + cumulative upgrade-dropped, distinctly.
+    get_admitted_operation_stats : () -> (AdmittedOperationStats) query;
+
+    // ── R-2 (C-30): the fee-flush window ──────────────────────────────────────
+    // The PrivateTransferFee treasury notification is BATCHED to an absolute
+    // wall-clock boundary every `fee_flush_window_ns`, so no publicly readable
+    // fee surface moves in response to an individual private spend. The cadence
+    // is a published constant, not a secret — the getter is deliberately open and
+    // the deploy checklist reads it back. The setter is operator-controller only
+    // and bounded to [ATTESTATION_BUCKET_NS (300 s), 24 h].
+    get_fee_flush_window_ns   : ()    -> (nat64)                    query;
+    set_fee_flush_window_ns   : (nat64) -> (variant { Ok; Err : text });
+    // ── P-DOM (C-DOM-2): advisory deployment attestation (immutable wiring + config
+    // hash + mutable VK/verifier/circuit). Advisory (L0-H) — NOT the gate.
+    get_deployment_attestation : () -> (variant { Ok: DeploymentAttestation; Err: PoolError }) query;
+
+    // ── Custody Vault (lane L3c, freeze V6 §6) ────────────────────────────────
+    // Four mutation-free, controller-gated UPDATE reads (gate: the stored
+    // CONTROLLER principal; non-controller calls reject). Request/response are
+    // wire mirrors of the frozen stsh-custody-types §3b read-model shapes
+    // (ReadModelRequest/ReadModelResponse — pool variants only). Every request
+    // is a {cursor, limit} page with frozen max limit 128; every response is
+    // {items, next_cursor} with each item a blob holding the Candid-encoded
+    // target-typed record (AccountingState / TreasuryReconciliationTombstone /
+    // AppendLeaseOwnerView / PendingPromotionRecord). Fail closed (reject) on
+    // out-of-range limit, malformed/oversized cursor, or wrong variant.
+    get_accounting_state_for_controller_update
+        : (PoolControllerReadRequest) -> (PoolControllerReadResponse);
+    get_treasury_reconciliation_tombstone_for_controller_update
+        : (PoolControllerReadRequest) -> (PoolControllerReadResponse);
+    get_append_lease_owner_for_controller_update
+        : (PoolControllerReadRequest) -> (PoolControllerReadResponse);
+    list_pending_output_promotions_for_controller_update
+        : (PoolControllerReadRequest) -> (PoolControllerReadResponse);
+    // §6 canonical read-back of the seven stored authority principals. PUBLIC.
+    // null (never a substituted default) on uninitialised/sentinel/corrupt
+    // state. Values persist in PoolStableState across upgrades.
+    get_authority_refs : () -> (opt PoolAuthorityRefs) query;
+
+    // ── ICRC-21 ───────────────────────────────────────────────────────────────
+    icrc21_canister_call_consent_message : (text) -> (variant { Ok: text; Err: text }) query;
+
+    // ── Fleet cycle monitor (A-6/A-6b, GAP-U9-1) ─────────────────────────────
+    // PUBLIC, additive, mutation-free: the canister's own cycle balance.
+    cycle_balance : () -> (nat) query;
+
+    // ── Solvency attestation (D-2 + D-4 smoke-alarm completion) ──────────────
+    // PUBLIC and ungated — the clamp is what makes it publishable where
+    // get_accounting_state's raw buckets are controller-only (DEF-076).
+    // Readable while a withdrawal is SolvencyBlocked (ARCHITECTURE.md Law #2).
+    // Verify the certificate + witness client-side and parse the VERIFIED
+    // canonical_bytes; never trust the bare attestation record alone.
+    get_solvency_attestation : () -> (CertifiedSolvencyAttestation) query;
+};

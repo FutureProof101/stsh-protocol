@@ -1,0 +1,33 @@
+# identifier_synthesizing_macro_denylist.toml — R-1 S4(b3-belt).
+#
+# Consulted ONLY by the (b3-belt) name ban — NOT by (b3-direct), which is a pure
+# allowlist with no name-based policy step (CTO_RULING_LINT_TCB_BOUNDARY item 1).
+#
+# Crate names whose macros ASSEMBLE a new identifier from fragments (rather than
+# pass an existing identifier through), defeating the occurrence lint's token
+# layer by construction: `paste!{ [<a b>] }`'s tokens are `a` and `b`, never the
+# synthesized `ab`.
+#
+# The belt bans, in `stsh_token`'s dep-info census:
+#   * any `use` naming one of these crates       (syn::UseTree, rename-resolved)
+#   * any `extern crate` naming one of these     (syn::ItemExternCrate, `ident`)
+#   * any macro INVOCATION whose own path's crate-root segment matches, with or
+#     without a leading `::`                     (syn::Macro.path)
+#   * any `macro_rules!` BODY naming one of these (AC-7o-bis, CTO ruling
+#     2026-09-05: a local macro_rules! can generate the binding the pre-expansion
+#     Layer A/B walk would otherwise miss)
+#
+# Extend by reviewed edit only — a TCB event under "What the gate trusts".
+# Never auto-derived from any observed dependency graph.
+
+[[name]]
+value = "paste"
+
+[[name]]
+value = "concat-idents"
+
+[[name]]
+value = "concat_idents"
+
+[[name]]
+value = "seq-macro"

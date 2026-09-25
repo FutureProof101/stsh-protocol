@@ -1,0 +1,23 @@
+[package]
+name    = "stsh-eager-cell"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+# ── Upgrade-persistence hardening: shared eager-cell primitives ──────────────
+# Fixed raw-byte `Storable` cell types with a fail-closed impossible sentinel,
+# shared by every canister converted away from a `pre_upgrade` checkpoint
+# (BRIEF_UPGRADE_PERSISTENCE_HARDENING_V2, Phase 1+).
+#
+# ONE implementation, ONE test suite. The sentinel is a security boundary —
+# copying it per canister would let the copies drift, and a drifted sentinel
+# degrades a fail-closed gate to fail-open silently.
+#
+# Like fee-policy, this is a plain library crate: NOT deployed, absent from
+# dfx.json, and deliberately free of ic-cdk so it can be unit-tested natively.
+# It allocates no MemoryId of its own — callers own their allocations.
+[dependencies]
+candid               = { workspace = true }
+ic-stable-structures = { workspace = true }

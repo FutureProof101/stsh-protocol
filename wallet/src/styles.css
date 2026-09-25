@@ -1,0 +1,1160 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * STSH wallet — visual system.
+ *
+ * WALLET-UI (2026-09): aligned with the stsh.fi site.
+ *
+ * WALLET-UI addendum 1 (W-7): the three original .woff2 files did not contain
+ * the fonts their names/CSS claimed. Only two were identified AND confirmed
+ * OFL-licensed upstream (DM Sans, JetBrains Mono) — renamed to match, with
+ * their verbatim OFL.txt committed beside them (src/assets/fonts) and shipped
+ * in the bundle at fonts/*-OFL.txt (OFL 1.1 §2; WALLET-SHIELD-LAYER1). The third
+ * (labelled "Space Grotesk", actually General Sans — Indian Type Foundry /
+ * Fontshare terms, not OFL, needs a counsel read before it can ship) is
+ * DROPPED per the addendum's fallback rule; the display face is a system
+ * stack until that clearance exists.
+ *
+ * Two bundled faces (DM Sans body, JetBrains Mono for figures, hashes and
+ * labels), the same near-black ground, hairline borders, and ONE accent: copper,
+ * used for focus, hover and the active route. It is a ground behind copy only
+ * where the copy is --on-accent (near-black, 8.8:1): the primary-button hover,
+ * text selection, and the selected segment (Owner, Addendum A item 8).
+ *
+ * Fonts are bundled (src/assets/fonts) and served from this canister; the asset
+ * policy's `font-src 'self'` permits exactly that and nothing else.
+ *
+ * State colours keep their historical names (`--high`, `--medium`,
+ * `--success`): the release-panel tests bind to them by name.
+ * ───────────────────────────────────────────────────────────────────────────*/
+
+@font-face {
+  font-family: "DM Sans";
+  src: url("./assets/fonts/DMSans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./assets/fonts/JetBrainsMono.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Three clear text tiers: --fg for titles and figures, --fg-soft for body,
+     --muted for secondary notes. Surfaces step up in lightness so a card
+     inside the page reads as a separate thing. */
+  --bg: oklch(0.05 0 0);
+  --panel: oklch(0.1 0 0);
+  --panel-2: oklch(0.14 0 0);
+  --fg: oklch(0.98 0 0);
+  --fg-soft: oklch(0.86 0 0);
+  --muted: oklch(0.64 0 0);
+  --label: oklch(0.74 0 0);
+  --border: oklch(0.23 0 0);
+  --border-strong: oklch(0.33 0 0);
+
+  --accent: oklch(0.75 0.098 65);
+  --accent-dim: oklch(0.75 0.098 65 / 0.33);
+  --on-accent: oklch(0.14 0 0);
+
+  --high: oklch(0.68 0.19 25);
+  --medium: oklch(0.8 0.14 80);
+  --success: oklch(0.74 0.16 150);
+
+  --radius: 10px;
+  --radius-lg: 16px;
+
+  color-scheme: dark;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+
+/* Several surfaces toggle `hidden` on elements this sheet gives a display
+   value to; the attribute must always win. */
+[hidden] { display: none !important; }
+
+::selection { background: var(--accent); color: var(--on-accent); }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--fg);
+  line-height: 1.55;
+  font-size: 15px;
+  background:
+    radial-gradient(1100px 480px at 50% -220px, oklch(0.75 0.098 65 / 0.08), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+#app { max-width: 720px; margin: 0 auto; padding: 0 16px 64px; }
+
+a { color: var(--fg); text-underline-offset: 3px; }
+a:hover { color: var(--accent); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0 14px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  background: oklch(0.05 0 0 / 0.86);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fg);
+  text-decoration: none;
+}
+.brand-mark {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.brand-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.session-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.session-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.session-pill.is-in { color: var(--fg-soft); }
+.session-pill.is-in::before { background: var(--success); box-shadow: 0 0 0 3px oklch(0.74 0.16 150 / 0.18); }
+
+/* Header on wider screens: brand, then the three destinations, then the
+   session indicator, all on one line. */
+@media (min-width: 561px) {
+  .app-header { flex-direction: row; align-items: center; gap: 20px; }
+  .brand-row { display: contents; }
+  .brand { order: 0; }
+  .nav { order: 1; }
+  .session { order: 2; margin-left: auto; }
+}
+
+/* Header account control and its menu. */
+.session { position: relative; }
+button.session-pill {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+button.session-pill.is-in::after { content: "▾"; margin-left: 2px; color: var(--muted); letter-spacing: 0; }
+button.session-pill.is-out { border-color: var(--fg); color: var(--fg); }
+button.session-pill.is-out::before { display: none; }
+.session-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--panel-2);
+  box-shadow: 0 16px 40px oklch(0 0 0 / 0.55);
+}
+.session-menu-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+.session-menu-principal { font-family: var(--font-mono); font-size: 14px; color: var(--fg); overflow-wrap: anywhere; }
+.session-menu-actions { display: flex; gap: 8px; }
+.session-menu-actions > button { flex: 1 1 0; }
+
+/* Nav: three destinations — Home, Activity, Settings. */
+.nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 11px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.nav a:hover { color: var(--fg); }
+.nav a.active {
+  color: var(--fg);
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+/* ── Page card ───────────────────────────────────────────────────────────── */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--panel), var(--bg));
+}
+
+
+h2 {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--fg);
+}
+h3 {
+  margin: 18px 0 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-strong);
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+h4 {
+  margin: 8px 0 4px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+h3.danger-zone { display: flex; align-items: center; gap: 10px; }
+h3.danger-zone::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--high);
+}
+
+p { margin: 0; color: var(--fg-soft); }
+.content > p:not([class]) { color: var(--fg-soft); }
+
+.muted { color: var(--muted); font-size: 14px; }
+.total {
+  margin: 2px 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The logged-in principal: selectable in one click, never truncated. */
+.principal {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+  -webkit-user-select: all;
+  user-select: all;
+  cursor: text;
+}
+
+ul, ol { margin: 0; padding-left: 20px; color: var(--fg-soft); font-size: 14px; }
+li { margin: 4px 0; }
+li::marker { color: var(--muted); }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row > input { flex: 1 1 220px; min-width: 0; }
+
+/* ── Controls ────────────────────────────────────────────────────────────── */
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 11px 18px;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+button.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button.danger { border-color: oklch(0.68 0.19 25 / 0.55); color: var(--high); }
+button.danger:hover:not(:disabled) { border-color: var(--high); color: var(--high); background: oklch(0.68 0.19 25 / 0.1); }
+button:disabled { opacity: 0.42; cursor: not-allowed; }
+.content > button { align-self: flex-start; }
+
+input[type="text"],
+input[type="password"],
+input:not([type]),
+input.amount,
+select,
+textarea,
+.note-select {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input::placeholder, textarea::placeholder { color: oklch(0.5 0 0); }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px oklch(0.75 0.098 65 / 0.18);
+}
+input[type="checkbox"], input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+label { display: block; font-size: 14px; color: var(--fg-soft); }
+.content > label:not(.radio):not(.row) { display: grid; gap: 6px; }
+label.radio { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0; cursor: pointer; }
+label.row { cursor: pointer; align-items: flex-start; flex-wrap: nowrap; }
+fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+legend {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0 6px;
+}
+
+table.denoms { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.denoms th, table.denoms td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+table.denoms th {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+table.denoms td { font-family: var(--font-mono); color: var(--fg); }
+
+/* Previews and progress: a quiet inset well, invisible until filled. */
+.preview:empty, .warnings:empty, .results:empty, .journal:empty { display: none; }
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: oklch(0.08 0 0 / 0.6);
+}
+.preview .total { font-size: 24px; }
+.preview.plain { padding: 0; border: 0; background: transparent; }
+section.preview > h3 { margin: 0; padding-top: 0; border-top: 0; }
+.preview ul { margin: 0; padding-left: 20px; }
+.results { display: flex; flex-direction: column; gap: 10px; }
+.results > h3:first-child { margin-top: 0; }
+
+.error { color: var(--high); font-size: 14px; }
+.success { color: var(--success); font-size: 14px; }
+
+/* ── Callouts: warnings and status lines share one shape ─────────────────── */
+
+.warnings { display: flex; flex-direction: column; gap: 8px; }
+.warning,
+.status-msg {
+  position: relative;
+  padding: 11px 14px 11px 32px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg-soft);
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+.warning::before,
+.status-msg::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 18px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+/* O-7 (Owner 2026-09-23, WALLET-CACHE-II-ONLY): every `level: "high"`
+   privacy callout is ADVISORY — specific-amount payout, 24h timing, rapid
+   roundtrip, public payout, allowance visibility — so it renders in the copper
+   accent, never the red that means a failed action. Red stays for `.error`,
+   `.status-msg.error` and `button.danger`. */
+.warning.high { border-color: oklch(0.75 0.098 65 / 0.55); background: oklch(0.75 0.098 65 / 0.08); }
+.warning.high::before { background: var(--accent); }
+.warning.medium { border-color: oklch(0.8 0.14 80 / 0.35); background: oklch(0.8 0.14 80 / 0.06); }
+.warning.medium::before { background: var(--medium); }
+.warning.low { border-color: var(--accent-dim); }
+.warning.low::before { background: var(--accent); }
+/* O-6: the short lines come first; the full disclosure sits behind "More". */
+.warning .warning-line { margin: 0; color: var(--fg); }
+.warning .warning-line + .warning-line { margin-top: 4px; }
+.warning details.warning-more { margin-top: 6px; border: 0; background: transparent; }
+.warning details.warning-more > summary { padding: 2px 0; font-size: 13px; }
+.warning details.warning-more > .fold-body { padding: 4px 0 0; }
+.warning details.warning-more p { margin: 0; color: var(--fg-soft); }
+
+.status { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.status:empty { display: none; }
+.status-msg { margin: 0; }
+.status-msg.error { border-color: oklch(0.68 0.19 25 / 0.4); background: oklch(0.68 0.19 25 / 0.07); }
+.status-msg.error::before { background: var(--high); }
+.status-msg.success { border-color: oklch(0.74 0.16 150 / 0.35); background: oklch(0.74 0.16 150 / 0.06); }
+.status-msg.success::before { background: var(--success); }
+.status-msg.info { border-color: var(--accent-dim); }
+.status-msg.info::before { background: var(--accent); }
+.status-msg.warn, .status-msg.medium { border-color: oklch(0.8 0.14 80 / 0.35); }
+.status-msg.warn::before, .status-msg.medium::before { background: var(--medium); }
+.status-msg.high { border-color: oklch(0.68 0.19 25 / 0.4); }
+.status-msg.high::before { background: var(--high); }
+/* O-7: advisory (a permanence or caution the user should read) — copper. */
+.status-msg.advisory { border-color: oklch(0.75 0.098 65 / 0.55); background: oklch(0.75 0.098 65 / 0.08); }
+.status-msg.advisory::before { background: var(--accent); }
+/* WALLET-CACHE-II-ONLY: the private-balance gate line — neutral info, grey. */
+.gate-note {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--fg-soft);
+  font-size: 14px;
+}
+.status-msg button { margin: 10px 8px 0 0; padding: 7px 12px; font-size: 13px; }
+/* WALLET-SHIELD-LAYER1 (Addendum A item 6): the last action's banner has a ×. */
+.status-msg.dismissable { padding-right: 44px; }
+.status-msg .status-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin: 0;
+  padding: 2px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.4;
+}
+.status-msg .status-dismiss:hover:not(:disabled) { color: var(--fg); background: var(--panel-2); }
+
+/* The submission-delay option lives under the status lines on every page. */
+.delay-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.delay-toggle:has(input:checked) { border-style: solid; border-color: var(--accent-dim); color: var(--fg-soft); }
+
+/* Unclassed wrappers inside a page keep the page's rhythm. */
+.content > div:not([class]) { display: flex; flex-direction: column; gap: 10px; }
+
+/* The device-wipe confirmation: contained, and unmistakably destructive. */
+.wipe-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid oklch(0.68 0.19 25 / 0.4);
+  border-radius: 12px;
+  background: oklch(0.68 0.19 25 / 0.05);
+}
+.wipe-panel > .row:has(button.danger) { margin-top: 4px; }
+
+/* Journals and intent lists read as ledgers: hairline rows, mono figures. */
+.journal { display: flex; flex-direction: column; gap: 10px; }
+.journal ul { list-style: none; padding: 0; border-top: 1px solid var(--border); }
+.journal li {
+  margin: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.journal li button { padding: 7px 12px; font-size: 13px; }
+.intent-summary {
+  list-style: none;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * J-25 AMBER-1 — the release footer's typography and per-row trust states.
+ *
+ * The footer emits `.mono` on the FULL 64-hex verifying-key hash and a
+ * `release-<state>` class on every row. Without these rules `.mono` inherited
+ * the :root system-ui family, so the "monospace, never truncated" requirement
+ * was satisfied in the DATA and not in the RENDERING; and a DISAGREES row was
+ * distinguishable only by reading its sentence. Both are fixed here.
+ *
+ * WALLET-UI: the panel now reads like the site's reserves readout — one
+ * bordered block, a mono heading bar, hairline rows. Each row keeps its
+ * left state rule, so a disagreement is still visible without reading.
+ * ───────────────────────────────────────────────────────────────────────────*/
+
+.mono {
+  /* Spelled out, not var(--font-mono): the J-25 test reads the computed family
+     in jsdom, which does not resolve custom properties. */
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* The 64-hex hash is one unbroken token: it must WRAP, never overflow and
+     never be visually truncated. */
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  font-size: 13px;
+}
+
+.release-panel {
+  margin-top: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--panel), var(--bg));
+  font-size: 13px;
+}
+.release-heading {
+  margin: 0;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.release-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+
+.release-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 14px 20px 14px 18px;
+  border-bottom: 1px solid var(--border);
+  border-left: 2px solid var(--border);
+  background: transparent;
+}
+.release-row:last-child { border-bottom: 0; border-bottom-left-radius: var(--radius-lg); }
+.release-label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.release-value { color: var(--fg); }
+.release-pool-value { color: var(--fg); }
+.release-source { color: var(--muted); font-size: 12px; }
+.release-trust { color: var(--muted); font-size: 12px; }
+
+/* Per-state emphasis. A disagreement is the one state that must be visible
+   without reading: red rule, red trust line, both values emphasised. */
+.release-informational { border-left-color: var(--accent); }
+.release-agrees { border-left-color: var(--success); }
+.release-agrees .release-trust { color: var(--success); }
+.release-unverified { border-left-color: var(--medium); }
+.release-unverified .release-trust { color: var(--medium); }
+.release-unavailable { border-left-color: var(--border); }
+.release-disagrees {
+  border-left-color: var(--high);
+  background: oklch(0.68 0.19 25 / 0.07);
+  outline: 1px solid var(--high);
+}
+.release-disagrees .release-trust { color: var(--high); font-weight: 600; }
+.release-disagrees .release-value,
+.release-disagrees .release-pool-value { color: var(--high); font-weight: 600; }
+
+/* ── J-17b: the Vault operator page (#/operator) ──────────────────────────────
+   Deliberately plain and dense. This surface exists for a handful of custody
+   signers doing one careful thing at a time; nothing here should compete with
+   the hash a signer is supposed to be reading. Monospace and wrapping are the
+   only things that matter — a 64-hex commitment that gets ellipsised, or a
+   principal that silently truncates, is a correctness problem, not a cosmetic
+   one, so every code block wraps in full rather than overflowing. */
+.operator .panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 10px 0;
+  background: var(--panel);
+}
+.operator .form { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
+.operator .proposal { border-left: 2px solid var(--border-strong); padding-left: 12px; margin: 10px 0; }
+.operator h3 { margin-top: 8px; padding-top: 0; border-top: 0; }
+.operator h4 { margin: 6px 0 4px; font-size: 14px; }
+.operator code,
+.operator pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  /* Never truncate: the whole point of showing a hash is that it is all there. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 4px 0;
+}
+.operator .principal-large { font-size: 14px; font-weight: 600; }
+.operator textarea { font-family: var(--font-mono); font-size: 12px; }
+.operator input[size] { width: auto; max-width: 100%; }
+
+/* ── WALLET-UX components ────────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.back-link {
+  align-self: flex-start;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.back-link:hover { color: var(--accent); }
+.page-sub { color: var(--fg-soft); font-size: 16px; line-height: 1.5; margin-top: -4px; }
+
+/* A short explanation block for a mode or choice. */
+.explainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.explainer-title { color: var(--fg); font-weight: 600; font-size: 15px; }
+
+button.ghost { background: transparent; border-color: var(--border); color: var(--fg-soft); }
+button.small { padding: 7px 12px; font-size: 13px; }
+button.wide { width: 100%; padding-block: 14px; font-size: 15px; }
+.content > button.wide { align-self: stretch; }
+
+.field { display: grid; gap: 6px; }
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+input.amount-lg {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 14px 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chips: status labels and tappable amount presets. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--fg-soft);
+  white-space: nowrap;
+}
+.chip-good { border-color: oklch(0.74 0.16 150 / 0.4); color: var(--success); }
+.chip-warn { border-color: oklch(0.8 0.14 80 / 0.4); color: var(--medium); }
+.chip-bad { border-color: oklch(0.68 0.19 25 / 0.45); color: var(--high); }
+.chip-accent { border-color: var(--accent-dim); color: var(--accent); }
+.chip-row, .note-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+.soon-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
+
+/* Segmented control. */
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.segmented .seg {
+  flex: 1 1 0;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: transparent;
+}
+.segmented .seg:hover:not(:disabled) { color: var(--fg); }
+/* WALLET-SHIELD-LAYER1 (Owner Addendum A item 8): the selected segment is the
+   copper accent, not white. Text is --on-accent (near-black): 8.8:1 against
+   --accent. The hover rule above would otherwise paint --fg (white) on copper
+   (2.1:1), so the selected state pins its colours under hover too. */
+.segmented .seg.is-on,
+.segmented .seg.is-on:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Breakdown: label/value lines, the one that matters in bold. */
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: oklch(0.08 0 0 / 0.6);
+}
+.bd-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 0 4px;
+}
+.bd-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.bd-row:last-child { border-bottom: 0; }
+.bd-label { color: var(--muted); }
+.bd-value { font-family: var(--font-mono); color: var(--fg); text-align: right; font-variant-numeric: tabular-nums; }
+.bd-strong .bd-label { color: var(--fg); }
+.bd-strong .bd-value { font-weight: 600; }
+
+/* Collapsible sections. */
+details.fold {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: oklch(0.08 0 0 / 0.4);
+}
+details.fold > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "+"; font-family: var(--font-mono); color: var(--muted); }
+details.fold[open] > summary::after { content: "−"; }
+details.fold > summary:hover { color: var(--fg); }
+.fold-body { display: flex; flex-direction: column; gap: 10px; padding: 0 16px 16px; }
+.fold-body > section.preview { border: 0; padding: 0; background: transparent; }
+
+/* A long operation in flight. */
+.progress-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 12px;
+  background: oklch(0.75 0.098 65 / 0.05);
+}
+.progress-head { display: flex; align-items: center; gap: 10px; }
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-dim);
+  border-top-color: var(--accent);
+  animation: wallet-spin 0.9s linear infinite;
+}
+@keyframes wallet-spin { to { transform: rotate(360deg); } }
+
+/* Addendum 2 item 5: the in-flight spend's stages. */
+.stages { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.stage { color: var(--muted); }
+.stage-now { color: var(--fg); font-weight: 600; }
+.stage-done { color: var(--muted); text-decoration: line-through; }
+
+/* Addendum 2 item 2: the spend action stays on screen however long the
+   warnings above it are. */
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+/* Addendum 2 item 7: the Shield page's exit disclosure, first on the page. */
+.exit-disclosure {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid oklch(0.8 0.14 80 / 0.35);
+  border-radius: 12px;
+  background: oklch(0.8 0.14 80 / 0.06);
+  color: var(--fg-soft);
+}
+.exit-disclosure > p { margin: 0; }
+/* O-6: "Verify this build" — the release panel, folded, on Settings only. */
+details.verify-build { margin-top: 16px; }
+details.verify-build > .release-panel { margin: 0 16px 16px; }
+
+/* Settings: the automatic-calls disclosure. */
+.auto-calls ul { margin: 4px 0; padding-left: 18px; }
+.auto-calls li { margin: 2px 0; }
+
+/* Home. */
+.welcome { display: flex; flex-direction: column; gap: 14px; padding: 8px 0; }
+.welcome h2 { font-size: 34px; }
+.points { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.points li { position: relative; padding-left: 20px; margin: 0; font-size: 15px; color: var(--fg-soft); }
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.balances { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.bal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+.bal-private { border-color: var(--accent-dim); background: linear-gradient(160deg, oklch(0.75 0.098 65 / 0.08), var(--bg) 60%); }
+.bal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bal-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bal-private .bal-label { color: var(--accent); }
+.bal-value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.bal-value.is-muted { color: var(--muted); }
+.bal-public .total { font-size: 22px; margin: 0; overflow-wrap: anywhere; }
+.bal-link { font-size: 13px; color: var(--muted); text-decoration: none; }
+.bal-link:hover { color: var(--accent); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.actions > button { flex: 1 1 160px; padding-block: 14px; font-size: 15px; }
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.address {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+.address-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.address-row .principal { flex: 1 1 auto; margin: 0; }
+.fold-stack { display: flex; flex-direction: column; gap: 10px; }
+.fold-stack > .row > input { flex: 1 1 100%; }
+.soon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.attention {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid oklch(0.8 0.14 80 / 0.35);
+  border-radius: 12px;
+  background: oklch(0.8 0.14 80 / 0.05);
+}
+.attention h3 { margin-top: 0; padding-top: 0; border-top: 0; font-size: 15px; }
+.attention .journal ul { border-top: 0; }
+.attention-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 14px; }
+.attention-link { font-size: 14px; color: var(--medium); text-decoration: none; }
+.attention-link:hover { color: var(--accent); }
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  text-align: left;
+}
+.empty > p:first-child { color: var(--fg); font-weight: 600; }
+
+/* Send. */
+.send-fields, .mode-slot { display: flex; flex-direction: column; gap: 12px; }
+.spend-summary:empty { display: none; }
+
+/* Activity timeline. */
+.timeline { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--border); }
+.tl-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.tl-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tl-title { color: var(--fg); font-weight: 600; font-size: 15px; }
+.tl-detail { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.tl-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.tl-when { color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+
+/* Settings. */
+/* Each Settings section is its own card, so sections never run together. */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+.settings-section > h3:first-child { margin: 0 0 2px; padding-top: 0; border-top: 0; color: var(--accent); }
+.settings-section.security > h3.danger-zone { margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 16px; }
+.settings-section section.preview { padding: 0; border: 0; background: transparent; }
+.settings-section section.preview > h3 { font-size: 16px; }
+.settings-section.admin-only { border-left: 2px solid var(--accent); padding-left: 20px; }
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--fg);
+  font-size: 14px;
+}
+.link-row .muted { flex: 1 1 auto; font-size: 13px; }
+.link-row-arrow { margin-left: auto; color: var(--muted); }
+.link-row:hover { border-color: var(--accent-dim); color: var(--fg); }
+.link-row:hover .link-row-arrow { color: var(--accent); }
+.admin-only { border-left: 2px solid var(--accent-dim); padding-left: 12px; }
+
+/* Small uppercase labels: one step brighter than secondary text so they read
+   as labels, not as more body copy. */
+.field-label,
+.bd-title,
+.bal-label,
+.section-label,
+table.denoms th,
+.release-heading,
+.release-label { color: var(--label); }
+.bd-label { color: var(--fg-soft); }
+.tl-title, .empty > p:first-child { color: var(--fg); }
+
+/* ── Small screens ───────────────────────────────────────────────────────── */
+
+@media (max-width: 560px) {
+  /* Phones: the header scrolls away; the nav becomes a bottom tab bar in
+     thumb reach. */
+  #app { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  /* No backdrop-filter here: it would make the header the containing block
+     for the fixed tab bar below, pinning the bar to the header. */
+  .app-header {
+    position: static;
+    padding-top: 12px;
+    margin-bottom: 16px;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-around;
+    gap: 0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    background: oklch(0.07 0 0 / 0.94);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  .nav a { flex: 1 1 0; text-align: center; padding: 10px 6px; font-size: 13px; }
+  .content { padding: 22px 18px; border-radius: 14px; }
+  h2 { font-size: 27px; }
+  .total { font-size: 32px; }
+  .bal-value { font-size: 34px; }
+  .balances { grid-template-columns: 1fr; }
+  .content > .row > button { flex: 1 1 auto; }
+  .actions > button { flex: 1 1 0; }
+  .content > button { align-self: stretch; }
+  .release-row { padding: 12px 16px 12px 14px; }
+  .release-heading { padding: 12px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+  .spinner { animation: none; }
+}

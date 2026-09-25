@@ -1,0 +1,36 @@
+[package]
+name    = "verify-genesis-manifest"
+version = "0.1.0"
+edition = "2021"
+# P-ARITH G-1/G-2: Gate-D (canonical init artifact vs approved genesis
+# manifest, field-exact, SHA-256 recorded) + Gate-V (two-phase founders
+# vesting-custody proof). Host tool only — never compiled into a canister.
+
+[lib]
+name = "verify_genesis_manifest"
+path = "src/lib.rs"
+
+[[bin]]
+name = "verify_genesis_manifest"
+path = "src/main.rs"
+
+[[bin]]
+# Real Candid parse for scripts/embed_candid_metadata.sh — see the bin's header.
+name = "check_candid_did"
+path = "src/bin/check_candid_did.rs"
+
+[dependencies]
+candid        = { workspace = true }
+candid_parser = "0.1"
+toml          = "0.8"
+serde         = { workspace = true }
+sha2          = { workspace = true }
+hex           = { workspace = true }
+num-traits    = { workspace = true }
+
+# R-3a — the `run_gates_from_strs` visibility lock (tests/visibility_lock.rs)
+# parses lib.rs's own source with `syn`. `full` ONLY: no `extra-traits`, no
+# `printing`, no `quote` — the helper returns a `bool`, so `Visibility` never
+# needs `PartialEq`/`Debug` or to be rendered.
+[dev-dependencies]
+syn = { version = "2", features = ["full"] }

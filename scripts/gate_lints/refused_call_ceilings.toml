@@ -1,0 +1,217 @@
+# =============================================================================
+# STSH — REFUSED-CALL CYCLE CEILINGS  (remediation lane R-L, campaign §5 G-b)
+# =============================================================================
+#
+# THE DEFECT CLASS. A rate-limited or floor-guarded endpoint has TWO cost paths,
+# and only one of them ever gets thought about. The accepted path does the work
+# and is obviously expensive. The REFUSED path is supposed to be cheap — that is
+# the entire point of putting a limiter in front of expensive work — but nothing
+# in this repo has ever asserted it. A refusal that costs nearly as much as the
+# work it refuses is not a defence; it is a CHEAPER ATTACK, because the attacker
+# no longer has to satisfy the precondition.
+#
+# TWO INDEPENDENT DISCOVERY PATHS decide who needs a row (`verify_gate_lints
+# refused-ceilings`), both restricted to the PRODUCTION view of the #[update]
+# census — a cfg-excluded item ships in no production Wasm and cannot
+# meaningfully carry a ceiling:
+#   1. MARKER      — `// RATE-LIMITED` / `// FLOOR-GUARDED` on the fn.
+#   2. STRUCTURAL  — an intra-crate call-graph walk, depth <= 3, over the
+#                    `structural_patterns` below. A NET, not a completeness
+#                    proof; the .did name-set cross-check is what closes the
+#                    macro-alias gap, not a wider regex.
+#
+# WHY THE CEILING LIVES HERE AND NOT IN THE CANISTER (brief §4 invariant 2).
+# The ceiling tests read THIS FILE's literal. They never read a `pub const` in
+# the canister crate. A check whose expected value comes from the artifact it
+# checks proves nothing — it passes by construction, and it passes just as
+# happily after the constant is raised to accommodate a regression. That is the
+# self-inherited-verification class (reviews/SWEEP_SELF_INHERITED_VERIFICATION_V1),
+# and AC-6/M6b exists specifically to catch a rewrite that reintroduces it.
+#
+# HOW THE PINS WERE PRODUCED. Five samples per endpoint on PocketIC 9.0.2 /
+# dfx 0.28.0, rustc 1.95.0 (rust-toolchain.toml), measured by lane R-L on
+# 2026-09-05 over base 115526d3a2755b6b5c9ed1f5a0014e746cff8b57.
+#
+#   THE PIN FORMULA (CTO_RULING_RL_REFUSED_CEILING_PIN_2026-09-05, ruling 1):
+#
+#       pin = ceil_100k( max(samples) + 3 x (max(samples) - min(samples)) )
+#
+#   NEVER A MULTIPLIER. The first cut of this file pinned at x1.5 of the max,
+#   and the lane's own M5 mutation then failed to cross it: these refusals cost
+#   ~6.3-6.8M cycles of which almost all is FIXED per-message overhead, so a
+#   x1.5 pin grants ~3.2M cycles of absolute headroom while the measurement's
+#   real run-to-run spread is 2,818-93,623 cycles. A pin proportional to the
+#   BASELINE is a pin proportional to overhead the endpoint does not control; a
+#   pin proportional to the SPREAD is a pin proportional to the measurement's
+#   own noise, which is the only thing the margin needs to absorb. The x3 is the
+#   noise allowance, the round-up to the next 100,000 keeps the committed number
+#   readable, and the sample vector and spread are recorded per row below and in
+#   the landing packet so the arithmetic can be re-run from this file alone.
+#
+#   The assertion is ONE-SIDED on purpose: a refusal getting cheaper is never a
+#   regression.
+#
+# HOW THE PIN IS PROVEN TO BITE (ruling 2). M5's mutation size is DERIVED from
+# the pin, never fixed: a mutation adding 2 x (pin - max) cycles of work on the
+# refusal path must turn the ceiling test RED, and one adding 0.5 x (pin - max)
+# must leave it GREEN. The second leg is the noise-floor control -- without it,
+# "the mutation went red" is equally consistent with a pin so tight that any
+# mutation reddens it. Both legs, per endpoint, are recorded in the packet
+# (§5b). Each row carries its own `m5_*` fields so the legs can be
+# reproduced without the packet.
+#
+# WHEN A CEILING IS EXCEEDED, re-measure and re-pin IN THE SAME CHANGE, with the
+# new samples in the review packet. Raising a ceiling afterwards to make a gate
+# go green is the failure mode every one of these numbers exists to prevent.
+#
+# TCB residual #2 (brief §9): editing this file to remove a real finding is a
+# bypass whose control is the reviewed diff, not a second lint watching this one.
+
+schema_version = 1
+
+# Ids that MUST have a row. Deleting a row must delete the EVIDENCE, never the
+# OBLIGATION — without this list, "delete the smoke-alarm row" is a mutation the
+# lint reports zero findings for (AC-4/M4).
+required_rows = [
+  "C-1-smoke-alarm-request-refresh",
+  "C-2-upgrader-refresh-controller-invariant",
+  "C-3-vetkeys-get-encrypted-vetkey",
+  "C-3b-vetkeys-invalid-transport-key",
+]
+
+# ── Structural discovery patterns ────────────────────────────────────────────
+# Token substrings whose presence in an endpoint's own body, or in a local
+# helper it reaches within three call levels, means the endpoint has a
+# rate-limit or cycle-floor guard and therefore a REFUSED call path.
+#
+# These are matched against the fn's rendered token stream with DOC ATTRIBUTES
+# STRIPPED. That strip is load-bearing: with doc comments included, the literal
+# phrase "rate-limited" appearing in an endpoint's PROSE made two upgrader
+# proposal endpoints look structurally guarded when neither has a rate limit.
+# A guard is executable code, never a sentence about one.
+structural_patterns = [
+  "rate-limited",
+  "MIN_GAP_NS",
+  "min_interval_ns",
+  "AlreadyInFlight",
+  "cycle_floor_admits",
+  "CycleFloorReached",
+  "_CYCLE_FLOOR_",
+]
+
+# ── C-1 — smoke-alarm-monitor `request_refresh` (UMC-28) ─────────────────────
+[[row]]
+id              = "C-1-smoke-alarm-request-refresh"
+crate_name      = "smoke-alarm-monitor"
+endpoint        = "request_refresh"
+kind            = "rate-limited"
+samples         = [6309751, 6307919, 6306933, 6307336, 6307528]
+measured_cycles = 6309751          # max of the five samples; spread 2,818
+ceiling_cycles  = 6400000          # ceil_100k(6309751 + 3 x 2818) = ceil_100k(6318205)
+m5_headroom_cycles   = 90249     # pin - max; the M5 legs are derived from THIS
+m5_red_cycles        = 180498     # 2.0 x headroom -- MUST turn the ceiling test RED
+m5_red_write_bytes   = 80417     # that many cycles of stable write @ ~2.2445 cycles/byte
+m5_green_cycles      = 45124     # 0.5 x headroom -- MUST leave it GREEN (noise-floor control)
+m5_green_write_bytes = 20104
+test            = "ceiling_c1_smoke_alarm_request_refresh_refusal"
+note = """
+Permissionless liveness valve on a BLACKHOLED canister — anyone may call it and
+nobody can top it up out of band, so the refused path is the whole cycle-reserve
+defence. The refusal is a saturating_sub against MANUAL_REFRESH_MIN_GAP_NS and
+an early Err, before run_refresh() and therefore before any inter-canister read.
+"""
+
+# ── C-2 — upgrader `refresh_controller_invariant_now` (UMC-03) ───────────────
+[[row]]
+id              = "C-2-upgrader-refresh-controller-invariant"
+crate_name      = "upgrader"
+endpoint        = "refresh_controller_invariant_now"
+kind            = "rate-limited"
+samples         = [6563111, 6572394, 6572102, 6572394, 6572102]
+measured_cycles = 6572394          # max of the five samples; spread 9,283
+ceiling_cycles  = 6700000          # ceil_100k(6572394 + 3 x 9283) = ceil_100k(6600243)
+m5_headroom_cycles   = 127606     # pin - max; the M5 legs are derived from THIS
+m5_red_cycles        = 255212     # 2.0 x headroom -- MUST turn the ceiling test RED
+m5_red_write_bytes   = 113704     # that many cycles of stable write @ ~2.2445 cycles/byte
+m5_green_cycles      = 63803     # 0.5 x headroom -- MUST leave it GREEN (noise-floor control)
+m5_green_write_bytes = 28426
+test            = "ceiling_c2_upgrader_refresh_controller_invariant_refusal"
+note = """
+Permissionless by design, with the rate limiter's state DURABLE (MemoryId 12)
+precisely because a heap counter would clear on every upgrade and the party who
+can trigger an upgrade is the governed path itself. The refusal happens in
+core::refresh_charge, before refresh_controller_invariant()'s await, so a
+refused call never reaches the management call it guards.
+"""
+
+# ── C-3 — vetkeys `get_encrypted_vetkey` cycle floor (UMC-01) ────────────────
+[[row]]
+id              = "C-3-vetkeys-get-encrypted-vetkey"
+crate_name      = "vetkeys"
+endpoint        = "get_encrypted_vetkey"
+kind            = "floor-guarded"
+samples         = [6738474, 6804163, 6832097, 6830120, 6830131]
+measured_cycles = 6832097          # max of the five samples; spread 93,623
+ceiling_cycles  = 7200000          # ceil_100k(6832097 + 3 x 93623) = ceil_100k(7112966)
+m5_headroom_cycles   = 367903     # pin - max; the M5 legs are derived from THIS
+m5_red_cycles        = 735806     # 2.0 x headroom -- MUST turn the ceiling test RED
+m5_red_write_bytes   = 327821     # that many cycles of stable write @ ~2.2445 cycles/byte
+m5_green_cycles      = 183951     # 0.5 x headroom -- MUST leave it GREEN (noise-floor control)
+m5_green_write_bytes = 81955
+test            = "ceiling_c3_vetkeys_derive_refusal"
+note = """
+The ACCEPTED path costs ~26,000,000,000 cycles (a management vetKD dispatch);
+this refusal costs ~6.8e6, four orders of magnitude less, which is what makes
+the floor a defence rather than a speed bump. The pre-existing g2 acceptance arm
+asserts "six refusals burn under 1e9" — a bound on the CLASS, chosen by the
+test's own author. This row is the bound on the ENDPOINT, held outside the code.
+vetkeys is WORKSPACE-EXCLUDED, so C-3 runs ONLY under run_gate.sh's separate
+--manifest-path invocation; a green workspace run says nothing about it.
+"""
+
+# ── C-3b — vetkeys `get_encrypted_vetkey` invalid-transport-key refusal ──────
+[[row]]
+id              = "C-3b-vetkeys-invalid-transport-key"
+crate_name      = "vetkeys"
+endpoint        = "get_encrypted_vetkey"
+kind            = "input-validation"
+samples         = [6657752, 6723827, 6751797, 6750751, 6751624]
+measured_cycles = 6751797          # max of the five samples; spread 94,045
+ceiling_cycles  = 7100000          # ceil_100k(6751797 + 3 x 94045) = ceil_100k(7033932)
+m5_headroom_cycles   = 348203     # pin - max; the M5 legs are derived from THIS
+m5_red_cycles        = 696406     # 2.0 x headroom -- MUST turn the ceiling test RED
+m5_red_write_bytes   = 310272     # that many cycles of stable write @ ~2.2445 cycles/byte
+m5_green_cycles      = 174101     # 0.5 x headroom -- MUST leave it GREEN (noise-floor control)
+m5_green_write_bytes = 77567
+test            = "ceiling_c3b_vetkeys_invalid_transport_key_refusal"
+note = """
+The INVALID-TRANSPORT-KEY refusal, distinct from C-3's cycle-floor refusal on
+the SAME endpoint: since R-5 (L04-01, dispatch 2026-09-06) this branch returns
+strictly BEFORE `METER`/`with_admission`/`preflight` are entered. It does NOT
+precede the LIMB 2 cycle-floor pre-check, which still runs first in both the
+old and the new order — below the floor a malformed key still refuses with
+`CycleFloorReached`, which is C-3's row, not this one. Measured and pinned on
+its OWN five samples per CTO_RULING_RL_REFUSED_CEILING_PIN_2026-09-05 rather
+than reusing or re-deriving C-3's row, which stays byte-identical to base.
+Measured over `setup()`'s RICH funding (not C-3's tight-floor fixture), each
+sample asserting `InvalidTransportKey` so the floor provably did not engage.
+vetkeys is WORKSPACE-EXCLUDED, so this row's test runs ONLY under
+run_gate.sh's separate --manifest-path invocation.
+
+M5 legs, as ACTUALLY realised (R-5 packet): the dummy stable-write work was
+`WRAPPED_SECRETS` inserts of a 512-byte value on the refusal path, because a
+single write cannot exceed that bound and the realised cost is dominated by
+per-insert overhead rather than the ~2.2445 cycles/byte the *_write_bytes
+fields above nominally derive. 8 inserts moved the max sample to 7,399,981
+(+648,184, ~1.86 x headroom) and the ceiling test went RED; 4 inserts moved it
+to 6,940,325 (+188,528, ~0.54 x headroom) and it stayed GREEN. The *_cycles
+fields are the governing derivation; the *_write_bytes fields are the same
+nominal conversion C-3's row uses and are not the realised knob.
+"""
+
+# ── Production-view #[update]s with NO guard, needing none ───────────────────
+# Deliberately empty at base: the structural walk plus the marker path find
+# exactly the three endpoints above across all 80 production-view #[update]
+# sites in the 14 nonzero canister crates. A row here is an explicit,
+# reason-carrying declaration that an endpoint the discovery paths flagged has
+# no refusal worth ceilinging — NOT a way to silence one that does.

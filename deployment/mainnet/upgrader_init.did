@@ -1,0 +1,70 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  deployment/mainnet/upgrader_init.did — Upgrader deployment init payload
+//
+//  R2.1 (CUST-SSA-002, Critical). Produced by the custody remediation to close
+//  the defect that this artifact DID NOT EXIST. Before it, the deploy-time gate
+//  SYNTHESISED the Upgrader init inline from placeholder principals
+//  (`init_args_for` → p(1), p(2), p(3) / p(9)), so the gate verified a fiction
+//  and reported GREEN for an attacker-chosen recovery roster.
+//
+//  THE EXPLOIT THIS CLOSES. `validate_bootstrap_quorum` (custody-types:107)
+//  checks only STRUCTURE — threshold 2, distinct non-anonymous members,
+//  separation from the Vault. Any structurally valid roster passes. An attacker
+//  who supplies their own recovery members at bootstrap, then closes the ring,
+//  can have those members submit a malicious Vault upgrade that inherits control
+//  of everything. Structure is not identity; this file pins identity.
+//
+//  GATE-VERIFIED — do NOT edit without repinning `vault_authorities.toml`.
+//  `verify_custody_manifest --deploy-time` requires this artifact to exist,
+//  parse, encode, and byte-match the pinned record on an EXACT ORDERED vector of
+//  principal bytes. A missing or unparseable artifact fails CLOSED — it is never
+//  skipped and never treated as "not yet pinned".
+//
+//  R2.4 — THE INSTALL MUST CONSUME THIS EXACT FILE. Verifying an artifact that
+//  deployment then reconstructs independently is worthless: the gate would be
+//  checking a file the install never reads. The deployment command encodes THIS
+//  artifact; there is no synthesis path left in the verifier.
+//
+//  RECOVERY ROSTER — the three ruled Vault signers, in the ruled order (II pair
+//  RE-PINNED 2026-09-12, J-17f, app.stsh.fi origin), ruled settled and not open for
+//  reinterpretation (brief §3.5):
+//    Owner (human II)                         5jmfd-...-qae
+//    STSHProtocol (Owner's 2nd personal II)   lwiax-...-oqe
+//    dfx (machine identity)                   4f6wg-...-cae
+//  The device key alone has no authority under any path. Threshold is the ruled
+//  fixed 2 (freeze §6, no contraction) and is NEVER 1 (V7 §4 D4).
+//
+//  VAULT — `cpdab-saaaa-aaaar-qca2q-cai`, the fixed counterpart. The Upgrader's
+//  only management effect is upgrade-mode `install_code` against THIS principal,
+//  never a caller-supplied target. That fixed-target property is what makes the
+//  Upgrader's singular management surface safe, and it is preserved exactly.
+//
+//  EVIDENCE BY SOURCE — same discipline as vault_authorities.toml.
+//   [Builder-verified] anonymous `dfx canister info`, 2026-08-05:
+//     principal      cgal5-eiaaa-aaaar-qca3a-cai  (this canister)
+//     module hash    None — no code installed (CREATE-ONLY)
+//     controllers    exactly [4f6wg-…-cae]
+//   The Vault principal is carried on the same evidence plus brief V4.1 §1/§A.0.
+//
+//  PRE-INSTALL REQUIREMENT (standing): immediately before installing, reverify
+//  via anonymous `dfx canister info` that the exact principal holds, the module
+//  hash is still None, and controllers are exactly [4f6wg-…-cae]. Nothing
+//  recorded here authorizes installation, controller change, or any other
+//  mainnet mutation. Install and cutover remain HELD.
+// ─────────────────────────────────────────────────────────────────────────────
+(
+  record {
+    // EXACT ORDERED byte-equality with vault_authorities.toml [recovery].members
+    // and with vault_init.did `signers`. The ordered comparison is deliberate:
+    // a set comparison would silently accept a reordering.
+    recovery_members = vec {
+      principal "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae";
+      principal "lwiax-bc6fp-osh2p-jhbyc-tpxjl-ir24x-o5pde-gtzl2-4ht56-ikt6h-oqe";
+      principal "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae";
+    };
+    // Ruled fixed recovery quorum. Never 1, never contracted.
+    threshold = 2 : nat32;
+    // The fixed Vault counterpart — never caller-supplied, never caller-influenced.
+    vault = principal "cpdab-saaaa-aaaar-qca2q-cai";
+  },
+)

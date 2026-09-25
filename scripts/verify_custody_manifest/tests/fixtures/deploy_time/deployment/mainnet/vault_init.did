@@ -1,0 +1,29 @@
+// Fixture: a valid vault deployment init artifact (deployment/mainnet/
+// vault_init.did shape) carrying exactly the ruled cutover pairs. Principals
+// are well-known valid test/platform principals; the cutover pair principals
+// are the real ruled ones.
+(
+  record {
+    quorum = record {
+      signers = vec {
+        principal "ryjl3-tyaaa-aaaaa-aaaba-cai";
+        principal "r7inp-6aaaa-aaaaa-aaabq-cai";
+        principal "rkp4c-7iaaa-aaaaa-aaaca-cai";
+      };
+      threshold = 2 : nat32;
+      upgrader = principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
+    };
+    cutover_targets = vec {
+      record {
+        "principal" = principal "pyeop-7yaaa-aaaam-ajfja-cai";
+        disposition = variant { SetControllerAtCutover };
+        purpose = "solvency_status";
+      };
+      record {
+        "principal" = principal "s3tyu-aaaaa-aaaab-qhdjq-cai";
+        disposition = variant { SetControllerAtCutover };
+        purpose = "wallet_frontend";
+      };
+    };
+  },
+)

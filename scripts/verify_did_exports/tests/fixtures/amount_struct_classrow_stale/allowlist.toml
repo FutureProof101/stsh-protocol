@@ -1,0 +1,4 @@
+[[amount_struct]]
+name        = "Report"
+rationale   = "fixture: a class-row whose surface is gone"
+field_count = 2

@@ -1,0 +1,37 @@
+[package]
+name    = "upgrader"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testing = []
+
+# ── L0 compileable skeleton ──────────────────────────────────────────────────
+# Upgrader + recovery-plane canister (CUSTODY_VAULT_INTERFACE_FREEZE_V6). L0
+# lands the shell — crate manifest, MemoryId allocation, memory manager,
+# init/post_upgrade stubs, .did skeleton; L2 fills the body
+# (trigger_vault_upgrade / reconcile_vault_upgrade, recovery protocol with its
+# own durable membership at fixed threshold 2).
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+# SHA-256 for the §3d/§3f hash binding (recompute expected wasm/arg hashes).
+# Already a workspace-pinned dependency (token/pool/verifier) — no new crate
+# enters the lock graph.
+sha2               = { workspace = true }
+stsh-custody-types = { path = "../custody-types" }
+
+[dev-dependencies]
+# W6-EVIDENCE-01 — the reachability gate lives in custody-types and is compiled
+# ONLY for test targets. Declared here as a DEV-dependency so `cargo build`
+# never enables it: the gate is test machinery and must not reach a canister.
+stsh-custody-types = { path = "../custody-types", features = ["gate-machinery"] }
+# In-crate check that upgrader.did parses and its method set matches the
+# real interface (custody-types precedent) — dev-only, never in the Wasm.
+candid_parser      = "0.1"

@@ -1,0 +1,558 @@
+// STSH Custody Upgrader Canister — Candid Interface (L2)
+// Hand-maintained, house convention; drift-locked by the did-parse test in
+// src/tests.rs. Query-surface rulings of freeze §5 bind what is here and how
+// it is gated (recovery-membership-gated or public — no third option; an
+// Upgrader query CANNOT gate on Vault signer membership because
+// canister-to-canister queries do not exist — no mirror is invented).
+//
+// Init: (recovery_members, threshold, vault)
+
+type UpgraderInitArgs = record {
+    recovery_members : vec principal;
+    threshold        : nat32;
+    vault            : principal;
+};
+
+// ── Frozen shared shapes (stsh-custody-types) ────────────────────────────────
+
+// R3 (CUST-SSA-003): Cancelled/Expired are TERMINAL and reachable ONLY from
+// Pending. See vault.did for the same contract on the governance plane.
+type ActionOutcome = variant {
+    Pending;
+    Executing;
+    Executed;
+    Failed;
+    OutcomeUnknown;
+    Cancelled;
+    Expired;
+};
+
+type CommitmentMismatch = variant {
+    CallerMismatch;
+    StoredVsRecomputed;
+};
+
+type LifetimeViolation = variant {
+    TooShort : record { requested_ns : nat64; min_ns : nat64 };
+    TooLong  : record { requested_ns : nat64; max_ns  : nat64 };
+    // Fail-closed while the §10.5 bounds are unruled — see vault.did.
+    BoundsNotRuled : record { requested_ns : nat64 };
+};
+
+type ObservedCanisterStatus = variant {
+    Running;
+    Stopping;
+    Stopped;
+};
+
+// Binds: observed target principal · observed module hash · observed
+// controller set and canister status · observation time (freeze §3d).
+type UpgradeObjectiveEvidence = record {
+    observed_upgrader_principal : principal;
+    observed_module_hash        : opt vec nat8;
+    observed_controllers        : vec principal;
+    observed_canister_status    : ObservedCanisterStatus;
+    observed_at_ns              : nat64;
+};
+
+type RecoveryAction = variant {
+    // Upgrade the Vault, hash-bound, upgrade-mode only.
+    TriggerVaultUpgrade : record {
+        expected_wasm_hash : vec nat8;
+        expected_arg_hash  : vec nat8;
+        wasm_bytes         : vec nat8;
+        arg_bytes          : vec nat8;
+    };
+    // Recovery-originated reconciliation of an outcome-unknown Vault upgrade
+    // (2-of-3 fallback with the Vault unavailable; OutcomeUnknown -> terminal
+    // only; never re-triggerable; never retries/reinstalls).
+    ReconcileVaultUpgrade : record {
+        proposal_id         : nat64;
+        objective_evidence  : UpgradeObjectiveEvidence;
+    };
+    // §S7 CELL 4 — Upgrader -> Vault stopped-recovery start (CUST-SSA-004).
+    // CARRIES NO TARGET PARAMETER, DELIBERATELY AND STRUCTURALLY: the target is
+    // the Vault principal read from durable membership, never caller-supplied
+    // and never caller-influenced. Target non-redirection is a property of THIS
+    // CANDID SURFACE (brief R4.4), not of a runtime check — there is no field
+    // to populate and nothing to validate. Acceptance 19 asserts it here.
+    StartVault;
+    // §S7 CELL 4 — settlement of an outcome-unknown Vault START, on observed
+    // STATUS (§5), distinct from the upgrade reconcile which settles on module
+    // hash. Different evidence types so neither can be settled by the other's
+    // predicate.
+    ReconcileVaultStart : record {
+        proposal_id         : nat64;
+        objective_evidence  : StartObjectiveEvidence;
+    };
+};
+
+// R1.6 — SIGNER-GATED typed rotation view. Without it a member can obtain
+// neither the proposed roster nor its commitment, and therefore cannot approve
+// a rotation at all once R1.5 makes the hash required at approve-time.
+type RotationProposalView = record {
+    proposal_id     : nat64;
+    epoch           : nat64;
+    // The PROPOSED roster, in full. Not a count.
+    new_members     : vec principal;
+    proposer        : principal;
+    approvals       : vec principal;
+    threshold       : nat32;
+    created_at_ns   : nat64;
+    outcome         : ActionOutcome;
+    expires_at_ns   : opt nat64;
+    commitment_hash : vec nat8;
+};
+
+
+// §S7 §4 — objective evidence for a START settlement: a canister_status
+// observation of the start target. The upgrade shape MINUS the module hash;
+// a start is mapped on observed STATUS alone (§5).
+type StartObjectiveEvidence = record {
+    observed_target_principal : principal;
+    observed_canister_status  : ObservedCanisterStatus;
+    observed_controllers      : vec principal;
+    observed_at_ns            : nat64;
+};
+
+// §S7 §2 — the durable start-intent, written BEFORE the first await of
+// start_canister together with a durable Executing. Binds proposal id, target
+// principal, epoch and intent time; §4 freshness is evaluated AGAINST
+// intent_at_ns, so evidence predating the intent can never terminalize.
+type StartIntent = record {
+    proposal_id  : nat64;
+    target       : principal;
+    epoch        : nat64;
+    intent_at_ns : nat64;
+};
+
+// §S7 §8a — WRITE-ONCE settlement record, written on the first and only
+// reconciliation terminal transition, in the SAME atomic durable transition as
+// the terminal outcome, the intent terminalization, the lock release and the
+// counter decrement. conflict_recorded is the ONLY writable field, false->true
+// exactly once and never back (§7d's one-shot discordance cap).
+type SettlementRecord = record {
+    outcome             : ReconcileTerminalOutcome;
+    semantic_key        : vec nat8;
+    evidence_commitment : vec nat8;
+    observed_at_ns      : nat64;
+    conflict_recorded   : bool;
+};
+
+// §S7 — the start-settlement limb carried by the proposal record itself, so
+// that §8a invariants 4 (upgrade-survival) and 5 (prune atomically with the
+// proposal) hold because there is only ever one object.
+type StartSettlementState = record {
+    intent     : StartIntent;
+    settlement : opt SettlementRecord;
+};
+
+// §S7 §7d.1 — FROZEN AT EXACTLY EIGHT FIELDS. Fields 2-4 read from the stored
+// SettlementRecord (never recomputed); fields 5-8 derived from the replay. The
+// hashes BIND the two observations, they do not EXPOSE them.
+type SettlementEvidenceConflict = record {
+    proposal_id                : nat64;
+    stored_outcome             : ReconcileTerminalOutcome;
+    stored_semantic_key        : vec nat8;
+    stored_evidence_commitment : vec nat8;
+    replay_mapped_outcome      : ReconcileTerminalOutcome;
+    replay_semantic_key        : vec nat8;
+    replay_evidence_commitment : vec nat8;
+    replay_observed_at_ns      : nat64;
+};
+
+type RecoveryProposal = record {
+    proposal_id   : nat64;
+    action        : RecoveryAction;
+    // R1.1 (V8 §3) — the proposer, recorded EXPLICITLY. Proposing approves
+    // nothing, so `approvals` is empty at creation and can no longer be read
+    // as "first approver == proposer".
+    proposer      : principal;
+    approvals     : vec principal;
+    // R1.2 property 8 / R1.3 — the stored commitment a member supplies to
+    // approve_recovery.
+    commitment_hash : vec nat8;
+    threshold     : nat32;
+    created_at_ns : nat64;
+    outcome       : ActionOutcome;
+    // R3.1 — absolute expiry; null while the §10.5 lifetime bounds are unruled.
+    expires_at_ns : opt nat64;
+    // §S7 §2/§8a — present ONLY on a cell-4 StartVault proposal.
+    start         : opt StartSettlementState;
+};
+
+type ReconcileTerminalOutcome = variant {
+    Executed;
+    Failed;
+};
+
+type GuardTarget = variant { Vault; Upgrader };
+
+type GuardViolation = variant {
+    ControllerInvariantBroken : record { target : GuardTarget };
+    StopForbidden             : record { target : GuardTarget };
+};
+
+// Update-path rejections only — gated QUERIES never surface a distinct
+// unauthorized observable (freeze §5): they return opt-typed None.
+// Evidence rejections carry the typed EvidenceRejection on the wire
+// (frozen in custody-types at 25ccbe7, SSA L2-6); the audit log remains
+// the attribution secondary surface.
+type RecoveryError = variant {
+    NotAuthorized;
+    UnknownProposal            : record { proposal_id : nat64 };
+    AlreadyApproved;
+    HashMismatch;
+    IllegalSourceState;
+    AlreadyTerminal;
+    // R3.7/R3.11: caller IS a recovery member but is not this proposal's
+    // proposer. No member may veto a proposal their peers are evaluating.
+    NotProposer;
+    LifetimeOutOfBounds : LifetimeViolation;
+    // R1.5 — same typed split as the Vault.
+    CommitmentMismatch : CommitmentMismatch;
+    ThresholdViolation;
+    GuardRejected              : GuardViolation;
+    SizeLimitExceeded          : record { encoded_bytes : nat64; limit_bytes : nat64 };
+    EvidenceRejected           : EvidenceRejection;
+    StaleEpoch                 : record { current : nat64; proposal : nat64 };
+    // §S7 §7c — a start reconcile against an ALREADY-SETTLED proposal. Replay
+    // is NEVER success-shaped; the settled outcome rides in the payload.
+    AlreadySettled             : record { outcome : ReconcileTerminalOutcome };
+    // S11-1 (P1-A) — recovery-plane twin of VaultError::ProposalExpired. Same
+    // ruling, same shape, same ZERO-MUTATION guarantee: the sweep remains the
+    // sole terminalizer and sole releaser of capacity.
+    ProposalExpired            : record { expires_at_ns : nat64; now_ns : nat64 };
+};
+
+// Shared bootstrap-validator rejection (stsh-custody-types) — carried in
+// MembershipRotationRejected audit events.
+type InitValidationError = variant {
+    DuplicatePrincipal;
+    AnonymousSigner;
+    ThresholdNotExactlyInitial : record { found : nat32 };
+    CounterpartAnonymous;
+    CounterpartIsSigner;
+    TooFewMembers              : record { distinct : nat64; threshold : nat32 };
+    // S6 corrective (CUST-SSA-S6-03), the ONE authorized DID change: an
+    // oversize roster is refused and the refusal is now RECORDED truthfully.
+    // Previously the charge happened with no audit entry, because no variant
+    // here was true of "too many" — TooFewMembers is its opposite.
+    TooManyMembers             : record { distinct : nat64; maximum : nat32 };
+};
+
+// Typed reconciliation-evidence rejection classification (SSA L2-2/L2-3) —
+// member-visible via the audit log.
+type EvidenceRejection = variant {
+    WrongPrincipal;
+    WrongControllers;
+    StatusNotRunning;
+    PredatesIntent;
+    FutureEvidence;
+    EvidenceTooOld;
+    AmbiguousIntentId;
+};
+
+// PUBLIC, conscious (freeze §5): the external no-human-controller proof —
+// the last durably-recorded observation; fails closed to
+// { false, false, 0 } before any observation exists.
+// NON-AUTHORITATIVE HISTORICAL EVIDENCE since S11-2 (CUST-SSA-006). Carries no
+// freshness, and { false, false, 0 } is indistinguishable from a genuine double
+// breach observed at time 0. RETAINED UNCHANGED for compatibility as a
+// deliberate PREDECESSOR — never reshaped in place (DID drift lock). The
+// authoritative contract is ControllerInvariantProof below.
+type ControllerInvariant = record {
+    vault_controllers_ok    : bool;
+    upgrader_controllers_ok : bool;
+    observed_at_ns          : nat64;
+};
+
+// S11-2 / CUST-SSA-006, BRIEF V4.1 R6 requirement 7 — three-state freshness.
+// NeverObserved is neither Fresh nor Stale: it is the ABSENCE of evidence, and
+// collapsing it into either is the ambiguity this closes. Orthogonal to breach
+// truth — staleness withdraws the warrant to act on a reading, it never
+// rewrites what the reading said.
+type InvariantFreshness = variant {
+    NeverObserved;
+    Fresh;
+    Stale;
+};
+
+// S11-2 / CUST-SSA-006 — the AUTHORITATIVE controller-invariant proof
+// (V4.1 R6 requirements 7-9). Successor to ControllerInvariant under a NEW
+// name, so no existing reader silently changes meaning. Freshness is computed
+// at QUERY TIME against max_age_ns (the pinned MemoryId 12 constant, 24 h),
+// never stored.
+type ControllerInvariantProof = record {
+    freshness               : InvariantFreshness;
+    // What the last recorded observation SAID. Fail-closed false, and
+    // meaningless, when freshness = NeverObserved.
+    vault_controllers_ok    : bool;
+    upgrader_controllers_ok : bool;
+    // 0 iff NeverObserved.
+    observed_at_ns          : nat64;
+    // now - observed_at_ns at query time. null iff NeverObserved — 0 would
+    // read as "just observed", the most dangerous possible lie for this field.
+    age_ns                  : opt nat64;
+    // The ruled bound the classification was made against, served so an
+    // external verifier can RE-DERIVE the classification rather than trust it.
+    max_age_ns              : nat64;
+    // Requirement 9 — THE FAIL-CLOSED AGGREGATE. True if and ONLY if
+    // Fresh && vault_controllers_ok && upgrader_controllers_ok. NeverObserved
+    // and Stale are NEVER success-shaped. False asserts the absence of a
+    // CURRENT PROOF, not a breach; the fields above disambiguate which.
+    current_proof_ok        : bool;
+};
+
+// S8B / R6 Option B — why a PERMISSIONLESS refresh was refused. DID movement
+// pre-authorized by CTO_ADDENDUM_S8B_DID_PREAUTH_2026-08-12.md (0d509960…) §1.
+//
+// Four arms, each a different statement about custody. NotRuled = the three R6
+// constants are unruled, so the endpoint is inert (no management call, no
+// write, no audit). TooSoon = the CALLER's cadence. NotStale = the
+// OBSERVATION's age. Conflating the last two would hide a live rate limit
+// behind a fresh reading, which is why the distinction is ratified rather than
+// collapsed.
+type InvariantRefreshRefusal = variant {
+    NotRuled;
+    TooSoon         : record { retry_after_ns : nat64 };
+    AlreadyInFlight;
+    NotStale        : record { age_ns : nat64 };
+};
+
+// PUBLIC, conscious (freeze §5) — no principals.
+type RecoverySummary = record {
+    threshold    : nat32;
+    member_count : nat32;
+};
+
+// ── L2-owned view shapes ─────────────────────────────────────────────────────
+
+type IntentOriginView = variant { Vault; Recovery };
+
+type ReconcileAuthorityView = variant {
+    Vault;
+    Recovery : record { approvers : vec principal };
+};
+
+type RecoveryActionTag = variant {
+    TriggerVaultUpgrade;
+    ReconcileVaultUpgrade;
+    // §S7 cell 4.
+    StartVault;
+    ReconcileVaultStart;
+};
+
+type UpgraderAuditEventKind = variant {
+    RecoveryBootstrapped : record {
+        member_count : nat32;
+        threshold    : nat32;
+        vault        : principal;
+    };
+    VaultUpgradeIntentRecorded : record {
+        id                 : nat64;
+        origin             : IntentOriginView;
+        expected_wasm_hash : vec nat8;
+        expected_arg_hash  : vec nat8;
+    };
+    VaultUpgradeExecuted : record {
+        id     : nat64;
+        origin : IntentOriginView;
+    };
+    VaultUpgradeOutcomeUnknown : record {
+        id            : nat64;
+        origin        : IntentOriginView;
+        reject_detail : text;
+    };
+    VaultUpgradeReconciled : record {
+        id        : nat64;
+        origin    : IntentOriginView;
+        outcome   : ReconcileTerminalOutcome;
+        authority : ReconcileAuthorityView;
+    };
+    VaultUpgradeReconcileRejected : record {
+        id        : nat64;
+        reason    : EvidenceRejection;
+        authority : ReconcileAuthorityView;
+    };
+    RecoveryProposalCreated : record {
+        proposal_id : nat64;
+        proposer    : principal;
+        action      : RecoveryActionTag;
+    };
+    RecoveryApprovalRecorded : record {
+        proposal_id : nat64;
+        approver    : principal;
+    };
+    RecoveryExecutionStarted : record { proposal_id : nat64 };
+    RecoveryProposalTerminal : record {
+        proposal_id : nat64;
+        outcome     : ActionOutcome;
+    };
+    MembershipRotationProposed : record {
+        proposal_id  : nat64;
+        proposer     : principal;
+        member_count : nat32;
+    };
+    MembershipRotationRejected : record {
+        proposer : principal;
+        reason   : InitValidationError;
+    };
+    MembershipRotated : record {
+        proposal_id  : nat64;
+        new_epoch    : nat64;
+        member_count : nat32;
+        approvers    : vec principal;
+    };
+    StaleIntentTerminalized : record {
+        proposal_id : nat64;
+        intent_id   : nat64;
+        epoch       : nat64;
+    };
+    StaleProposalTerminalized : record {
+        proposal_id : nat64;
+        epoch       : nat64;
+    };
+    ControllerInvariantObserved : record {
+        vault_controllers_ok    : bool;
+        upgrader_controllers_ok : bool;
+    };
+    // ── §S7 start settlement (cell 4) ────────────────────────────────────
+    // §2 — durable start-intent recorded, BEFORE the first await.
+    VaultStartIntentRecorded : record {
+        proposal_id : nat64;
+        target      : principal;
+        epoch       : nat64;
+    };
+    // §3a — observed success in the reply callback. Terminal, and carries NO
+    // SettlementRecord: no §4 evidence existed.
+    VaultStartExecuted : record { proposal_id : nat64 };
+    // §3a E1 — transport rejection or any reply not objectively establishing
+    // success: Executing -> OutcomeUnknown, in the SAME message. Never Failed.
+    VaultStartOutcomeUnknown : record {
+        proposal_id   : nat64;
+        reject_detail : text;
+    };
+    // §3a E2 — the post-upgrade sweep. No evidence, no terminal outcome, no
+    // lock release, idempotent.
+    VaultStartSweptToUnknown : record { proposal_id : nat64 };
+    // §5 — a terminal settlement from objective evidence.
+    VaultStartSettled : record {
+        proposal_id : nat64;
+        outcome     : ReconcileTerminalOutcome;
+        authority   : ReconcileAuthorityView;
+    };
+    // §3c.3 — a late callback was FENCED. Declared deviation, independently
+    // concurred by the project SSA: zero state and zero lock change
+    // unconditionally, departing on AUDIT only, so the fence is observable in
+    // production. Bounded by construction at one per proposal (§2), and not
+    // caller-driven.
+    LateCallbackFenced : record {
+        proposal_id    : nat64;
+        observed_state : ActionOutcome;
+    };
+    // §7d.1 — the FIRST §4-valid semantic discordance. At most one per
+    // proposal, EVER. The append and the conflict_recorded false->true
+    // transition occur in ONE atomic durable transition (§0b).
+    SettlementEvidenceConflictRecorded : record {
+        conflict : SettlementEvidenceConflict;
+    };
+};
+
+type UpgraderAuditEvent = record {
+    seq   : nat64;
+    at_ns : nat64;
+    kind  : UpgraderAuditEventKind;
+};
+
+type AuditEventsPage = record {
+    events      : vec UpgraderAuditEvent;
+    next_cursor : opt nat64;
+};
+
+// Status view — never carries artifact bytes.
+type UpgradeStatusView = record {
+    id                  : nat64;
+    origin              : IntentOriginView;
+    expected_wasm_hash  : vec nat8;
+    expected_arg_hash   : vec nat8;
+    outcome             : ActionOutcome;
+    created_at_ns       : nat64;
+    terminal_at_ns      : opt nat64;
+    artifact_bytes_held : bool;
+};
+
+type TriggerUpgradeResult = record {
+    outcome : ActionOutcome;
+};
+
+service : (UpgraderInitArgs) -> {
+    // R3.7/R3.11: withdraw your OWN pending recovery proposal. Member-gated
+    // then PROPOSER-scoped.
+    cancel_recovery_proposal : (nat64) -> (variant { Ok : null; Err : RecoveryError });
+    // R3.8/R3.11: bounded expiry sweep over recovery proposals.
+    sweep_expired_recovery_proposals : (nat32) -> (variant { Ok : vec nat64; Err : RecoveryError });
+
+    // ── Update surface (deny by default; exactly two authorities) ───────────
+    // Vault-caller only. Upgrade-mode, hash-bound, inline-only install of the
+    // VAULT; durable intent before the first inter-canister call; replay
+    // returns the prior result.
+    trigger_vault_upgrade : (
+        request_id          : nat64,
+        expected_wasm_hash  : vec nat8,
+        expected_arg_hash   : vec nat8,
+        wasm_bytes          : vec nat8,
+        arg_bytes           : vec nat8,
+    ) -> (variant { Ok : TriggerUpgradeResult; Err : RecoveryError });
+    // Vault-caller only. OutcomeUnknown -> Executed|Failed is the ONLY
+    // state-changing transition; never back to Pending; never
+    // re-triggerable; never retries/reinstalls. Already-terminal intents
+    // REPLAY read-only (CUST-L12-02): Ok(Executed|Failed), no mutation,
+    // no audit append, no management call.
+    reconcile_vault_upgrade : (
+        request_id          : nat64,
+        objective_evidence  : UpgradeObjectiveEvidence,
+    ) -> (variant { Ok : ReconcileTerminalOutcome; Err : RecoveryError });
+    // Recovery-member-gated (own durable membership, fixed threshold 2).
+    // R3.1 — optional CALLER-REQUESTED lifetime in ns; null takes the ruled default.
+    propose_recovery : (RecoveryAction, opt nat64) -> (variant { Ok : nat64; Err : RecoveryError });
+    // Recovery-member-gated membership rotation (SSA L2-4): fixed threshold
+    // 2, shared bootstrap validation, atomic durable transition, epoch bump.
+    propose_membership_rotation : (vec principal, opt nat64) -> (variant { Ok : nat64; Err : RecoveryError });
+    // R1.5 — the second argument is the EXPECTED COMMITMENT HASH, read from
+    // the proposal view. A mismatch rejects with ZERO writes.
+    approve_recovery : (nat64, vec nat8) -> (variant { Ok; Err : RecoveryError });
+
+    // S8B / R6 Option B — PERMISSIONLESS, rate-limited refresh of the
+    // controller-invariant observation. The only update on this canister not
+    // gated to the Vault or a recovery member; what bounds it is the durable
+    // rate limiter (MemoryId 12), charged before the first await, not the
+    // caller's identity. `Ok` means the endpoint RAN — a failed management
+    // status call returns the prior observation unchanged and still spends the
+    // allowance, so induced failures are not an unmetered retry loop.
+    refresh_controller_invariant_now : () -> (
+        variant { Ok : ControllerInvariant; Err : InvariantRefreshRefusal }
+    );
+
+    // ── Query surface (freeze §5 — exact rulings) ───────────────────────────
+    // PUBLIC, conscious.
+    // NON-AUTHORITATIVE historical evidence (S11-2). Retained for
+    // compatibility; carries no freshness. Do not decide on it.
+    get_controller_invariant : () -> (ControllerInvariant) query;
+    // S11-2 / CUST-SSA-006 — THE AUTHORITATIVE current-proof endpoint
+    // (V4.1 R6 requirements 7-9). Read current_proof_ok to answer "is the
+    // no-human-controller property PROVEN right now?".
+    get_controller_invariant_proof : () -> (ControllerInvariantProof) query;
+    get_recovery_summary     : () -> (RecoverySummary) query;
+    get_build_info           : () -> (text) query;
+    // RECOVERY-SIGNER-GATED — unauthorized / unknown / invalid bounds are
+    // the same None, never a distinct unauthorized observable.
+    get_upgrader_audit_events : (cursor : opt nat64, limit : nat32) -> (opt AuditEventsPage) query;
+    get_upgrade_status        : (proposal_id : nat64) -> (opt UpgradeStatusView) query;
+    get_recovery_proposal     : (id : nat64) -> (opt RecoveryProposal) query;
+    // R1.6 — SIGNER-GATED: the proposed roster and its commitment. Without
+    // this a member can obtain neither, and therefore cannot approve a
+    // rotation at all once R1.5 makes the hash required at approve-time.
+    get_rotation_proposal     : (nat64) -> (opt RotationProposalView) query;
+    get_recovery_membership   : () -> (opt vec principal) query;
+}

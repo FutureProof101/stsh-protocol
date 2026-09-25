@@ -1,0 +1,113 @@
+// STSH Smoke Alarm — standalone solvency monitor (v3).
+// v1 read ONLY public token data and could not prove the escrow-vs-liability
+// delta. v2 adds the two reads that complete the alarm (D-2 + D-4):
+//   - the pool's certified get_solvency_attestation  -> RED when backing breaks
+//   - icrc1_balance_of(treasury) on the TOKEN ledger -> YELLOW stray funds
+// The monitor still makes ZERO calls to the treasury canister, and it GATES
+// NOTHING: no freeze, no trap, no enforcement, no monitor-to-custody call.
+
+type MonitorInit = record {
+    token_canister          : principal;
+    pool_principal          : principal;
+    // v2 (D-4): the treasury account weighed for stray funds. Read through the
+    // TOKEN's icrc1_balance_of — never by calling the treasury.
+    treasury_principal      : principal;
+    // v2 (D-2): the canister exposing get_solvency_attestation.
+    pool_attestation_source : principal;
+    refresh_interval_ns     : nat64;
+    max_staleness_ns        : nat64;
+    history_capacity        : nat32;
+};
+
+// v2: per-source read outcome, distinct from the whole-refresh SnapshotStatus.
+// Anything but Ok is fail-closed at the point it is consumed.
+type SourceReadStatus = variant {
+    Ok;
+    CallFailed;   // inter-canister call rejected
+    Malformed;    // returned, but unusable (schema, range, or bytes/record disagree)
+    Stale;        // pool attestation older than max_staleness_ns + 300 s
+};
+
+type SnapshotStatus = variant {
+    Fresh;
+    // Never written by a refresh — init placeholder + derived views only.
+    // Reader-side staleness (certificate /time vs refreshed_at_ns) is the
+    // authoritative staleness check.
+    Stale;
+    RefreshFailed;
+    SourceCallFailed;
+};
+
+// Base units, integers — no floats.
+// healthy == true ONLY if status == Fresh AND source calls succeeded AND the
+// token supply invariant holds (fail-closed).
+type SolvencySnapshot = record {
+    supply_invariant_holds : bool;
+    fixed_max_supply_e8s   : nat;
+    sum_all_balances_e8s   : nat;
+    pool_balance_e8s       : nat;
+    // ── v2 (D-2): the pool solvency attestation — the RED source ────────────
+    pool_attestation_source_status : SourceReadStatus;
+    pool_delta_healthy             : bool;
+    // min(raw_delta, 0) as published by the pool: 0 in every healthy state,
+    // negative violation magnitude otherwise. Forwarded, never recomputed.
+    pool_public_delta_e8s          : int;
+    pool_attested_at_ns            : nat64;   // 300 s bucketed, at the pool
+    // ── v2 (D-4): treasury stray funds — YELLOW, never RED ──────────────────
+    treasury_read_status           : SourceReadStatus;
+    // Foreign by definition: excluded from custody accounting, from the
+    // solvency delta, and from `healthy`. Nonzero means "stray funds present,
+    // backing unaffected".
+    treasury_stray_funds_e8s       : nat;
+    // ── v3 (R-4): UNAVAILABLE, distinct from VIOLATED ──────────────────────
+    // TRUE iff the token's verify_supply_invariant report carried
+    // arithmetic_error = Some(_): the invariant could not be EVALUATED, as
+    // opposed to evaluated and found false. Bound to arithmetic_error alone,
+    // never to !supply_invariant_holds. Does not affect `healthy` — both states
+    // are unhealthy and always were.
+    supply_invariant_unavailable   : bool;
+    refreshed_at_ns        : nat64;
+    max_staleness_ns       : nat64;
+    status                 : SnapshotStatus;
+    // v2: TRUE only if status == Fresh AND source calls succeeded AND the token
+    // supply invariant holds AND the pool attestation read Ok AND the pool
+    // reports the backing healthy. The treasury read is NOT part of this.
+    healthy                : bool;
+    schema_version         : nat32;
+};
+
+// canonical_bytes: the exact 131-byte domain-separated leaf committed under the
+// certified tree key "solvency_snapshot" (v3 layout: see
+// canisters/smoke-alarm-monitor/CERTIFIED_SNAPSHOT_ENCODING.md).
+// certificate: null when read in replicated context — treat as unverifiable.
+// witness: self-describing CBOR hash tree per the IC certification spec.
+type CertifiedSolvencySnapshot = record {
+    snapshot        : SolvencySnapshot;
+    canonical_bytes : blob;
+    certificate     : opt blob;
+    witness         : blob;
+};
+
+// Uncertified derived health (applies the staleness rule at read time).
+type HealthStatus = record {
+    healthy          : bool;
+    status           : SnapshotStatus;
+    snapshot_age_ns  : nat64;
+    cycles_balance   : nat;
+};
+
+service : (MonitorInit) -> {
+    // Certified read — verify the certificate + witness client-side and parse
+    // the verified canonical_bytes; never trust the bare snapshot alone.
+    get_certified_snapshot : () -> (CertifiedSolvencySnapshot) query;
+
+    // Uncertified convenience reads.
+    get_snapshot      : () -> (SolvencySnapshot) query;
+    get_history       : () -> (vec SolvencySnapshot) query;
+    get_health_status : () -> (HealthStatus) query;
+    get_config        : () -> (MonitorInit) query;
+
+    // Liveness safety valve — anyone may kick a refresh, rate-limited to
+    // once per minute (cycle-drain protection).
+    request_refresh : () -> (variant { Ok; Err : text });
+}

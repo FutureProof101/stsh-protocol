@@ -1,0 +1,34 @@
+type ScanHead = record {
+    leaf_count : nat64;
+    root : blob;
+};
+
+type ScanPageEntry = record {
+    index : nat64;
+    leaf : blob;
+    encrypted_payload : blob;
+};
+
+// Custody Vault L3g: canonical authority read-back (public, fail-closed).
+type AuthorityRefs = record {
+    pool_canister : principal;
+};
+
+service : (principal) -> {
+    append_commitment : (blob, blob) -> (variant { Ok : nat64; Err : text });
+    append_commitments : (vec record { blob; blob }) -> (variant { Ok : vec nat64; Err : text });
+
+    get_authority_refs : () -> (variant { Ok : AuthorityRefs; Err : text }) query;
+
+    get_root          : ()           -> (blob) query;
+    get_scan_head     : ()           -> (ScanHead) query;
+    get_scan_page     : (nat64, nat64) -> (variant { Ok : vec ScanPageEntry; Err : text }) query;
+    get_root_at_index : (nat64)      -> (opt blob) query;
+    is_valid_anchor   : (blob)       -> (bool) query;
+    leaf_count        : ()           -> (nat64) query;
+    get_leaf          : (nat64)      -> (opt blob) query;
+    get_payloads      : (nat64, nat64) -> (vec record { nat64; blob }) query;
+
+    // Fleet cycle monitor (A-6/A-6b, GAP-U9-1): PUBLIC, additive, mutation-free.
+    cycle_balance     : ()           -> (nat) query;
+};

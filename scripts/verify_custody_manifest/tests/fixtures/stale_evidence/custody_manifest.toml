@@ -1,0 +1,80 @@
+# STALE-EVIDENCE CONTROL (freeze §13.2a, R4-H1): a legitimate controller
+# change between two DIFFERENTLY-TIMESTAMPED snapshots of the SAME gate epoch
+# must FAIL as typed StaleEvidence — never a pass, never a FactConflict.
+schema_version = 2
+gate_epoch = "fixture-epoch-1"
+
+[bootstrap_ring]
+status = "pending"
+evidence_path = "deployment/mainnet/bootstrap_ring_evidence.toml"
+evidence_sha256 = ""
+members = ["vault", "upgrader"]
+
+[sources.d1]
+kind = "dfx_json_launch_entries"
+declared_complete_for = ["repo_declared_canisters"]
+
+[sources.d2]
+kind = "canister_ids_json"
+declared_complete_for = []
+
+[sources.d3]
+kind = "dns_zone_snapshot"
+status = "pending"
+declared_complete_for = []
+candidates = []
+
+[sources.d4]
+kind = "artifact2_evidenced_set"
+status = "populated"
+declared_complete_for = []
+collection_run = "fixture-run-1"
+candidates = ["s3tyu-aaaaa-aaaab-qhdjq-cai", "pyeop-7yaaa-aaaam-ajfja-cai"]
+
+[sources.d5]
+kind = "vault_create_canister_receipts"
+status = "pending"
+declared_complete_for = ["vault_created_production"]
+receipts = []
+
+# Same principal, same field, same semantic, same epoch — but observed at two
+# different times in two collection runs, with a legitimate controller
+# transition in between (pre-cutover pair → post-cutover [Vault]).
+[[facts]]
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+field = "controllers"
+semantic = "observed_current"
+value = ["4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae"]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-02T16:20:17Z"
+collection_run = "fixture-run-1"
+epoch = "fixture-epoch-1"
+
+[[facts]]
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+field = "controllers"
+semantic = "observed_current"
+value = ["rrkah-fqaaa-aaaaa-aaaaq-cai"]
+source = "D4"
+network = "ic"
+observed_at = "2026-08-03T09:00:00Z"
+collection_run = "fixture-run-2"
+epoch = "fixture-epoch-1"
+
+[[canister]]
+dfx_name = "wallet_frontend"
+principal = "s3tyu-aaaaa-aaaab-qhdjq-cai"
+disposition = "set_controller_at_cutover"
+
+[[canister]]
+dfx_name = "solvency_status"
+ids_name = "solvency_status"
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+disposition = "set_controller_at_cutover"
+
+# R-3b S1: required deploy-posture declaration. Fixtures exercise the coverage
+# contract, not the deploy posture, so they declare the empty pre-ceremony set.
+[deploy_gate]
+posture = "pre-ceremony"
+expected_pending = []

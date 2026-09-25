@@ -1,0 +1,225 @@
+# GENERIC single-source positive control: a SYNTHETIC candidate present in
+# exactly one derivation (D4) and absent from the rest. Deliberately NOT
+# labeled s3tyu — that name is reserved for the real, corrected case
+# (freeze §13.2a).
+schema_version = 2
+gate_epoch = "fixture-epoch-1"
+
+[bootstrap_ring]
+status = "pending"
+evidence_path = "deployment/mainnet/bootstrap_ring_evidence.toml"
+evidence_sha256 = ""
+members = ["vault", "upgrader"]
+
+[sources.d1]
+kind = "dfx_json_launch_entries"
+declared_complete_for = ["repo_declared_canisters"]
+
+[sources.d2]
+kind = "canister_ids_json"
+declared_complete_for = []
+
+[sources.d3]
+kind = "dns_zone_snapshot"
+status = "pending"
+declared_complete_for = []
+candidates = []
+
+[sources.d4]
+kind = "artifact2_evidenced_set"
+status = "populated"
+declared_complete_for = []
+collection_run = "fixture-run-1"
+candidates = ["aaaaa-aa"]
+
+[sources.d5]
+kind = "vault_create_canister_receipts"
+status = "pending"
+declared_complete_for = ["vault_created_production"]
+receipts = []
+
+[[canister]]
+dfx_name = "solvency_status"
+ids_name = "solvency_status"
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+disposition = "set_controller_at_cutover"
+
+[[canister]]
+principal = "aaaaa-aa"
+disposition = "out_of_scope"
+out_of_scope_reason = "Synthetic single-source fixture candidate (NOT s3tyu)."
+
+# ── Axis 2 — authority-principal inventory (freeze §13.4, §6 builder sweep) ──
+# Scope is AUTHORITY: principals used for authorization, privileged routing,
+# peer-call trust, controller/configuration, or custody — not every serialized
+# Principal. 18 durable authority fields at commit 6520185. Launch values that
+# name a born-under-vault principal are PENDING until that principal is
+# allocated at bootstrap; any change to a stored authority value post-launch
+# goes through the same proposal and evidence path as any other action
+# (freeze §13.4 — a launch read-back is not perpetual proof).
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "TOKEN"
+storage = "shielded-pool/src/lib.rs:2608-2613 (authority refs)"
+writers = ["init"]
+launch_value = "PENDING(stsh_token born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "NULLIFIER"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(nullifier_registry born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "MERKLE"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(merkle_tree born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "TREASURY"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(treasury born-under-vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "STAKING"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(vault principal) — pinned to Vault at launch (V7 Ruling A); no pause authority exists outside the Vault (brief gotcha 8)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "CONTROLLER"
+storage = "shielded-pool/src/lib.rs:2608-2613"
+writers = ["init"]
+launch_value = "PENDING(vault principal)"
+read_back = "get_authority_refs (L3c)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "VERIFIER_CANISTER"
+storage = "shielded-pool/src/lib.rs:2617"
+writers = ["init", "governed runtime update: set_verifier_canister (:6533)"]
+launch_value = "PENDING(verifier born-under-vault principal)"
+read_back = "get_authority_refs (L3c) — the ONE pre-existing rebind+read-back pair (freeze §6: 17-of-18 gap count already credits it)"
+
+[[authority_field]]
+canister = "treasury"
+field = "TOKEN"
+storage = "treasury/src/lib.rs:331-333 (CANISTER_REFS eager cell, MemoryId 4)"
+writers = ["init"]
+launch_value = "PENDING(stsh_token born-under-vault principal)"
+read_back = "get_canister_refs_readback (L3a)"
+
+[[authority_field]]
+canister = "treasury"
+field = "POOL"
+storage = "treasury/src/lib.rs:331-333"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_canister_refs_readback (L3a)"
+
+[[authority_field]]
+canister = "treasury"
+field = "CONTROLLER"
+storage = "treasury/src/lib.rs:331-333"
+writers = ["init"]
+launch_value = "PENDING(vault principal)"
+read_back = "get_canister_refs_readback (L3a)"
+
+[[authority_field]]
+canister = "vesting"
+field = "TOKEN"
+storage = "vesting/src/lib.rs:180-181 (CANISTER_REFS eager cell, MemoryId 3)"
+writers = ["init"]
+launch_value = "PENDING(stsh_token born-under-vault principal)"
+read_back = "get_canister_refs_readback (L3b)"
+
+[[authority_field]]
+canister = "vesting"
+field = "CONTROLLER"
+storage = "vesting/src/lib.rs:180-181"
+writers = ["init"]
+launch_value = "PENDING(vault principal) — set once; NO rebind setter (freeze §6 gotcha: setters destroy the set-once vacuity proof, vesting/src/lib.rs:526-538)"
+read_back = "get_canister_refs_readback (L3b)"
+
+[[authority_field]]
+canister = "nullifier_registry"
+field = "POOL_CANISTER"
+storage = "nullifier-registry/src/lib.rs:92,119,125,133,384-408 (POOL_REF eager cell, MemoryId 2)"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_authority_refs (L3d; name may vary, shape may not) — the 18th field (freeze §6, RR-3)"
+
+[[authority_field]]
+canister = "verifier"
+field = "AUTHORIZED_POOL"
+storage = "verifier/src/lib.rs:74"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_authorized_pool (L3e)"
+
+[[authority_field]]
+canister = "stsh_token"
+field = "TREASURY"
+storage = "token/src/lib.rs:461"
+writers = ["init"]
+launch_value = "PENDING(treasury born-under-vault principal)"
+read_back = "get_authority_refs (L3f)"
+
+[[authority_field]]
+canister = "stsh_token"
+field = "FEE_COLLECTOR"
+storage = "token/src/lib.rs:466"
+writers = ["init"]
+launch_value = "PENDING(ruled at genesis; per genesis_manifest token_init.fee_collector, replaced with the real principal at RR-1)"
+read_back = "get_authority_refs (L3f)"
+
+[[authority_field]]
+canister = "stsh_token"
+field = "STAKING_CANISTER"
+storage = "token/src/lib.rs:467 (required InitArgs principal, :511-521; persisted :2083-2084, restored :2143)"
+writers = ["init", "upgrade-restore (:2143)"]
+launch_value = "PENDING(vault principal) — RULED: pinned to the Vault at launch (freeze §14). Fails closed: assert_staking_canister traps on None (:1967-1969). NO setter — post-launch change is a governance upgrade (freeze §15)."
+read_back = "get_authority_refs (L3f)"
+
+[[authority_field]]
+canister = "merkle_tree"
+field = "POOL_CANISTER"
+storage = "merkle-tree/src/lib.rs:125 (POOL_REF eager cell, MemoryId 5)"
+writers = ["init"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_authority_refs (L3g)"
+
+[[authority_field]]
+canister = "shielded_pool"
+field = "VETKEYS_CANISTER"
+storage = "shielded-pool/src/lib.rs (VETKEYS_CANISTER_CELL, MemoryId 28)"
+writers = ["post_upgrade(vetkeys_canister)"]
+launch_value = "PENDING(vetkeys born-under-vault principal)"
+read_back = "get_vetkeys_canister"
+
+[[authority_field]]
+canister = "vetkeys"
+field = "DEVICE_CHECK_CALLER"
+storage = "vetkeys/src/state.rs (DEVICE_CHECK_CALLER, MemoryId 20)"
+writers = ["init(device_check_caller)", "post_upgrade(device_check_caller)"]
+launch_value = "PENDING(shielded_pool born-under-vault principal)"
+read_back = "get_device_check_caller"
+
+# R-3b S1: required deploy-posture declaration. Fixtures exercise the coverage
+# contract, not the deploy posture, so they declare the empty pre-ceremony set.
+[deploy_gate]
+posture = "pre-ceremony"
+expected_pending = []

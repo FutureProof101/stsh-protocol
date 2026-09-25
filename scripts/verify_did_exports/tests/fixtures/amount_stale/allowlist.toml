@@ -1,0 +1,6 @@
+[[amount]]
+krate    = "canisters/c"
+endpoint = "transfer"
+path     = "amount: u128"
+gate     = "fixture"
+reason   = "row whose boundary no longer exists"

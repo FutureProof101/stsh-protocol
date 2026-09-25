@@ -1,0 +1,21 @@
+(
+  opt record {
+    threshold = 2 : nat32;
+    commitment_hash = blob "\2f\d5\ee\2c\86\01\36\a8\71\7c\2d\07\2d\a7\a8\d6\b1\8d\bc\e8\00\09\af\68\10\6c\ac\7a\41\0f\55\be";
+    epoch = 0 : nat64;
+    created_at_ns = 1_789_992_686_850_846_937 : nat64;
+    new_members = vec {
+      principal "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae";
+      principal "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae";
+      principal "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae";
+    };
+    proposal_id = 1 : nat64;
+    proposer = principal "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae";
+    outcome = variant { Executed };
+    expires_at_ns = opt (1_792_584_686_850_846_937 : nat64);
+    approvals = vec {
+      principal "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae";
+      principal "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae";
+    };
+  },
+)

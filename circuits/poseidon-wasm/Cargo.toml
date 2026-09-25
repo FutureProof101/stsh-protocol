@@ -1,0 +1,34 @@
+[package]
+name    = "stsh-poseidon-wasm"
+version = "0.1.0"
+edition = "2021"
+
+# Workspace MEMBER (architect-approved, wallet-build lane): inherits the exact
+# light-poseidon / ark-bn254 / ark-ff pins the canisters use — which is what
+# guarantees the browser-side Poseidon parameters byte-match the canister and
+# circuit. wasm-bindgen has no `links` key, so the vetkeys exclusion reason
+# does not apply here.
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+# Same pins as the canisters (workspace-inherited — do NOT localize versions).
+light-poseidon = { workspace = true }
+ark-bn254      = { workspace = true }
+ark-ff         = { workspace = true }
+
+# Canonicality guard + merkle-leaf reference, reused VERBATIM from the pure
+# field-utils crate (the same code the pool/verifier use) — drift-proof by
+# construction, per the F5 ruling. No local modulus copy exists in this crate.
+stsh-field-utils = { path = "../../canisters/field-utils" }
+
+# wasm-pack post-processing: disable wasm-opt. The pinned wasm-opt bundled with
+# this wasm-pack rejects the bulk-memory (memory.copy) opcodes rustc emits by
+# default, and installing a newer wasm-opt is out of scope. The unoptimized
+# module is correct and only used in-browser/in-tests — size is not a concern
+# here (unlike the canister Wasms). Determinism > a few hundred KB.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

@@ -1,0 +1,10 @@
+[package]
+name = "c"
+version = "0.0.0"
+edition = "2021"
+
+# SSA F1j: a DECLARED target is a promise. Dropping it because the file is
+# absent removed a whole module graph while the scan still reported success.
+[[bin]]
+name = "missing"
+path = "src/nope.rs"

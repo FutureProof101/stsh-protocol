@@ -1,0 +1,7 @@
+(
+  opt vec {
+    principal "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae";
+    principal "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae";
+    principal "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae";
+  },
+)

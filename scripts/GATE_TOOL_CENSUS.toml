@@ -1,0 +1,383 @@
+# =============================================================================
+# STSH — GATE TOOL CENSUS  (remediation lane R-3b, campaign §5 G-e)
+# =============================================================================
+#
+# EVERY tracked entry directly under `scripts/` — file or directory alike, with
+# NO exclusion by shape — is either invoked by `run_gate.sh` DIRECTLY, on a line
+# that names the tool literally, in a recognised BLOCKING form, or is listed
+# here with a reason and an owner as deliberately not. The class this exists to
+# stop is "a check whose only catcher is a binary the gate does not run, or runs
+# but does not actually fail on."
+#
+# `invoked_by_gate = true` is NOT satisfied by naming the tool. It requires,
+# all of, checked live against `run_gate.sh` BY CONTENT and never by line
+# number (tests/gate_tool_census.rs):
+#
+#   (e) INVOCATION      — a physical line whose command word and argument
+#                         tokens identify this tool.
+#   (f) BLOCKING FORM   — form (a) `if ! <invocation>` with a `die` /
+#                         `verdict_fail` reachable on the failure path inside
+#                         the matching `fi`, or form (b) `<invocation> || die`
+#                         with the terminator as the immediate right-hand
+#                         operand — and NOT caught by a disqualifier
+#                         (`if false`, `if 0`, a heredoc-comment wrapper).
+#   (g) TERMINATOR BODY — the cited terminator's LIVE body, extracted by brace
+#                         depth and both executed and read, actually exits
+#                         nonzero. A name is not a behaviour.
+#   (h) COMMAND RESOLUTION — that body terminates with the literal
+#                         `builtin exit <nonzero>`, and `run_gate.sh` as a whole
+#                         contains none of the constructs that could shadow it.
+#   (i) PROCESS ENVIRONMENT — `run_gate.sh` opens with the self-sanitising
+#                         preamble, so no function or variable imported from a
+#                         parent shell reaches any of the above.
+#
+# NO npm `pre<script>`/`post<script>` hook is EVER credited as evidence, resolved
+# or not: `ignore-scripts` lets npm run a named script while silently
+# suppressing its hooks, and that state is not observable from file content.
+#
+# Regenerate the entry list with `git ls-files scripts/` (direct entries only).
+#
+# DIRECTORY ROWS (R-L post-merge rebase). An uncrated directory under `scripts/`
+# is a rule-(c) TOOL directory when any nested tracked file is a tool (tool
+# extension or shebang), and a rule-(d) DATA directory when none is. The bar is
+# enforced in both directions by tests/gate_tool_census.rs: a directory holding
+# a tool CANNOT claim `kind = "data"`, and a data directory must be
+# `invoked_by_gate = false` and must name a tool that has its own census row in
+# its `reason` — so committed data cannot be orphaned either.
+# =============================================================================
+
+schema_version = 1
+
+# ── TOOLS THE GATE INVOKES ───────────────────────────────────────────────────
+
+[[entry]]
+path = "verify_memory_ids"
+shape = "crate"
+kind = "tool"
+rule = "a"
+invoked_by_gate = true
+owner = "this lane"
+reason = ""
+note = "MemoryId append-only registry lint; blocking, runs first, before any build."
+[[entry.via]]
+anchor = ["-p verify-memory-ids"]
+tool_token = "-p verify-memory-ids"
+form = "a"
+terminator = "die"
+
+[[entry]]
+path = "verify_custody_manifest"
+shape = "crate"
+kind = "tool"
+rule = "a"
+invoked_by_gate = true
+owner = "this lane"
+reason = ""
+note = "Four call sites: coverage before the build, §8 sizes after it, the R-3b deploy-posture stage after that, and the lane A-7 install-kit stage (third binary verify_a7_kit) after the vetkeys build. Its tests/gate_tool_census.rs is the fixture that enforces THIS file, scripts/GATE_TOOL_CENSUS.toml, against the live run_gate.sh."
+[[entry.via]]
+anchor = ["-p verify-custody-manifest", "--coverage-only"]
+tool_token = "-p verify-custody-manifest"
+form = "a"
+terminator = "die"
+[[entry.via]]
+anchor = ["-p verify-custody-manifest", "--sizes-only"]
+tool_token = "-p verify-custody-manifest"
+form = "a"
+terminator = "die"
+[[entry.via]]
+anchor = ["-p verify-custody-manifest", "--deploy-posture"]
+tool_token = "-p verify-custody-manifest"
+form = "a"
+terminator = "die"
+[[entry.via]]
+anchor = ["-p verify-custody-manifest", "--bin verify_a7_kit"]
+tool_token = "--bin verify_a7_kit"
+form = "a"
+terminator = "die"
+
+[[entry]]
+path = "verify_did_exports"
+shape = "crate"
+kind = "tool"
+rule = "a"
+invoked_by_gate = true
+owner = "this lane"
+reason = ""
+note = "Standalone crate, invisible to `cargo test --workspace`, so its own fixture suite is run explicitly too. Its second binary, verify_amount_boundaries, is the third call site. Consumes scripts/did_export_census.toml and scripts/amount_boundary_allowlist.toml."
+[[entry.via]]
+anchor = ["cargo test --manifest-path \"$CANDID_TOOL\""]
+tool_token = "--manifest-path \"$CANDID_TOOL\""
+form = "a"
+terminator = "verdict_fail"
+[[entry.via]]
+anchor = ["\"$CANDID_TOOL\"", "--bin verify_did_exports"]
+tool_token = "--bin verify_did_exports"
+form = "a"
+terminator = "verdict_fail"
+[[entry.via]]
+anchor = ["\"$CANDID_TOOL\"", "--bin verify_amount_boundaries"]
+tool_token = "--bin verify_amount_boundaries"
+form = "a"
+terminator = "verdict_fail"
+
+[[entry]]
+path = "verify_spend_artifacts.mjs"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = true
+owner = "this lane"
+reason = ""
+note = "Direct, blocking stage added by R-3b. `wallet/package.json`'s `prebuild` entry still fires under a plain `npm run build` and stays for developer convenience, but is deliberately given NO gate credit — a hook is not an invocation."
+[[entry.via]]
+anchor = ["node \"$GATE_ROOT/scripts/verify_spend_artifacts.mjs\""]
+tool_token = "scripts/verify_spend_artifacts.mjs"
+form = "b"
+terminator = "die"
+
+[[entry]]
+path = "verify_genesis_manifest"
+shape = "crate"
+kind = "tool"
+rule = "a"
+invoked_by_gate = true
+owner = "R-3"
+reason = ""
+note = "Flipped from false in the R-3 post-merge rebase over R-3b, discharging the obligation R-3b's own row text recorded (\"whichever of R-3/R-3b lands second flips this row in its merge commit\"). ONE call site: the Phase-1 `--posture` stage R-3 §6.1 adds. The tool is fail-closed against the committed artifacts and stays RED until RR-1, so a bare `verify_genesis_manifest || die` would have left the gate permanently red; `--posture` is the gateable form — it runs the whole Gate-D + Gate-V + GP0..GP6 surface and asserts the DECLARED posture in deployment/mainnet/genesis_principals.toml, so it passes today and turns RED the moment the observed failing set leaves the declared closed set."
+[[entry.via]]
+anchor = ["-p verify-genesis-manifest", "--posture"]
+tool_token = "-p verify-genesis-manifest"
+form = "a"
+terminator = "verdict_fail"
+
+[[entry]]
+path = "verify_gate_lints"
+shape = "crate"
+kind = "tool"
+rule = "a"
+invoked_by_gate = true
+owner = "R-L"
+reason = ""
+note = "Added in the R-L post-merge rebase over R-3b + R-3. FOUR call sites, all blocking form (a) with `die`, all in Phase 0 immediately after the MemoryId lint and before any build: `claims` (G-a, unmeasured safety claims), `refused-ceilings` (G-b, refused-call cycle ceilings), `bindings` (G-c, binding-property registry) and `no-skips` (G-d, silent-skip shapes). One binary, four subcommands, so the tool needs four `via` blocks rather than one: a census row that credited the crate on a single subcommand would let three of the four stages be deleted without this census noticing. Consumes scripts/gate_lints/ (its own row) and tests/BINDING_REGISTRY.toml."
+[[entry.via]]
+anchor = ["-p verify-gate-lints", "claims"]
+tool_token = "-p verify-gate-lints"
+form = "a"
+terminator = "die"
+[[entry.via]]
+anchor = ["-p verify-gate-lints", "refused-ceilings"]
+tool_token = "-p verify-gate-lints"
+form = "a"
+terminator = "die"
+[[entry.via]]
+anchor = ["-p verify-gate-lints", "bindings"]
+tool_token = "-p verify-gate-lints"
+form = "a"
+terminator = "die"
+[[entry.via]]
+anchor = ["-p verify-gate-lints", "no-skips"]
+tool_token = "-p verify-gate-lints"
+form = "a"
+terminator = "die"
+
+# ── TOOLS THE GATE DELIBERATELY DOES NOT INVOKE ──────────────────────────────
+
+[[entry]]
+path = "cycle_monitor"
+shape = "crate"
+kind = "tool"
+rule = "a"
+invoked_by_gate = false
+owner = "operations"
+reason = "Operations tooling — a standing fleet cycle monitor, not a build/test gate check. Running it in the gate would make the gate depend on live mainnet state."
+note = ""
+
+[[entry]]
+path = "a65"
+shape = "dir"
+kind = "tool"
+rule = "c"
+invoked_by_gate = false
+owner = "operations / campaign tooling (no standing lane)"
+reason = "One-shot audit sweep harness (a65_sweep.sh), pinned to the historical commit 504d85c8 inside its own body. That pin is intrinsic to what the tool IS — a sweep of a specific past tree — not a defect; a standing gate stage over it would be meaningless."
+note = "Uncrated tool directory: no Cargo.toml, content nested one level down. Rule (c) puts it in scope anyway."
+
+[[entry]]
+path = "build_token_base_measure_wasm.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "R-1 (token supply integrity)"
+reason = "A fixture-BUILD recipe, not a gate check. It reproduces the AC-10 'before' Wasm (stsh_token_base_115526d_measure_test.wasm) from base source at 115526d plus the two performance_counter wrappers. run_gate.sh names it only inside the Phase-3 MISSING recipe string for that fixture — a recipe a human runs when the artifact is absent. Invoking it from the gate would make every gate run rebuild a historical Wasm from a temporary worktree, which is a build step, not a check, and cannot fail in a way that means anything about the tree under test. What the gate DOES enforce is the fixture's presence, blockingly, via the Phase-3 MISSING list and die."
+note = "Added in the R-3b post-merge rebase over R-1. The completeness rule bit here exactly as designed: R-1 landed a new tracked direct entry under scripts/ and census_is_complete_over_every_tracked_scripts_entry went RED until this row existed. R-1's other scripts/ additions (verify_did_exports/src/r1_*) are NESTED inside the existing verify_did_exports crate entry and correctly need no row of their own."
+
+[[entry]]
+path = "embed_candid_metadata.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "mainnet release / candid embed tooling"
+reason = "Build-time candid embedding step for the release pipeline, not a gate check. At base it is named in run_gate.sh ONLY inside a prose comment (as the `return 0` skip anti-pattern the did-vs-exports gate was written against) — a mention is not an invocation, and this row records that honestly rather than crediting the comment."
+note = "Referenced from scripts/verify_candid_metadata.sh and scripts/verify_genesis_manifest/src/bin/check_candid_did.rs."
+
+[[entry]]
+path = "icrc_dfx_conformance.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "R-10"
+reason = "Propagates failure since R-10 (run() sets FAILED, script exits non-zero; the exec bit was also restored, since the runbook documents ./scripts/... and mode 644 gave the operator exit 126). Still not gate-invoked: requires a live dfx CLI + reachable replica (dfx 0.32 is GLIBC-broken in this WSL box), and its assertion — dfx's own Candid inference resolving a method without --type raw — has no PocketIC-reachable form, since PocketIC bypasses the dfx binary entirely. Rehearsal-only, permanently (ruled R-10 §3.4); see MAINNET_DEPLOYMENT.md's Gate C entry for the rehearsal-time step."
+note = ""
+
+[[entry]]
+path = "icrc_dfx_conformance_tests.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "R-10"
+reason = "Stubbed-dfx test harness proving icrc_dfx_conformance.sh propagates failure (both directions) and that MAINNET_DEPLOYMENT.md still names it. Host-side only, no live dfx/replica needed; run by hand or from the packet — not gate-wired because icrc_dfx_conformance.sh itself stays permanently ungated (dfx-CLI-conformance category mismatch with PocketIC, ruled R-10 §3.4)."
+note = ""
+
+[[entry]]
+path = "verify_candid_metadata.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "mainnet deploy tooling"
+reason = "Deploy-time path, not the gate: invoked from justfile:135 as `VERIFY_ONCHAIN=1 ./scripts/verify_candid_metadata.sh`, which queries a live canister. The gate has its own, stronger, source-derived candid check (verify_did_exports)."
+note = ""
+
+[[entry]]
+path = "watcher.ts"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "operations / monitoring (no standing gate lane)"
+reason = "A standalone hard-red invariant watcher run by operations outside the gate, against live state — not a build/test artifact."
+note = "THE row this census exists to stop from going missing: no shebang (line 1 is a `/**` doc comment), and no reference from run_gate.sh, the justfile, or any package.json scripts block. Its ONLY classification signal is the `.ts` extension, which rule (b) treats as sufficient on its own."
+
+# ── DATA ─────────────────────────────────────────────────────────────────────
+
+[[entry]]
+path = "did_export_census.toml"
+shape = "file"
+kind = "data"
+rule = "d"
+invoked_by_gate = false
+owner = "this lane"
+reason = "Data consumed by verify_did_exports — see that tool's row, which names it."
+note = ""
+
+[[entry]]
+path = "GATE_TOOL_CENSUS.toml"
+shape = "file"
+kind = "data"
+rule = "d"
+invoked_by_gate = false
+owner = "this lane"
+reason = "This census itself. It is data consumed by verify_custody_manifest's gate_tool_census fixture — which is exactly why it needs its own row: the completeness rule has no exception for the file that states the rule."
+note = ""
+
+[[entry]]
+path = "amount_boundary_allowlist.toml"
+shape = "file"
+kind = "data"
+rule = "d"
+invoked_by_gate = false
+owner = "this lane"
+reason = "Data consumed by verify_amount_boundaries (the verify_did_exports crate's second binary) — see that tool's row, which names it."
+note = ""
+
+[[entry]]
+path = "gate_lints"
+shape = "dir"
+kind = "data"
+rule = "d"
+invoked_by_gate = false
+owner = "R-L"
+reason = "Data consumed by verify_gate_lints — see that tool's row, which names it. Holds the four stages' committed data: claims_patterns.toml / claims_baseline.toml (G-a), refused_call_ceilings.toml (G-b, also read by integration-tests/tests/refused_call_ceiling_tests.rs so the ceiling assertions bind the FILE and never a canister-crate constant), BOUND_TEST_SUITES.toml and CORPUS.toml (G-c/G-d scope), no_skips_patterns.toml / no_skips_baseline.toml (G-d)."
+note = "Uncrated data directory: no Cargo.toml, contents nested one level down, so one row covers the directory rather than seven. Added in the R-L post-merge rebase. These files are the lints' TCB — the guarantee each stage gives is bounded by its committed pattern data (SSA AMBER-1, carried to campaign item R-L2)."
+
+# ── WHAT THE GATE TRUSTS (TCB) ───────────────────────────────────────────────
+#
+# Named explicitly, per CTO_RULING_LINT_TCB_BOUNDARY_2026-09-04 item 3: a
+# residual named here is closed; one not named here is open.
+#
+#  * The `bash`, `env`, and coreutils BINARIES resolved at the moment
+#    `./run_gate.sh` is first invoked — to honour `env -i`, `--noprofile
+#    --norc`, and to report the post-re-exec assertion's four questions
+#    HONESTLY. The preamble reduces its exposure by invoking every external
+#    command through an absolute path (a word containing a slash is never
+#    subject to shell-function lookup), but a modified binary still lies to it.
+#  * The kernel's `exec`/`fork` semantics that make `env -i`'s start-from-nothing
+#    guarantee actually hold.
+#  * THREE SHELL BUILTINS IN THE RE-EXEC LINE: `exec`, `[` and `test`. A builtin
+#    has no absolute-path form, so these three command words cannot be
+#    slash-qualified the way `/usr/bin/env` and `/bin/bash` are, and bash
+#    resolves a FUNCTION of the same name ahead of the builtin. A parent that
+#    exports a function named `exec`, `[` or `test` can therefore intercept the
+#    single line that performs sanitisation. Graded NOTE under ruling item 1:
+#    it is the irreducible floor of an in-script design, it is not reachable
+#    without the parent deliberately exporting one of those three names, and
+#    the post-re-exec assertion below still fires on the resulting dirty
+#    process for the `[`/`test` cases. THIS RESIDUAL IS NAMED, THEREFORE CLOSED.
+#    (What is NOT in the TCB, and was in V1's: `builtin`, `compgen`, `unset`,
+#    `printf`, `shift`. V1 routed its re-exec DECISION through `builtin`, and
+#    SSA_LANDED_DIFF_R-3b_V1_2026-09-05 RED-1 showed an ordinary exported
+#    `builtin()` function suppressed both the re-exec and the `builtin exit 1`
+#    terminators. V2's decision is unconditional and argv-keyed, so no probe
+#    runs before sanitisation and none of those names is load-bearing for it.)
+#  * A PARENT THAT INVOKES `./run_gate.sh --stsh-sanitised` ITSELF. The marker
+#    is ARGV, not environment: `export STSH_GATE_SANITISED=1` is inert, but a
+#    caller passing the literal argument suppresses the re-exec. That is a
+#    deliberate act by whoever runs the gate, not something a parent can arrange
+#    by exporting a variable or a function. It is also largely unprofitable: the
+#    post-re-exec assertion then runs against the unsanitised process and dies
+#    on (a)/(b)/(d). Graded NOTE. CI RUNNERS MUST NOT PASS `--stsh-sanitised`.
+#  * `BASH_ENV` / `ENV` STARTUP FILES. A non-interactive bash sources the file
+#    `BASH_ENV` names BEFORE this script's first line, and `--noprofile`/`--norc`
+#    do NOT suppress it. Such a file can redefine `exec` itself, which bash
+#    resolves as a function ahead of the builtin, so no in-script construct
+#    survives it. `BASH_ENV` is not in the `env -i` list and so is dropped on
+#    re-exec, and the post-re-exec assertion's condition (c) makes a surviving
+#    `BASH_ENV` fatal — but a `BASH_ENV` that redefines `exec` remains a TCB
+#    residual, graded NOTE under ruling item 1. THE CI GATE RUNNER MUST NOT SET
+#    `BASH_ENV`.
+#  * A `PATH` manipulation, or an `exec`'d wrapper calling a different
+#    `run_gate.sh`, performed BEFORE the gate is invoked at all.
+#  * The PATH-resolved toolchain (cargo, rustc, dfx, node, npm, git) every later
+#    stage invokes.
+#
+# NO ENVIRONMENT VALUE the gate reads is trusted for the sanitisation decision.
+# The decision is `[ "${1:-}" = "--stsh-sanitised" ]` — an ARGV test — and
+# everything else re-execs UNCONDITIONALLY under `/usr/bin/env -i /bin/bash
+# --noprofile --norc`. The four live-state conditions still exist, but as a
+# POST-RE-EXEC ASSERTION that aborts the gate, never as the trigger: there is no
+# check a parent can shadow into skipping sanitation, because sanitation happens
+# before any check runs. That inversion is the fix for RED-1.
+
+[[entry]]
+path = "build_pool_pre_r15_wasm.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "R-15 (payout retry hardening)"
+reason = "A historical fixture-build recipe, not a gate check. It builds the exact 9f7c81e predecessor from an immutable git archive in an isolated target and verifies the expected Wasm hash before copying it. run_gate.sh names the recipe in the missing/wrong fixture diagnostic; it does not invoke it. The gate independently and blockingly verifies fixture presence and SHA256 before tests."
+note = "The fixture is the genuine predecessor for R15 migration and before/after evidence. Rebuilding it from current source is refused by the pinned hash, not silently accepted."
+
+[[entry]]
+path = "prepare_fresh_worktree.sh"
+shape = "file"
+kind = "tool"
+rule = "b"
+invoked_by_gate = false
+owner = "O-12 (fresh-worktree gate preparation)"
+reason = "PREPARATION, not a gate check, and deliberately not invoked by run_gate.sh: it asserts PRESENCE of the prerequisites a fresh worktree lacks, never a verdict. Wiring it into the gate would add a leg (B-3/B-9/B-19, post-cutover) and would let a preparation step's success be read as test evidence. It is reached from the justfile (`just prepare-worktree`) and from docs/FRESH_WORKTREE_GATE_PREP.md."
+note = "Derives its artifact set from the tree — run_gate.sh's TEST_CANISTERS/PROD_PACKAGES, integration-tests/build.rs, the test sources, and run_gate.sh's own prerequisite checks — and prints the derived count as output; no count is stored. Recipes are QUOTED from run_gate.sh rather than restated (single writer), and an artifact run_gate.sh names but the script cannot derive is a hard error, never a narrowing to the intersection."

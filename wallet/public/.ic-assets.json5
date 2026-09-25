@@ -1,0 +1,158 @@
+// IC asset-canister config for the STSH wallet UI.
+//
+// Vite copies `public/` (dotfiles included) into `dist/`, so this lands at the
+// served asset root — the same placement as
+// `website/solvency-status/public/.ic-assets.json5`. That precedent is right
+// about WHERE the file goes and silent about WHAT the policy permits, and the
+// two do not transfer together: the website is a static page, and this wallet
+// compiles WebAssembly at runtime.
+//
+// PROVENANCE OF THE POLICY BELOW — read before editing:
+//   It is the output of `dfx info security-policy` for dfx **0.28.0** with
+//   exactly FIVE deliberate deviations, each named here. Nothing else is
+//   altered — no `'unsafe-eval'`, no relaxed `object-src` / `frame-ancestors` /
+//   `form-action`, and `blob:` is NOT granted to `script-src` / `default-src`.
+//
+//   (1) `'wasm-unsafe-eval'` APPENDED to `script-src`.
+//   WHY: dfx's standard policy emits `script-src 'self'`, and a `script-src`
+//   without `'wasm-unsafe-eval'` makes the browser refuse `WebAssembly.compile`.
+//   The wallet compiles WASM in at least two places — Poseidon
+//   (`src/crypto/poseidon.ts`, wasm-pack `--target web` ⇒ `instantiateStreaming`)
+//   and groth16 proving (`src/workers/prover.worker.ts`, `src/zk/artifacts.ts`).
+//   Under the unmodified standard policy there is no shield and no unshield.
+//
+//   `'wasm-unsafe-eval'` permits WebAssembly compilation WITHOUT permitting
+//   `eval()` of JavaScript. It is strictly narrower than `'unsafe-eval'`, which
+//   must never appear in this file.
+//
+//   (2) WT-1 — `style-src`, `style-src-elem` and `font-src` NARROWED from `*`
+//   to `'self'`. dfx's standard policy ships these as `*`, i.e. any origin on the
+//   internet may supply this wallet's stylesheets and fonts. A stylesheet is not
+//   inert: it selects on attribute values and can exfiltrate them through
+//   background-image URLs, which in a wallet means principals and amounts. The
+//   wallet loads no third-party CSS or fonts — everything is bundled — so `*`
+//   bought nothing and was pure attack surface.
+//   `'unsafe-inline'` is RETAINED on `style-src` / `style-src-elem`, and the
+//   named failing case is the wallet's own rendering: the UI sets element styles
+//   inline (e.g. progress/meter widths computed at runtime in
+//   `src/ui/pages/*.ts`) and Vite injects the bundled stylesheet through an
+//   inline `<style>` element. Removing it blanks the UI. It is not carried "just
+//   in case" — it is carried because those two are real.
+//
+//   (3) WT-1 — `http://localhost:*` REMOVED from `connect-src`. dfx's standard
+//   policy includes it so a locally served build can reach a local replica. This
+//   is the PRODUCTION asset config for a mainnet wallet; a production page that
+//   may open connections to arbitrary ports on the user's own machine is a
+//   capability with no legitimate use here. There is no separate dev asset
+//   config in this tree (`.ic-assets.json5` exists only under `public/`, and it
+//   is shipped, not environment-switched), and none is introduced: `vite dev`
+//   serves from Vite's own dev server, which does not apply this file at all, so
+//   loopback development is unaffected by the removal. Documented here rather
+//   than worked around, per the WT-1 brief.
+//
+//   (4) WALLET-CSP-BLOB — `blob:` APPENDED to `connect-src`.
+//   WHY: S-16 — the prover worker never sees a network URL. `src/zk/artifacts.ts`
+//   fetches spend.wasm / spend_1.zkey, checks length and SHA-256 against the
+//   manifest, and only then hands the worker `blob:` object URLs made from the
+//   verified bytes; snarkjs (via fastfile) reads them back with `fetch()`, which
+//   `connect-src` governs, and `'self'` does not match the `blob:` scheme. Without
+//   this grant every private spend fails "proof generation failed: Failed to
+//   fetch" (mainnet, final-v7, 2026-09-23). SECURITY: what this adds is read
+//   access, via fetch, to blob URLs this origin's own script can resolve. It
+//   opens no new network destination. CSP does NOT authenticate a blob's
+//   producer or contents — the S-16 hash check is enforced in `artifacts.ts`,
+//   not by this directive.
+//
+//   (5) WALLET-CSP-BLOB — NEW directive `worker-src 'self' blob:`.
+//   WHY: snarkjs's field library ffjavascript builds its proving thread pool by
+//   `new Worker(URL.createObjectURL(new Blob([threadSource])))` inside the
+//   prover worker. With no `worker-src` / `child-src`, worker creation falls
+//   back to `script-src 'self' 'wasm-unsafe-eval'`, which refuses `blob:`, so
+//   proving fails after (4) is fixed. `'self'` is REQUIRED: once `worker-src`
+//   exists it replaces the script-src fallback for the wallet's own
+//   same-origin prover and scanner workers. `script-src`, `default-src` and
+//   `child-src` are deliberately left unchanged — `blob:` must NOT reach
+//   `script-src`, which would let blob URLs load as page scripts.
+//   SECURITY — a real, bounded capability, not a no-op: `'self' blob:` is a
+//   list of alternatives, not "only blobs we made". It lets ANY script already
+//   running in this origin turn an arbitrary string (including fetched,
+//   attacker-controlled text) into dedicated- or shared-worker code, without
+//   hosting a script file and without `'unsafe-eval'`. It does not admit an
+//   external script into the page, and a locally created blob worker inherits
+//   this same policy (network and eval restrictions still apply inside it).
+//   Accepted as the cost of multi-threaded proving (CTO ruling, Option A;
+//   single-threaded proving was rejected as a code/design change).
+//
+//   Overriding the header pins a COPY of dfx's standard policy, so it can go
+//   stale silently. Release checklist item **B-4** re-derives
+//   `dfx info security-policy` against the dfx version in use at release and
+//   diffs it against this copy — expect the diff to show exactly the FIVE
+//   deviations above and nothing else.
+[
+  {
+    // WT-1 / SSA landed-diff F-1 — UN-IGNORE THE DIRECTORY, not just the file.
+    //
+    // Asset canisters SKIP hidden directories by default and do not descend into
+    // them, so a rule that un-ignores `.well-known/ii-alternative-origins` alone
+    // is not enough: dfx never walks `.well-known/` to reach it. The failure is
+    // silent and passes every in-tree check — the file is present in `dist`
+    // (AC-4 green), the file rule below is satisfied (AC-5 green), and the asset
+    // simply never exists on `s3tyu`. Logins from `app.stsh.fi` would then fall
+    // back to alias-derived principals: the wrong identity, not a visible error.
+    //
+    // Mirrors the in-repo precedent exactly —
+    // `website/solvency-status/public/.ic-assets.json5:2-9`, where the same
+    // omission would have broken the reserves.stsh.fi custom-domain validation.
+    // BOTH rules are required: this one makes dfx enter the directory, the one
+    // at the foot of this file gives the asset its Content-Type and CORS header.
+    "match": ".well-known",
+    "ignore": false
+  },
+  {
+    "match": "**/*",
+    "security_policy": "standard",
+    "headers": {
+      "Content-Security-Policy": "default-src 'self';script-src 'self' 'wasm-unsafe-eval';connect-src 'self' https://icp0.io https://*.icp0.io https://icp-api.io blob:;worker-src 'self' blob:;img-src 'self' data:;style-src 'self' 'unsafe-inline';style-src-elem 'self' 'unsafe-inline';font-src 'self';object-src 'none';base-uri 'self';frame-ancestors 'none';form-action 'self';upgrade-insecure-requests;"
+    }
+  },
+  {
+    // WT-1 — the Internet Identity alternative-origins asset.
+    //
+    // This is what lets a session served from `https://app.stsh.fi` derive its
+    // principals from THIS canister's own origin. II fetches it from the
+    // derivation origin and will only honour the request if it is served
+    // correctly, so each requirement below is load-bearing rather than tidy:
+    //
+    //   - `ignore: false` — REQUIRED, and NOT SUFFICIENT ON ITS OWN. `dfx` skips
+    //     dot-prefixed paths by default. This un-ignores the FILE; the rule at
+    //     the TOP of this file un-ignores the DIRECTORY, and dfx must be told
+    //     both or it never descends into `.well-known/` to find this entry at
+    //     all. With either missing, the file is present in `dist`, passes every
+    //     build-output test, and still 404s in production (SSA F-1).
+    //   - `Content-Type: application/json` — the file has no extension, so the
+    //     asset canister cannot infer a type and II rejects the wrong one. It is
+    //     intentionally extensionless: II fetches this exact path.
+    //   - `Access-Control-Allow-Origin` — II fetches cross-origin. Without the
+    //     header the browser discards the response and every login from the
+    //     alias falls back to alias-derived principals, i.e. the wrong identity
+    //     rather than a visible error. `*` is correct and not a leak: the body
+    //     is a public, non-secret list this canister publishes deliberately, and
+    //     the asset is anonymously readable by anyone regardless.
+    //
+    // NOT enforceable here, and therefore ceremony evidence (brief AC-8): HTTP
+    // 200 with no redirect, and the `IC-Certificate` header. Certification is
+    // asset-canister runtime behaviour — `dist` cannot show it, and there is no
+    // PocketIC wallet-asset harness in `integration-tests`. Verified by curl
+    // against the canister-id origin and captured in the packet.
+    //
+    // The body is asserted (JSON-parsed, not byte-compared) by
+    // `tests/wt1_canister_rooted_identity.test.ts`; II caps the list at 100
+    // entries and this one carries exactly one.
+    "match": ".well-known/ii-alternative-origins",
+    "ignore": false,
+    "headers": {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    }
+  }
+]

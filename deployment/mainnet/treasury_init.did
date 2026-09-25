@@ -1,0 +1,28 @@
+// =============================================================================
+// STSH — CANONICAL treasury INIT ARTIFACT (lane A-7)
+// =============================================================================
+// Interface: canisters/treasury/treasury.did:98 —
+// `service : (principal, principal, principal) -> {…}`, bound in source at
+// `canisters/treasury/src/lib.rs:694` as
+//   init(token_canister, pool_canister, controller)
+// POSITIONAL, three bare principals — NOT a record. The order is the contract.
+//
+// Values (all three from RECORD_J18_VAULT_BIRTHS_2026-09-12.md except the
+// controller, which is the Vault):
+//   1. token_canister  stsh_token      clv7x-haaaa-aaaar-qchha-cai   (J-18 prop 5)
+//   2. pool_canister   shielded_pool   cxrfg-qaaaa-aaaar-qchfa-cai   (J-18 prop 1)
+//   3. controller      Vault           cpdab-saaaa-aaaar-qca2q-cai   (custody ring)
+//
+// CUSTODY_DECISION (Option 2, 2026-06-21): the treasury is an ACCOUNTING VIEW.
+// It must not custody real STSH; `execute_withdrawal` disburses through a
+// pool-authorized path, never from a treasury-held ledger balance. Nothing in
+// this argument grants it custody, and nothing here should be read as doing so.
+//
+// The operator page uploads treasury_init.bin verbatim; `expected_arg_hash` is
+// the sha256 of that .bin (a7_install_kit.toml).
+// =============================================================================
+(
+  principal "clv7x-haaaa-aaaar-qchha-cai",
+  principal "cxrfg-qaaaa-aaaar-qchfa-cai",
+  principal "cpdab-saaaa-aaaar-qca2q-cai",
+)

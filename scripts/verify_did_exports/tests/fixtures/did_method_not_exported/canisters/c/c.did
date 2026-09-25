@@ -1,0 +1,4 @@
+service : {
+    ping  : () -> (nat64) query;
+    ghost : () -> (nat64) query;
+};

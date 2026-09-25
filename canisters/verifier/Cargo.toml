@@ -1,0 +1,36 @@
+[package]
+name    = "stsh-verifier"
+version = "0.1.0"
+edition = "2021"
+
+# cdylib — this is a standalone IC canister.
+# rlib is also emitted so integration-tests can call compiled_vk_sha256() natively.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# IC CDK — required for canister endpoints
+ic-cdk        = { workspace = true }
+ic-cdk-macros = { workspace = true }
+candid        = { workspace = true }
+# All ark deps require default-features = false to disable rayon (incompatible with wasm32).
+# Feature set mirrors circuits/rust-spike/Cargo.toml, verified wasm32-compatible in A0/A1.
+ark-bn254     = { workspace = true, default-features = false, features = ["std", "curve"] }
+ark-groth16   = { workspace = true }
+ark-ff        = { workspace = true, default-features = false, features = ["std"] }
+ark-ec        = { workspace = true }
+ark-serialize = { workspace = true }
+num-bigint    = { workspace = true }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+sha2          = { workspace = true }
+# #116 canonical field encoding: strict rejection of non-canonical Fr/Fq byte arrays
+stsh-field-utils = { path = "../field-utils" }
+
+# R-6 (G4): the build-freshness leg — `compiled_vk_hash_matches_committed_pin`
+# reads scripts/verify_genesis_manifest/VK_PIN.toml via include_str! and compares
+# it against the compiled-in VK's hash. Dev-deps are excluded from
+# `cargo build --release`, so neither crate enters the shipped Wasm.
+[dev-dependencies]
+toml = "0.8"
+hex  = { workspace = true }

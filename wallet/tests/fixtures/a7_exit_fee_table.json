@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "A-7 cross-surface fee table. Every row is the CANISTER's own answer,",
+    "obtained by call in integration-tests/tests/a7_exit_fee_symmetry_tests.rs",
+    "(t6a): the pool is handed a deliberately wrong fee and states the number it",
+    "wanted in PrivateSpendFeeMismatch.expected.",
+    "",
+    "The wallet's unshieldProtocolFee mirror is asserted against these same rows",
+    "in wallet/tests/a7_exit_fee_mirror.test.ts. The two implementations are",
+    "therefore compared against ONE table, not against each other's arithmetic —",
+    "two implementations that happen to agree are not evidence.",
+    "",
+    "REGENERATED at lane A6.6 from a real canister run, at the parameters ruled",
+    "2026-09-08 (OWNER_RULING_FEE_FLOOR_2_5_STSH): unshield_fee_bps = 25,",
+    "unshield_flat_minimum = 2.5 STSH (was 0.1 STSH). The crossover — where the",
+    "two arms of max() coincide — therefore moves from 40 STSH to 1,000 STSH,",
+    "which is exactly the floor rung of the A6.6 five-tier denomination ladder:",
+    "the flat minimum binds only BELOW the ladder, and the bps arm governs every",
+    "rung on it. Because the fee is integer floor division, one e8s above the",
+    "crossover the floor STILL binds; 100_000_000_400 e8s is the first amount",
+    "whose bps fee strictly exceeds it (400 e8s of amount buys 1 e8s of fee at",
+    "25 bps). The final row is the largest exit that fits the widened circuit",
+    "bound (MAX_NOTE_VALUE = 10^15 e8s): amount + fee = exactly 10^15."
+  ],
+  "unshield_fee_bps": 25,
+  "flat_minimum_e8s": "250000000",
+  "crossover_e8s": "100000000000",
+  "rows": [
+    { "public_amount_e8s": "10000000000", "fee_e8s": "250000000" },
+    { "public_amount_e8s": "99999999999", "fee_e8s": "250000000" },
+    { "public_amount_e8s": "100000000000", "fee_e8s": "250000000" },
+    { "public_amount_e8s": "100000000001", "fee_e8s": "250000000" },
+    { "public_amount_e8s": "100000000400", "fee_e8s": "250000001" },
+    { "public_amount_e8s": "1000000000000", "fee_e8s": "2500000000" },
+    { "public_amount_e8s": "997506234413966", "fee_e8s": "2493765586034" }
+  ]
+}

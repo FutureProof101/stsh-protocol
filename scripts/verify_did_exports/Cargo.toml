@@ -1,0 +1,71 @@
+[package]
+name    = "verify-did-exports"
+version = "0.1.0"
+edition = "2021"
+
+# STANDALONE crate — deliberately NOT a member of the root workspace, and NOT
+# listed in the root `exclude` either: the empty `[workspace]` table below makes
+# this directory its own workspace root, so cargo never walks up to the estate
+# manifest. That is the whole point (W3 3-1 packet §2.1): a new workspace member
+# would move root Cargo.toml AND root Cargo.lock, both BUILD_INPUT_PATHS, and no
+# host-side lint is worth moving a build input. Precedent: canisters/vetkeys.
+#
+# Build:  cargo build --manifest-path scripts/verify_did_exports/Cargo.toml --locked
+# Test:   cargo test  --manifest-path scripts/verify_did_exports/Cargo.toml --locked
+# Run:    cargo run   --manifest-path scripts/verify_did_exports/Cargo.toml --locked \
+#           --bin verify_did_exports -- <repo-root>
+[workspace]
+
+[lib]
+name = "verify_did_exports"
+path = "src/lib.rs"
+
+[[bin]]
+name = "verify_did_exports"
+path = "src/bin/verify_did_exports.rs"
+
+[[bin]]
+name = "verify_amount_boundaries"
+path = "src/bin/verify_amount_boundaries.rs"
+
+# ── R-1 (token supply integrity) ─────────────────────────────────────────────
+# Three independent, independently-blocking gate lints. They share this bin
+# family (and its `syn`/`toml`/`serde_json` dependencies) but check three
+# unrelated properties: visibility+cfg, occurrence count+location+file
+# provenance, and dependency identity by edge. A mutation can trip one, two, or
+# all three; the R-1 packet records which for each.
+[[bin]]
+name = "verify_ledger_maps"
+path = "src/bin/verify_ledger_maps.rs"
+
+[[bin]]
+name = "verify_ledger_boundary"
+path = "src/bin/verify_ledger_boundary.rs"
+
+[[bin]]
+name = "verify_proc_macro_deps"
+path = "src/bin/verify_proc_macro_deps.rs"
+
+[[bin]]
+name = "verify_icrc_deviation_register"
+path = "src/bin/verify_icrc_deviation_register.rs"
+
+[dependencies]
+# The export census comes from a real Rust syntax parse, never a grep (packet
+# §2.2): `#[ic_cdk_macros::query(name = "x")]` and `#[ query ]` are the same
+# thing to an AST and different strings to a regex.
+syn         = { version = "2", features = ["full", "visit", "extra-traits", "printing"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+quote       = "1"
+# The .did side is a REAL candid parse (packet §2.3): structural checks do not
+# discharge a syntax requirement (recorded SSA overturn).
+candid_parser = "0.1"
+candid        = "0.10"
+# Census / allowlist are checked-in data, not code.
+toml  = "0.8"
+serde = { version = "1", features = ["derive"] }
+# R2-1 §2(b) D-1/L: `launch_excluded_dfx` rows are checked against dfx.json, the
+# authority the D1 launch-exclusion ruling is itself phrased against. A real JSON
+# parse, not a grep: the check must FAIL CLOSED when the file cannot be read or
+# parsed, and "the key is absent" must never be the answer to "I could not tell".
+serde_json = "1"

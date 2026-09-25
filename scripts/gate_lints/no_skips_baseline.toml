@@ -1,0 +1,317 @@
+# =============================================================================
+# STSH — no-skips (G-d) BASELINE.  DATA (invariant 3, invariant 4).
+# =============================================================================
+#
+# PRE-EXISTING sites the structural net finds at the lane's base commit
+# (115526d3a2755b6b5c9ed1f5a0014e746cff8b57) that this lane does NOT convert.
+# Each is a REAL instance of the defect class, annotated honestly with why it is
+# recorded rather than fixed and which lane owns fixing it — never "this is
+# fine". Anything NEW is a violation; this list grants no cover to a site that
+# is not already on it.
+#
+# WHY A BASELINE EXISTS AT ALL, stated plainly. Brief R-L V12 §3 S4 asserts the
+# baseline conversion is "the ONE live SKIP site only (load_artifacts() in the
+# verifier)". That premise is FALSE at base and was found false by this lane's
+# own lint: the brief's count came from grepping the literal text `SKIP` inside
+# `canisters/verifier/src/`, while the STRUCTURAL rule the brief itself
+# specifies finds the same defect shape 34 further times (17 let-else diverge
+# branches plus the 17 `eprintln!("SKIP …")` announcements that sit on them), in two
+# integration-test files the brief never scanned. R-L converted the two loaders
+# it owns (canisters/verifier/src/lib.rs and
+# integration-tests/tests/verifier_tests.rs, 17 call sites between them) and
+# recorded the rest here rather than either (a) silently narrowing the lint
+# until the brief's number came out right, or (b) converting test files whose
+# fixture-provisioning decisions belong to other lanes.
+#
+# A row whose site no longer matches is itself a finding — a stale exemption is
+# an exemption nobody is watching, so the lint REFUSES a baseline that has
+# drifted rather than quietly carrying it.
+#
+# Rows are keyed on (file, owner_fn, shape) AND `count`. NEVER on a line
+# number: a line number moves the moment anything above it is edited, which
+# would silently transfer an old row's exemption onto a newly-introduced defect.
+#
+# `count` is NOT decoration. (file, owner_fn, shape) alone is not a SITE
+# identity — one function can hold several findings of the same shape, so a row
+# without multiplicity extends its exemption to every FUTURE one. SSA
+# landed-diff round 1 RED-2 proved it: a brand-new unconditional
+# `eprintln!("SKIP …"); return;` inserted at the top of the already-exempted
+# shape-5 test below left the lint green, with its suppressed tally quietly
+# moving 34 -> 35. The count is now EXACT in both directions — more matching
+# sites than recorded is a new defect, fewer is a row that must be re-counted.
+#
+# When a new site trips a row, the fix is the SITE. Raising `count` to make the
+# lint quiet is the bypass this file exists to prevent, and it is visible in the
+# reviewed diff (TCB residual #2).
+
+[[site]]
+file     = "integration-tests/tests/fee_setter_guardrail_tests.rs"
+owner_fn = "pre_a1_pool_upgrade_is_refused_because_the_boundary_is_a_reinstall"
+shape    = 5
+count    = 1
+owner    = "fee-setter / pool-upgrade lane"
+reason   = "The pre-A1 pool Wasm is a genuinely OPTIONAL build artifact, not a checked-in fixture. Converting this to a panic makes that Wasm a hard gate prerequisite, which is a run_gate.sh provisioning decision R-3b owns, not R-L."
+
+[[site]]
+file     = "integration-tests/tests/fee_setter_guardrail_tests.rs"
+owner_fn = "pre_a1_pool_upgrade_is_refused_because_the_boundary_is_a_reinstall"
+shape    = 6
+count    = 1
+owner    = "fee-setter / pool-upgrade lane"
+reason   = "The pre-A1 pool Wasm is a genuinely OPTIONAL build artifact, not a checked-in fixture. Converting this to a panic makes that Wasm a hard gate prerequisite, which is a run_gate.sh provisioning decision R-3b owns, not R-L."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_55_valid_real_proof_spend_succeeds"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_55_valid_real_proof_spend_succeeds"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_64_commitment_append_failure_records_partial_state"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_64_commitment_append_failure_records_partial_state"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_65_failed_after_outputs_committed_records_partial_state"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_65_failed_after_outputs_committed_records_partial_state"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_66_repeated_spend_id_is_idempotent"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_66_repeated_spend_id_is_idempotent"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_67_invalid_proof_bytes_rejected_no_mutation"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_67_invalid_proof_bytes_rejected_no_mutation"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_68_tampered_public_signal_rejected_no_mutation"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_68_tampered_public_signal_rejected_no_mutation"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_69_verifier_not_configured_rejected_no_mutation"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_69_verifier_not_configured_rejected_no_mutation"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_70_verifier_unreachable_removes_guard_and_is_retryable"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_70_verifier_unreachable_removes_guard_and_is_retryable"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_90_reservation_gate_fires_before_merkle_append"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "test_90_reservation_gate_fires_before_merkle_append"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "lanea_task1_private_spend_public_amount_bound_to_real_verifier"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "lanea_task1_private_spend_public_amount_bound_to_real_verifier"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_a_valid_recipient_payout_succeeds"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_a_valid_recipient_payout_succeeds"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_b_substituted_principal_rejected"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_b_substituted_principal_rejected"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_c_substituted_subaccount_lo_rejected"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_c_substituted_subaccount_lo_rejected"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_d_substituted_subaccount_hi_rejected"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_d_substituted_subaccount_hi_rejected"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_e_none_proof_with_recipient_rejected"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_e_none_proof_with_recipient_rejected"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_f_none_proof_none_payout_succeeds"
+shape    = 5
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."
+
+[[site]]
+file     = "integration-tests/tests/security_tests.rs"
+owner_fn = "def026_test_f_none_proof_none_payout_succeeds"
+shape    = 6
+count    = 1
+owner    = "proof-fixture / R-3b provisioning"
+reason   = "Skips on an absent circuits/ proof fixture (spend, payout-A, payout-B). Converting these to panics makes every one of those fixtures a hard gate prerequisite; whether they are is a provisioning decision this lane does not own. Brief 3-OUT: R-L labels honestly, the owning lane fixes."

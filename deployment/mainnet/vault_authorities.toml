@@ -1,0 +1,416 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  deployment/mainnet/vault_authorities.toml — pinned Vault deployment authorities
+#
+#  The INDEPENDENT second source that vault_init.did's quorum must EQUAL. The
+#  deploy-time gate (verify_custody_manifest --deploy-time / check_authority_binding)
+#  requires: threshold == 2, exactly 3 distinct non-anonymous signers, upgrader
+#  non-anonymous + distinct, no placeholder/anonymous/management/sentinel principal,
+#  and this set == the vault_init.did quorum.
+#
+#  Principals are byte-matched from source (Owner via A1, 2026-08-04; the two II
+#  principals RE-PINNED 2026-09-12 (J-17f) to their app.stsh.fi-origin derivations —
+#  II principals are per-origin, the NNS-dapp-derived pair could never sign here); production
+#  principals are re-pasted from source, never hand-copied.
+#
+#  signers — REAL mainnet 2-of-3 (pinned):
+#    Owner (human II)                         5jmfd-...-qae
+#    STSHProtocol (Owner's 2nd personal II)   lwiax-...-oqe
+#    dfx (machine identity)                   4f6wg-...-cae
+#
+#  upgrader — PINNED 2026-08-05. The Upgrader is born_under_vault (principal
+#  allocated at bootstrap; custody_manifest.toml), created by the human ceremony.
+#  Pinned byte-identically here and in vault_init.did.
+#
+#  PROVENANCE — canister creation and the resulting principals are attributed to the
+#  office-authoritative CTO record. That artifact is NOT committed in this repository:
+#    CTO_CEREMONY_RESULT_ADDENDUM_2026-08-05.md
+#    SHA-256 c9f7400c9f771baf2f7417fc9933eab9132b3f3cdca32d14de1d9a94de6c3670
+#  Parent ruling: RULING_UPGRADER_CEREMONY_PARAMS_2026-08-05.md.
+#
+#  EVIDENCE BY SOURCE — every fact below carries its actual evidence source.
+#
+#   [Builder-verified] — evidence: anonymous `dfx canister info`, 2026-08-05:
+#     principal      cgal5-eiaaa-aaaar-qca3a-cai
+#     module hash    None  — no code installed (CREATE-ONLY)
+#     controllers    exactly [4f6wg-…-cae]
+#
+#   [Owner device attestation] — evidence: controller-authenticated
+#   `dfx canister status`, supplied 2026-08-05. These fields were NOT independently
+#   builder-verified; they are not readable without controller authentication:
+#     freeze threshold  7_776_000 s  (exactly 90 days)
+#     balance           Upgrader 3_679_196_741_732 / Vault 3_679_196_689_410 cycles
+#     idle burn         2_260_543_031 cycles/day per canister
+#
+#   [Public dashboard evidence, 2026-08-05] — NOT `dfx canister info` evidence:
+#     subnet  pzp6e-ekpqk-3c5x7-2h6so-njoeq-mt45d-h3h6c-q3mxf-vpeq5-fk5o7-yae
+#
+#  FUNDING: the parent ruling's 5T-per-canister figure was a provisioning TARGET,
+#  formally superseded by the accepted actuals above. No top-up is required.
+#  Accepted arithmetic: ~4.5 year runway; alert thresholds warn <1T, crit <0.5T.
+#
+#  [APPENDED 2026-09-14 — 34-NODE RE-CUT, T0-DOCS lane. The accepted-actuals block
+#   above is NOT rewritten; it is the record. This note qualifies what it implies.]
+#   Subnet pzp6e-…-yae is a **34-node** application subnet, not the 13-node default
+#   (source: CTO handoff 2026-09-13 item 2; SSoT V9 §1 row D9-4). IC application-subnet
+#   pricing scales with node count, so 13-node-derived figures understate cost by
+#   ×≈2.6 (34 ÷ 13 = 2.615).
+#   WHAT STILL STANDS: the balances and the idle burn above are MEASURED on this
+#   subnet, so they are already 34-node numbers. 2_260_543_031 cycles/day × 365 ≈
+#   0.825 T/year, and 3_679_196_741_732 cycles ≈ 3.679 T, so 3.679 ÷ 0.825 ≈ 4.46 years — the
+#   "~4.5 year runway" arithmetic reproduces against the MEASURED idle burn and is
+#   retained as an idle-only figure.
+#   WHAT DOES NOT STAND: "No top-up is required" as a FORWARD claim. It covers idle
+#   burn only. It does not cover the 34-node cost of the work these canisters are
+#   about to do: canister creation is ≈1.3 T at 34 nodes (2 T at 13 nodes was the
+#   basis of CREATE_CANISTER_CYCLES, leaving ≈0.7 T per birth — that is what stranded
+#   proposal #10 "out of cycles, top up ≥162B"). Nor does it cover install payload
+#   costs or the post-install operating burn of the installed canisters.
+#   OWNER SIZING UNDER 34-NODE PRICES (standing, 2026-09-14): top up **1 T per
+#   canister** before each install, and **2 T for the pool** (cxrfg). Re-measure and
+#   re-state after the first installs; the alert thresholds (warn <1T, crit <0.5T)
+#   are policy and are unchanged.
+#   The `CREATE_CANISTER_CYCLES` source constant itself is OUT of this lane
+#   (canisters/ under source freeze 2297a6c); it is roadmap item PL-7.
+#
+#  BOOTSTRAP-WINDOW EXCEPTION: 4f6wg-…-cae is presently BOTH sole controller of the
+#  two empty canisters AND a future Vault quorum member. This exception is limited to
+#  codeless canisters holding no authority, and MUST terminate at ring closure. Any
+#  claim that no human/device key holds unilateral controller authority is a
+#  POST-CUTOVER claim and must NOT be made about the current bootstrap window.
+#
+#  PRE-INSTALL REQUIREMENT (standing): immediately before installing either canister,
+#  reverify via anonymous `dfx canister info` that the exact principal holds, the
+#  module hash is still None, and the controller list is exactly [4f6wg-…-cae].
+#  Nothing recorded here authorizes installation, controller change, deployment, or
+#  any other mainnet mutation.
+# ─────────────────────────────────────────────────────────────────────────────
+
+threshold = 2
+
+signers = [
+  "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae",
+  "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+
+# PINNED 2026-08-05 — real born-at-bootstrap Upgrader; must equal vault_init.did.
+upgrader = "cgal5-eiaaa-aaaar-qca3a-cai"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  [recovery] — the Upgrader recovery roster (R2.2, CUST-SSA-002)
+#
+#  WHY THIS IS HERE AND NOT IN A SECOND FILE. A1 ruling: this file is already
+#  "the INDEPENDENT second source", and ONE place to byte-match is the property
+#  worth protecting. A second authority file would be a second thing to keep in
+#  sync and a second thing to forget.
+#
+#  WHAT WAS BROKEN. `validate_bootstrap_quorum` (custody-types:107) checks only
+#  STRUCTURE — threshold 2, distinct non-anonymous members, separation from the
+#  counterpart. It therefore accepts ANY structurally valid attacker-selected
+#  roster. Before this pin there was no `upgrader_init.did` at all and the gate
+#  SYNTHESISED the Upgrader init from placeholders, so the deploy gate reported
+#  GREEN for an attacker-chosen recovery set. Structure is not identity.
+#
+#  THE RULE. `members` must equal the three ruled Vault `signers` above as an
+#  EXACT ORDERED vector of principal BYTES — not a count, not a set, not
+#  textual abbreviations, not hashes. Order is load-bearing because an ordered
+#  comparison is the only one that also catches a reordering that a set
+#  comparison would silently accept. Duplicates are prohibited and checked at
+#  every surface.
+#
+#  FOUR COMPARED SURFACES (R2.3) — the gate checks 1-3 in-process; 4 is
+#  operator-attested and is NOT machine-provable (see below):
+#    1. this file                          — canonical roster artifact
+#    2. vault_init.did `signers`           — the three ruled Vault signers
+#    3. upgrader_init.did `recovery_members` — as ACTUALLY ENCODED for install
+#    4. live `get_recovery_membership()`   — OPERATOR ATTESTATION ONLY
+#
+#  SURFACE-4 PROVENANCE LIMITATION, STATED PLAINLY: the verifier can check that
+#  the recorded bytes equal this pin. It CANNOT prove those bytes came from the
+#  live signer-gated query on the real Upgrader. A checked attestation is not a
+#  cryptographic proof of provenance and must never be read as one.
+#
+#  `get_recovery_membership` is recovery-signer-gated and returns an
+#  indistinguishable `None` to non-members, so surface 4 is readable only by the
+#  three ruled principals — all Owner's keys. Owner performs those reads from the
+#  device as runbook steps, once per intended recovery principal (three reads),
+#  immediately before bootstrap-controller removal. NO custody passphrase, seed,
+#  or identity file enters an agent session, a CI job, or any automated context.
+#  Any `None`, any disagreement, or stale evidence HALTS cutover.
+#
+#  VAULT PRINCIPAL — PINNED HERE, DELIBERATELY, FIRST TIME IN-REPO.
+#  `cpdab-saaaa-aaaar-qca2q-cai` was previously parked out of the repository by
+#  SSA direction, scoped to the L4 authority-pin lane ("belongs in a later
+#  lane"). R2.1/R2.2 of the SSA-GREEN remediation brief V4.1 are that later
+#  lane: `UpgraderInitArgs.vault` cannot be committed without it. Pinned here
+#  rather than in `canister_ids.json` because R2.2 says so and because this file
+#  is outside the D1/D2 coverage universe — adding it to `canister_ids.json`
+#  would create a new coverage candidate requiring its own disposition.
+#  Provenance: brief V4.1 §1 and §A.0, plus builder anonymous `dfx canister
+#  info` 2026-08-05 (principal, module hash `None`, controllers exactly
+#  [4f6wg-…-cae]). Re-verify per the standing pre-install requirement above.
+#
+#  Recovery threshold is the ruled fixed 2 (freeze §6, no contraction) and is
+#  NEVER 1 (V7 §4 D4).
+# ─────────────────────────────────────────────────────────────────────────────
+[recovery]
+
+# EXACT ORDERED byte-equality with `signers` above. Do not reorder either list
+# independently — the ordered check exists to make a reordering a gate failure.
+members = [
+  "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae",
+  "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+
+threshold = 2
+
+vault = "cpdab-saaaa-aaaar-qca2q-cai"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  [APPENDED 2026-09-19 — ROT-LEDGER lane. Nothing above this line is edited;
+#   this file is append-only and a correction is a new row that supersedes.]
+#
+#  HEADER — READ THIS BEFORE BELIEVING THE PINS ABOVE (Q5).
+#
+#  [REWRITTEN 2026-09-21 — ROT-LEDGER-FILL, the "rotated on <date>" form this
+#   paragraph was always going to take. Only this paragraph is replaced.]
+#
+#  ROTATED ON 2026-09-21. The `signers` set and the `[recovery].members` set
+#  pinned above are now the POST-ROTATION sets — they equal the LIVE Vault
+#  `cpdab-saaaa-aaaar-qca2q-cai` and the LIVE Upgrader
+#  `cgal5-eiaaa-aaaar-qca3a-cai`, as read back at 2026-09-21T12:18:52Z
+#  (Upgrader) and 2026-09-21T12:24:52Z (Vault). The pins are the reader's
+#  shortcut to "now"; they are NOT a record of what was installed.
+#
+#  WHAT WAS INSTALLED is the app.stsh.fi-alias-origin set, byte-encoded into
+#  `vault_init.did` / `upgrader_init.did`, and snapshotted ONCE in
+#  `[rotation.bootstrap]` below. Those `.did` files cannot change: they record
+#  an install that already happened. A reader who needs the install-time set
+#  reads `[rotation.bootstrap]` or the init `.did` files, never these pins.
+#
+#  THE LEDGER BELOW IS THE HISTORY that connects the two. The board step-7
+#  rotation was executed as Upgrader proposal #1 and then Vault proposal #16,
+#  each proposed by 5jmfd…qae and approved by 5jmfd…qae + 4f6wg…cae, read back
+#  by 4f6wg…cae. All three surfaces — the pins, the init payloads and the
+#  ledger — are machine-checked against each other through this ledger
+#  (Q5-A lockstep in `scripts/verify_custody_manifest`), never by editing
+#  history: the init payloads are checked against `[rotation.bootstrap]`, and
+#  the pins against the LAST EXECUTED row of the matching plane.
+#
+#  READERS MUST CONSULT `[[rotation.upgrader]]` / `[[rotation.vault]]` AT THE
+#  END OF THIS FILE FOR THE LIVE STATE and for how it was reached.
+#
+#  PROVENANCE LIMITATION, RESTATED FOR THIS LEDGER (same limitation the
+#  SURFACE-4 note above states for the recovery roster): every rotation row
+#  records an operator-supplied read-back. The checker can verify that the
+#  named evidence file exists and hashes to the recorded sha256, that the rows
+#  chain, and that every declared field is internally consistent. It CANNOT
+#  prove those bytes came from a live query against the real canister. A
+#  checked attestation is not a cryptographic proof of provenance and must
+#  never be read as one.
+# ─────────────────────────────────────────────────────────────────────────────
+[rotation]
+
+# Lockstep with the reader in scripts/verify_custody_manifest (ROTATION_LEDGER_SCHEMA_VERSION).
+# Any other value is REFUSED — a ledger written to a schema the reader does not
+# know is not partially readable, it is unreadable.
+schema_version = 1
+
+# "not-yet-performed" | "rotated". Must agree with the arrays below: this word
+# and an empty pair of arrays is the declared pending form, and it is the ONLY
+# pending form — a placeholder row is a corrupt ledger, not a pending one.
+state = "rotated"
+
+# The `[[rotation.upgrader]]` / `[[rotation.vault]]` rows appended at the END of
+# this file are the plane arrays. The empty-array literals that stood here while
+# the rotation was pending were removed by ROT-LEDGER-FILL, 2026-09-21.
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  [rotation.bootstrap] — the CHAIN ROOT, and why it is not the pins above.
+#
+#  Row 1 of each plane chains its `old_*` onto THIS snapshot, never onto
+#  `signers` / `[recovery].members`. Reason: ROT-LEDGER-FILL rewrites those
+#  pins to the post-rotation set (Q5), so a chain anchored on them would go RED
+#  on a correct record the moment the reconciliation lands. This snapshot is
+#  written ONCE, here, and is never edited again by any lane.
+#
+#  BIRTH CHECK: while `state = "not-yet-performed"` the checker requires this
+#  snapshot to be ordered-BYTE-equal to the live pins above (and the thresholds
+#  to match), so a transposed or reordered hand-copy cannot become a false
+#  chain root. Once `state` flips the comparison is skipped by design and this
+#  snapshot is the sole anchor.
+# ─────────────────────────────────────────────────────────────────────────────
+[rotation.bootstrap]
+
+# Verbatim byte-copy of `signers` above, taken at the ROT-LEDGER base commit.
+vault_signers = [
+  "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae",
+  "lwiax-bc6fp-osh2p-jhbyc-tpxjl-ir24x-o5pde-gtzl2-4ht56-ikt6h-oqe",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+vault_threshold = 2
+
+# Verbatim byte-copy of `[recovery].members` above, taken at the same commit.
+upgrader_members = [
+  "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae",
+  "lwiax-bc6fp-osh2p-jhbyc-tpxjl-ir24x-o5pde-gtzl2-4ht56-ikt6h-oqe",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+upgrader_threshold = 2
+
+# The Vault governance epoch as installed. Each executed Vault rotation row
+# must strictly advance it.
+vault_epoch = 0
+
+# The commit whose `signers` / `[recovery].members` / thresholds this snapshot
+# copies. Informational provenance; the birth check above is what makes it true.
+snapshot_of_pins_at_commit = "7fdbce2670c0b152af0275382321efc2b88e3ff9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ROW SCHEMA. The rows themselves are at the END of this file; ROT-LEDGER-FILL
+#  wrote them on 2026-09-21.
+#
+#  [[rotation.upgrader]] and [[rotation.vault]] rows carry, all required and
+#  all acted upon by the checker — an unvalidated field is indistinguishable
+#  from a checked one, so there are none:
+#
+#    sequence                 1-based, dense, strictly increasing per plane
+#    status                   "EXECUTED" (the only accepted value; there is no
+#                             PLACEHOLDER status — see [rotation].state)
+#    old_members / new_members    ordered principal text, 3 distinct, no
+#                             forbidden principal; old_* chains onto the
+#                             predecessor row's new_*, or onto
+#                             [rotation.bootstrap] for row 1
+#    old_threshold / new_threshold    both 2
+#    old_epoch / new_epoch    VAULT ROWS ONLY; new_epoch > old_epoch
+#    after_upgrader_sequence  VAULT ROWS ONLY; names the EXECUTED upgrader row
+#                             that must precede this one in time (I-7)
+#    proposal_id              the on-chain id, >= 1; each plane numbers
+#                             independently (Upgrader rotations start at 1; the
+#                             Vault's first rotation was #16)
+#    approvers                exactly two distinct principals from old_members
+#    observed_at_ns           nat64, must agree with observed_at_utc and must
+#                             not exceed the checked HEAD's commit time
+#    observed_at_utc          ISO-8601 Z
+#    network                  "ic"
+#    canister                 the rotated canister's principal
+#    read_by                  the identity that performed the read-back; must
+#                             be a member of old_members
+#    readback_command         the exact command text, unabridged
+#    readback_evidence_path   repo path of the COMPLETE unedited stdout
+#    readback_output_sha256   sha256 of that file's bytes
+#    predecessor_row_sha256   sha256 of the predecessor row's canonical text,
+#                             or "" for row 1
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  THE ROWS — board step 7, executed 2026-09-21, transcribed by ROT-LEDGER-FILL.
+#
+#  WHERE EACH FIELD COMES FROM. These are FOUR different provenance classes and
+#  they are not interchangeable; a reader who treats them all as "read off the
+#  wire" would be crediting this record with more than it has.
+#
+#   1. STDOUT-DERIVED — read out of the committed read-back files under
+#      `deployment/mainnet/evidence/identity_rotation/`:
+#        `status` (from each file's `outcome`), `new_members`, `new_threshold`,
+#        `proposal_id`, `approvers`, `observed_at_ns`, `observed_at_utc`, and
+#        the Vault row's `new_epoch`.
+#
+#   2. BOOTSTRAP-DERIVED — copied from `[rotation.bootstrap]` above, which is
+#      the install-time snapshot and the chain root, NOT a read-back:
+#        `old_members`, `old_threshold`, and the Vault row's `old_epoch`.
+#      (The pre-rotation rosters are corroborated by evidence `01`, and the
+#      Vault epoch by `09b`, but the value written here is the snapshot's.)
+#
+#   3. LEDGER METADATA and COMPUTED DIGESTS — produced by this record's own
+#      structure, not observed anywhere:
+#        `sequence`, `after_upgrader_sequence`, `predecessor_row_sha256`
+#        (empty: row 1 of each plane chains onto the snapshot),
+#        `readback_evidence_path` (the repo path the file was committed at),
+#        and `readback_output_sha256`, which is a sha256 COMPUTED over that
+#        file's bytes. That digest is BYTE-INTEGRITY ONLY: it proves the
+#        committed file has not changed since the row was written. It decodes
+#        nothing and proves nothing about where the bytes came from.
+#
+#   4. COMMAND CONTEXT — taken from the read-back commands themselves, which
+#      exist only in the ceremony record because the evidence files hold
+#      STDOUT ONLY:
+#        `readback_command` (transcribed verbatim), `network` (the `--network
+#        ic` of those commands), and `canister` (this record's own `upgrader`
+#        and `[recovery].vault` pins, which is also what the checker binds the
+#        field to).
+#      `read_by` is the identity the ceremony record ATTRIBUTES the read-back
+#      to; the principal bytes written here are the second approver of the same
+#      plane, which is the same principal.
+#
+#  Source ceremony record (office-authoritative, NOT committed here):
+#    reviews/CEREMONY_RECORD_BOARD_STEP_7_ROTATION_2026-09-21.md
+#
+#  Files 09 and 09b are identical by construction (the query read and the
+#  `--update` read returned byte-identical output). Both are committed; the row
+#  cites 09b, the consensus read.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[rotation.upgrader]]
+sequence = 1
+status = "EXECUTED"
+old_members = [
+  "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae",
+  "lwiax-bc6fp-osh2p-jhbyc-tpxjl-ir24x-o5pde-gtzl2-4ht56-ikt6h-oqe",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+new_members = [
+  "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae",
+  "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+old_threshold = 2
+new_threshold = 2
+proposal_id = 1
+approvers = [
+  "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+observed_at_ns = 1789993132832809204
+observed_at_utc = "2026-09-21T12:18:52Z"
+network = "ic"
+canister = "cgal5-eiaaa-aaaar-qca3a-cai"
+read_by = "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae"
+readback_command = "dfx canister --network ic call cgal5-eiaaa-aaaar-qca3a-cai get_rotation_proposal '(1 : nat64)' --identity default --query --candid ~/stsh/canisters/upgrader/upgrader.did"
+readback_evidence_path = "deployment/mainnet/evidence/identity_rotation/04_upgrader_rotation_1_readback.txt"
+readback_output_sha256 = "9cb6797618975e9eca165c618e08dd8df256e12f9ca0dcac3d68b665b39bcd8a"
+predecessor_row_sha256 = ""
+
+[[rotation.vault]]
+sequence = 1
+status = "EXECUTED"
+old_members = [
+  "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae",
+  "lwiax-bc6fp-osh2p-jhbyc-tpxjl-ir24x-o5pde-gtzl2-4ht56-ikt6h-oqe",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+new_members = [
+  "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae",
+  "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+old_threshold = 2
+new_threshold = 2
+old_epoch = 0
+new_epoch = 1
+after_upgrader_sequence = 1
+proposal_id = 16
+approvers = [
+  "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae",
+  "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae",
+]
+observed_at_ns = 1789993492711330993
+observed_at_utc = "2026-09-21T12:24:52Z"
+network = "ic"
+canister = "cpdab-saaaa-aaaar-qca2q-cai"
+read_by = "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae"
+readback_command = "dfx canister --network ic call cpdab-saaaa-aaaar-qca2q-cai get_proposal '(16 : nat64)' --identity default --update --candid ~/stsh/canisters/vault/vault.did"
+readback_evidence_path = "deployment/mainnet/evidence/identity_rotation/09b_vault_16_readback_update.txt"
+readback_output_sha256 = "46098713b7bb449b0e609a64ada5dbb4d8dae80fcfcf1dbc85e32aa9ded35aa7"
+predecessor_row_sha256 = ""

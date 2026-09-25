@@ -1,0 +1,10 @@
+[[canister]]
+krate    = "canisters/c"
+did      = "canisters/c/c.did"
+in_scope = true
+reason   = "fixture"
+
+[[canister]]
+krate    = "canisters/external"
+in_scope = false
+reason   = "library crate — no endpoints, no .did"

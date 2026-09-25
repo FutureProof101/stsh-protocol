@@ -1,0 +1,44 @@
+STSH ceremony acceptance evidence — generation: next
+manifest: $STSH_ROOT/circuits/ceremony/domain_manifest.json
+min contributions for a self-run ptau: 3
+
+[PASS] C1  ptau is production-grade
+         PUBLIC-CEREMONY PATH: matches pinned entry "powersOfTau28_hez_final_15" on BOTH digests
+         blake2b 982372c867d229c236091f767e703253249a9b432c1710b4f326306bfa2428a17b06240359606cfe4d580b10a5a1f63fbed499527069c18ae17060472969ae6e  (publisher-attested)
+         sha256  3ef2ecc5b75d687048cf2d59195119b42fb07c5af639c5f283d84bfa69829e7f  (independent second digest)
+         attestation https://raw.githubusercontent.com/iden3/snarkjs/master/README.md — blake2b-512 published by the snarkjs (iden3) README powers-of-tau table (the publisher), retrieved 2026-09-09
+         download source https://media.githubusercontent.com/media/hswopeams/composite-number-game/main/circuit/powersOfTau28_hez_final_15.ptau — download source (mirror), not attestation
+         pinned by A-4 PREP wave 2 (CTO ruling: RULING_RECORD_LAUNCH_WEEK_2026-09-09.md Addendum F) on 2026-09-09
+         NOTE: C1 taking this branch does NOT exercise the structural beacon parser — see the phase-1/self-run branch below. The ptau-layer beacon rests on the publisher's attestation (the README table's own header states the series carries 54 contributions and a beacon), not on a check this tool ran.
+[PASS] C2  ptau power covers the circuit
+         derived power (from ptau header) 2^15 = 32768
+         constraints 10593  (headroom 22175)
+         manifest declares power 15  (agrees)
+[PASS] C3  final zkey verifies against final R1CS AND chosen ptau
+         r1cs circuits/build/spend.r1cs (sha256 6ee4350674d0c21dca0a4f2344208ba3547977d48ee10edb5bf408d813aeaa34)
+         ptau circuits/ptau/powersOfTau28_hez_final_15.ptau
+         zkey circuits/build/spend_1.zkey (sha256 4898655e8b3c3de9517f649f7caf8366ff4f9c95190ac274d5859de58f21e80c)
+[PASS] C4  zkey phase-2 contributions observed and match the record
+         observed 2 phase-2 contribution(s): drand mainnet round 6460200, FutureProof operator 2026-09-12
+         manifest declares count 2, names ["FutureProof operator 2026-09-12","drand mainnet round 6460200"]
+         record agrees with the artifact
+[PASS] C5  exported VK sha256 matches the manifest pin
+         computed 84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914
+         manifest 84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914
+         This hash must ALSO be pinned in the pool and verifier artifacts — verified separately by the Rust gate (compiled_vk_sha256).
+[PASS] C6  production zkey is pinned and stale artifacts cannot be mistaken for it
+         production zkey circuits/build/spend_1.zkey
+           sha256 4898655e8b3c3de9517f649f7caf8366ff4f9c95190ac274d5859de58f21e80c
+           manifest pin 4898655e8b3c3de9517f649f7caf8366ff4f9c95190ac274d5859de58f21e80c
+         stale artifacts declared: 6
+         production key matches its pin; no stale artifact shares its hash; all declared stale artifacts accounted for
+         Presence of stale keys on disk is not itself a failure — they are untracked local residue.
+         Deleting them is local cleanup and is NOT auditable closure evidence.
+
+── summary ──  6 pass / 0 fail
+  PASS  C1  ptau is production-grade
+  PASS  C2  ptau power covers the circuit
+  PASS  C3  final zkey verifies against final R1CS AND chosen ptau
+  PASS  C4  zkey phase-2 contributions observed and match the record
+  PASS  C5  exported VK sha256 matches the manifest pin
+  PASS  C6  production zkey is pinned and stale artifacts cannot be mistaken for it

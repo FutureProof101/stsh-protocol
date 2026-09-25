@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "canisters": {
+    "solvency_status": { "type": "assets", "source": ["website/solvency-status/dist"] }
+  }
+}

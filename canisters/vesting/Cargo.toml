@@ -1,0 +1,27 @@
+[package]
+name    = "vesting"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+# Test-only probe endpoint used by the cross-Wasm sentinel tests. OFF BY
+# DEFAULT — the production build never enables it, so the probe is absent from
+# every deployed Wasm (asserted by eager_cell_feature_isolation_tests).
+testing = []
+
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+stsh-eager-cell    = { path = "../eager-cell" }
+
+[dev-dependencies]
+# W2 2-5R (field drift): the published-field lock parses the canister's own
+# committed vesting.did with the REAL candid parser. Test-only — a
+# dev-dependency never enters the Wasm, so the release artifact is unmoved.
+candid_parser = "0.1"

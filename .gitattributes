@@ -1,0 +1,22 @@
+# Enforce LF line endings for all text files.
+# This project compiles in WSL2/Linux — CRLF in source files breaks builds.
+* text=auto eol=lf
+
+# Explicitly lock key file types
+*.rs     text eol=lf
+*.toml   text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.ts     text eol=lf
+
+# Binary proving artifacts (L3c, Option A) — never line-ending-converted.
+*.zkey   binary
+*.wasm   binary
+*.circom text eol=lf
+*.did    text eol=lf
+*.sh     text eol=lf
+
+# Binaries — no line ending conversion
+*.wasm   binary
+*.png    binary
+*.jpg    binary

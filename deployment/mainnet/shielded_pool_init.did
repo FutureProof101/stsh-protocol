@@ -1,0 +1,73 @@
+// =============================================================================
+// STSH — shielded_pool INIT ARTIFACT (lane A-7) — ***DRAFT ONLY, HELD***
+// =============================================================================
+//  ┌───────────────────────────────────────────────────────────────────────┐
+//  │  HOLD — DO NOT INSTALL FROM THIS FILE UNTIL RR-1 LANDS.               │
+//  └───────────────────────────────────────────────────────────────────────┘
+// The pool's four TRUST ROOTS are still pinned to the P0-3 placeholder
+// principals in deployment/mainnet/genesis_manifest.toml `[pool_init]`
+// (token_canister / treasury_canister / staking_canister / controller,
+// ~lines 128-131), and Gate-D checks DPOOL-4..7 bind those manifest values to
+// token_init.did / vesting_init.did — NOT to this file. Until RR-1 rebinds
+// `[pool_init]` to the D5 principals below and `verify_genesis_manifest` is
+// green on the rebound record, the manifest and this artifact DISAGREE by
+// construction. Installing the pool in that state would put the live pool's
+// trust roots outside the reach of the gate that exists to check them.
+//
+// `verify_a7_kit` enforces the hold in BOTH directions: while `[pool_init]`
+// still differs from this file the kit's `hold` row must be present, and once
+// the two agree the hold row must be CLEARED — a stale hold is as much a defect
+// as a missing one.
+//
+// Interface: canisters/shielded-pool/shielded_pool.did:720 — a single record.
+// Bound in source at canisters/shielded-pool/src/lib.rs:4152 (`#[init]`); init
+// is PURELY LOCAL — it makes no inter-canister call, so the pool may be
+// installed before or after its counterparties without an ordering hazard of
+// its own. The only ordering constraint on it is the RR-1 gate above.
+//
+// Values (RECORD_J18_VAULT_BIRTHS_2026-09-12.md unless noted):
+//   token_canister     stsh_token          clv7x-haaaa-aaaar-qchha-cai (prop 5)
+//   nullifier_canister nullifier_registry  ccwul-riaaa-aaaar-qchgq-cai (prop 4)
+//   merkle_canister    merkle_tree         cmuzd-kyaaa-aaaar-qchhq-cai (prop 6)
+//   treasury_canister  treasury            cqqds-5yaaa-aaaar-qchfq-cai (prop 2)
+//   staking_canister   VAULT               cpdab-saaaa-aaaar-qca2q-cai
+//        D1 (2026-08-14): staking is NOT INSTALLED at launch and is absent from
+//        dfx.json. The field is pinned to the Vault, never to a staking
+//        canister — freeze §14, and the same value genesis_manifest DPOOL-6
+//        will carry after RR-1.
+//   controller         VAULT               cpdab-saaaa-aaaar-qca2q-cai
+//   verifier_canister  opt verifier        arjxl-zqaaa-aaaar-qchia-cai (prop 7)
+//        Declared init-writable in deployment/mainnet/custody_manifest.toml as
+//        authority_field VERIFIER_CANISTER — the interface could not express
+//        it. Supplying it here is what keeps private_spend from coming up
+//        fail-closed on VerifierUnavailable. Law 4: the verifier is a SEPARATE
+//        canister called async; there is no in-process path to fall back to.
+//
+//   initial_vk_hash    blob = sha256(circuits/verification_key.json)
+//                      84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914
+//        Measured on this tree and equal to genesis_manifest `[pool_init]`
+//        vk_hash (A-4). The pool's DENY_VK_HASH init trap refuses the M5
+//        single-participant dev hash; that deny list is not provenance — this
+//        equality is.
+//   initial_proof_system "groth16-bn254"
+//
+// FEE ACTIVATION IS NOT AN INSTALL STEP. The pool comes up on launch_defaults,
+// which are FEE-FREE; nonzero fees arrive later as a PoolSetGovernanceFeeParams
+// governance proposal (A-5/A-6), never as an init value. Nothing here sets one.
+//
+// When the hold clears, the operator page uploads shielded_pool_init.bin
+// verbatim; `expected_arg_hash` is the sha256 of that .bin (a7_install_kit.toml).
+// =============================================================================
+(
+  record {
+    token_canister       = principal "clv7x-haaaa-aaaar-qchha-cai";
+    nullifier_canister   = principal "ccwul-riaaa-aaaar-qchgq-cai";
+    merkle_canister      = principal "cmuzd-kyaaa-aaaar-qchhq-cai";
+    treasury_canister    = principal "cqqds-5yaaa-aaaar-qchfq-cai";
+    staking_canister     = principal "cpdab-saaaa-aaaar-qca2q-cai";
+    controller           = principal "cpdab-saaaa-aaaar-qca2q-cai";
+    initial_vk_hash      = blob "\84\db\a3\05\9c\1f\b1\50\80\cd\2d\1c\5b\9a\1e\ef\bf\ea\7f\3b\03\21\e1\29\7d\83\ad\56\ac\bc\69\14";
+    initial_proof_system = "groth16-bn254";
+    verifier_canister    = opt principal "arjxl-zqaaa-aaaar-qchia-cai";
+  },
+)

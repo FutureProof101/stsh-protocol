@@ -1,0 +1,24 @@
+// =============================================================================
+// STSH — CANONICAL verifier INIT ARTIFACT (lane A-7)
+// =============================================================================
+// THE exact Candid init argument the mainnet `verifier` install consumes.
+// Interface: canisters/verifier/verifier.did:16 — `service : (principal) -> {…}`.
+// The single init argument is the AUTHORIZED POOL CALLER (DEF-083):
+// `canisters/verifier/src/lib.rs:102` stores it and every verification entry
+// point rejects any other caller.
+//
+// Value: the shielded_pool principal born under the Vault at J-18 proposal 1
+// (RECORD_J18_VAULT_BIRTHS_2026-09-12.md) —
+//   cxrfg-qaaaa-aaaar-qchfa-cai
+//
+// The operator page uploads verifier_init.bin (the Candid-ENCODED bytes of this
+// text) verbatim; `expected_arg_hash` is the sha256 of that .bin, recorded in
+// deployment/mainnet/a7_install_kit.toml. Hand-reconstructing this argument at
+// install time is a Gate-D-class violation — the install must consume the file.
+//
+// Verified by `verify_a7_kit` (scripts/verify_custody_manifest): this text is
+// re-encoded against verifier.did's init type and must byte-match the .bin.
+// =============================================================================
+(
+  principal "cxrfg-qaaaa-aaaar-qchfa-cai",
+)

@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "canisters": {
+    "wallet_frontend": { "type": "assets", "source": ["wallet/dist"] },
+    "solvency_status": { "type": "assets", "source": ["website/solvency-status/dist"] }
+  }
+}

@@ -1,0 +1,24 @@
+[package]
+name    = "nullifier_registry"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+# Test-only probe endpoint used by the cross-Wasm sentinel tests. OFF BY
+# DEFAULT — the production build never enables it, so the probe is absent from
+# every deployed Wasm (asserted by eager_cell_feature_isolation_tests).
+testing = []
+
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+hex                = { workspace = true }
+# #116: canonical Fr encoding for defense-in-depth registry key validation.
+stsh-field-utils   = { path = "../field-utils" }
+stsh-eager-cell    = { path = "../eager-cell" }

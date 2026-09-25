@@ -1,0 +1,97 @@
+[package]
+name    = "stsh_vetkeys"
+version = "0.1.0"
+edition = "2021"
+
+# STANDALONE crate — deliberately NOT a member of the root workspace (the root
+# Cargo.toml `exclude`s it). ic-vetkeys 0.7 requires ic-cdk 0.20, whose
+# ic-cdk-executor `links` key conflicts with the workspace's ic-cdk 0.16
+# executor; cargo forbids both in one dependency graph even across separate
+# member binaries. This crate therefore has its own Cargo.lock (committed, for
+# reproducibility) and its own target/ dir.
+#
+# Build:  cargo build --manifest-path canisters/vetkeys/Cargo.toml \
+#           --target wasm32-unknown-unknown --release --locked
+# Test:   cargo test  --manifest-path canisters/vetkeys/Cargo.toml --locked
+#         (requires the Wasm build above first, plus the WORKSPACE merkle_tree
+#          wasm for the cross-device scan test, and POCKET_IC_BIN)
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+candid = "0.10"
+serde  = { version = "1", features = ["derive"] }
+
+# Pinned exact (=) per the brief: vetKeys APIs are still evolving.
+ic-cdk                     = "=0.20.2"
+ic-cdk-management-canister = "=0.1.1"
+ic-stable-structures       = "=0.7.2"
+ic-vetkeys                 = "=0.7.0"
+
+# wasm32-unknown-unknown build requirement: ic-vetkeys' crypto deps pull
+# getrandom 0.2, which refuses wasm32-unknown-unknown without a backend. The
+# "custom" feature compiles it with an unregistered stub — fine here because
+# this canister never asks for host randomness at runtime (it only forwards
+# management-canister vetKD calls; all IBE encryption randomness is client-side).
+getrandom = { version = "0.2", features = ["custom"] }
+
+# W-VETKEYS §C — P-256 ECDSA VERIFICATION ONLY.
+#
+# Authorized as a narrow, fenced exception to the no-new-crypto-deps posture by
+# CTO_ADJUDICATION_W_VETKEYS_COMMIT1_HALT_2026-08-27 (7cd63a14…) item B:
+# RustCrypto `p256` is the widely used implementation and `ic-vetkeys`
+# offers no P-256. EXACT version pin (the same discipline as the ic-* pins
+# above), `default-features = false`, and only the features verification needs:
+#   ecdsa  — the ECDSA verifier itself
+#   pkcs8  — parse a device's SPKI signing public key
+#   sha256 — the digest ECDSA-P256 signs over
+# PURPOSE FENCE: verification of ApprovalV1/RevokeV1 transcripts, including the
+# explicit high-S rejection. No signing, no key generation, no other canister.
+p256 = { version = "=0.13.2", default-features = false, features = ["ecdsa", "pkcs8", "sha256"] }
+
+# Direct (was already in this crate's lockfile transitively at the same 0.10
+# line): SHA-256 over the SPKI / wrapped-envelope bytes the transcripts bind.
+sha2 = { version = "0.10", default-features = false }
+
+[dev-dependencies]
+# Tests SIGN the transcripts the canister verifies. Resolver-2 keeps
+# dev-dependency features out of the shipped Wasm build; the production
+# dependency above stays verification-scoped.
+p256 = { version = "=0.13.2", features = ["ecdsa", "pkcs8", "sha256"] }
+# Host-side acceptance tests (tests/): PocketIC harness + the ic-vetkeys client
+# primitives (TransportSecretKey / EncryptedVetKey / DerivedPublicKey /
+# IbeCiphertext). pocket-ic has no ic-cdk dependency, so no links conflict here.
+pocket-ic = "9"
+# R-L (campaign §5 G-b): the refused-call ceiling is DATA in
+# scripts/gate_lints/refused_call_ceilings.toml and the C-3 test reads THAT
+# FILE, never a constant in this crate (brief §4 invariant 2).
+toml      = "0.8"
+# H-2 (A2 case-3): compile a minimal empty-predecessor canister Wasm from WAT at test
+# time, to drive a genuine cross-Wasm upgrade onto a fresh config cell (post_upgrade trap).
+wat       = "1"
+rand      = "0.8"
+sha2      = "0.10"
+# HD note-secret derivation (HKDF-SHA256) — must byte-match the wallet's
+# implementation in wallet/src/crypto/notes.ts (shared test vector pins it).
+hkdf      = "0.12"
+# Rust reference for the commitment/nullifier/leaf equality checkpoints
+# (wallet-build Commit 2): the SAME circom-anchored Poseidon (arities 2/3/4/6)
+# + reduce_le_field the wallet's WASM uses. Path dep on the workspace member;
+# it has no ic-cdk, so no links conflict with this crate's ic-cdk 0.20.
+stsh-poseidon-wasm = { path = "../../circuits/poseidon-wasm" }
+# decimal → Fr → LE bytes for the pool-principal domain input (test helper).
+ark-bn254 = { version = "0.4", default-features = false, features = ["curve"] }
+ark-ff    = { version = "0.4", default-features = false }
+# The pool's own merkle_leaf, for the leaf equality cross-check.
+stsh-field-utils = { path = "../../canisters/field-utils" }
+
+# Mirror of the workspace release profile (a standalone crate does not inherit it).
+[profile.release]
+lto       = true
+opt-level = 'z'
+strip     = true
+panic     = "abort"
+# P-ARITH R-1: mirrors the workspace profile — silent wraps trap in release.
+overflow-checks = true

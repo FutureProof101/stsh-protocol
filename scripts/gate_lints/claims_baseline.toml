@@ -1,0 +1,458 @@
+# =============================================================================
+# STSH — `claims` (G-a) BASELINE.  DATA (invariant 3, invariant 4).
+# =============================================================================
+#
+# The full-corpus hit list, annotated honestly, one row per hit.
+#
+# LANE R-11 (2026-09-07) DISCHARGED EVERY UNBACKED ROW; LANE R-L2 (2026-09-08)
+# then grew the corpus and reintroduced them. The counts are NOT
+# restated in this header — a hand-maintained tally above a list is the exact
+# second-source-of-truth shape this lane spent its time removing. Regenerate
+# them at the point of use:
+#
+#   grep -c '^\[\[claim\]\]' scripts/gate_lints/claims_baseline.toml
+#   grep '^marker' scripts/gate_lints/claims_baseline.toml | sort | uniq -c
+#
+# WHAT A ROW MEANS.
+#   MEASURED — the claim is stated inside a `#[test]` function, and THAT TEST is
+#              what backs it.  The lint checks the referent NAMES A REAL fn; it
+#              does NOT and CANNOT check that the test exercises the specific
+#              attached claim.  That check is a human read, and a `MEASURED:`
+#              pointing at a real test that does not exercise its claim is WORSE
+#              than no marker at all.  R-11 found exactly one such row live in
+#              this file (the vault `pic_tests.rs` history-depth clause, pointed
+#              at an unrelated upgrade test) and re-pointed it; the general
+#              relevance gap is a register item owned by lane R-L2.
+#   UNBACKED — no measurement exists.  The reason says what is actually missing.
+#              R-11 left ZERO of these; lane R-L2 (2026-09-08) grew the corpus by
+#              twelve patterns and REINTRODUCED them, so "there are none left" is
+#              no longer true of this file.  See the R-L2 section below, whose
+#              header states that every row it adds is `UNBACKED`.  The posture
+#              as of that lane, PASTED from the two commands above and not
+#              retyped:
+#
+#                $ grep -c '^\[\[claim\]\]' scripts/gate_lints/claims_baseline.toml
+#                57
+#                $ grep '^marker' scripts/gate_lints/claims_baseline.toml | sort | uniq -c
+#                     15 marker   = "MEASURED"
+#                     42 marker   = "UNBACKED"
+#
+#              That block is a dated SNAPSHOT, not a tally to maintain — rerun
+#              the commands rather than trusting it.  A row REINTRODUCED with
+#              this marker needs a reason that says what is missing and which
+#              lane owns it — never a softened restatement of the claim.
+#
+# HOW R-11 DISCHARGED A ROW — four remedies, all applied at the SOURCE, never by
+# adding a marker to an unmeasured claim:
+#   MEASURE       — a real test now exercises the claim; the row carries its name.
+#   REWORD        — the sentence overstated what was true; the corrected sentence
+#                   no longer asserts a cost bound, so it is not a hit and has no
+#                   row.
+#   DELETE        — the claim quoted figures nothing in the tree produces, for a
+#                   canister not installed at launch; the figures are gone.
+#   STALE-DELETE  — the sentence was true as history and false as present tense,
+#                   with a HISTORICAL banner already covering it; removed.
+#
+# The baseline discharges the marker obligation for these EXACT claim texts and
+# nothing else.  Rows are keyed on (file, whitespace-normalised text), NEVER on
+# a line number — a line number moves the moment anything above it is edited,
+# which would silently transfer an old row's annotation onto a new claim.  Edit
+# a claim's wording and its row stops matching, which is a finding (a stale
+# annotation is an annotation nobody is watching), not a silent pass.
+#
+# Fixing a claim listed here is the OWNING lane's job. This file labels.
+
+[[claim]]
+file     = "canisters/shielded-pool/UPGRADE_BOOTSTRAP_RUNBOOK.md"
+marker   = "MEASURED"
+referent = "r11_drain_loop_per_call_record_cap_is_enforced"
+reason   = "MEASURE (lane R-11, BR-05). `integration-tests/tests/a5_upgrade_resume_tests.rs` seeds a backlog strictly inside ONE drain phase and asserts one call visits EXACTLY `UPGRADE_SCAN_CHUNK` records, with the cursor phase unchanged across the call so a short count cannot be a phase-boundary artifact. `e4_per_message_work_never_exceeds_the_named_chunk` already proved no call EXCEEDS the cap; this proves the cap is SPENT, which is the 'drain the backlog with repeated calls' half."
+property = "EXPECTED_DRAIN_CHUNK"
+text     = "is bounded per call and resumable — drain the backlog with repeated calls:"
+
+[[claim]]
+file     = "canisters/token/src/lib.rs"
+marker   = "MEASURED"
+referent = "h3_post_upgrade_migration_budget_is_bounded_in_gate"
+reason   = "MEASURE (lane R-11, BR-07/08/09 — one shared test). `integration-tests/tests/token_dedup_dos_tests.rs` measures the all-live dedup back-fill over a 2,000-row fixture through the existing `measure_migration_instructions_for_test` endpoint, derives the per-entry cost from THAT run, and asserts per_row_cost x MAX_MIGRATION_ENTRIES_PRODUCTION <= the post_upgrade instruction limit. Replaces reliance on `measure_h3_migration_budget`, which is `#[ignore]`d and never runs in the gate."
+property = "POST_UPGRADE_INSTRUCTION_LIMIT"
+text     = "/// instruction budget partway through the scan. It never partially back-fills:"
+
+[[claim]]
+file     = "canisters/token/src/lib.rs"
+marker   = "MEASURED"
+referent = "h3_post_upgrade_migration_budget_is_bounded_in_gate"
+reason   = "MEASURE (lane R-11, BR-07/08/09 — one shared test). `integration-tests/tests/token_dedup_dos_tests.rs` measures the all-live dedup back-fill over a 2,000-row fixture through the existing `measure_migration_instructions_for_test` endpoint, derives the per-entry cost from THAT run, and asserts per_row_cost x MAX_MIGRATION_ENTRIES_PRODUCTION <= the post_upgrade instruction limit. Replaces reliance on `measure_h3_migration_budget`, which is `#[ignore]`d and never runs in the gate."
+property = "POST_UPGRADE_INSTRUCTION_LIMIT"
+text     = "// never blow the post_upgrade instruction budget mid-migration; else → trap."
+
+[[claim]]
+file     = "canisters/token/src/lib.rs"
+marker   = "MEASURED"
+referent = "h3_post_upgrade_migration_budget_is_bounded_in_gate"
+reason   = "MEASURE (lane R-11, BR-07/08/09 — one shared test). `integration-tests/tests/token_dedup_dos_tests.rs` measures the all-live dedup back-fill over a 2,000-row fixture through the existing `measure_migration_instructions_for_test` endpoint, derives the per-entry cost from THAT run, and asserts per_row_cost x MAX_MIGRATION_ENTRIES_PRODUCTION <= the post_upgrade instruction limit. Replaces reliance on `measure_h3_migration_budget`, which is `#[ignore]`d and never runs in the gate."
+property = "POST_UPGRADE_INSTRUCTION_LIMIT"
+text     = "// large dedup map cannot turn `post_upgrade` into an instruction-limit brick,"
+
+[[claim]]
+file     = "canisters/treasury/src/lib.rs"
+marker   = "MEASURED"
+referent = "r11_treasury_migration_scan_per_call_cap_is_enforced"
+reason   = "MEASURE (lane R-11, BR-10). Native test in `canisters/treasury/src/lib.rs`'s own test module: exactly `MAX_UPGRADE_SCAN` qualifying records sweep to completion (the positive control a trap-only test cannot give), and `MAX_UPGRADE_SCAN + 1` traps with every record still exactly as seeded — never a PARTIAL migration."
+property = "MAX_UPGRADE_SCAN"
+text     = "/// partial migration, never an unbounded scan that would exceed the instruction"
+
+[[claim]]
+file     = "canisters/upgrader/src/tests.rs"
+marker   = "MEASURED"
+referent = "s8b_pinned_refresh_constants_match_the_a1_filing"
+property = "min_interval_ns"
+text     = "/// refused cycle cannot flap the public proof stale. Asserted as the INEQUALITY"
+
+[[claim]]
+file     = "canisters/upgrader/src/tests.rs"
+marker   = "MEASURED"
+referent = "w6_evidence_01_reachable_history_accesses_are_enumerated_upgrader"
+property = "reachable_history_accesses"
+text     = "cycle, whose depth this gate cannot bound: {found:#?}\""
+
+[[claim]]
+file     = "canisters/vault/src/lib.rs"
+marker   = "MEASURED"
+referent = "pic_rf3_allocation_instruction_cost_is_independent_of_history_depth"
+reason   = "MEASURE (lane R-11, BR-13). Re-pointed after a direct read: the clause is history-INDEPENDENCE of the allocation path's instruction cost, and the test that measures it is `pic_rf3_allocation_instruction_cost_is_independent_of_history_depth` (`canisters/vault/tests/pic_tests.rs`), which measures `measure_allocation_instructions_for_test` at two history depths and asserts growth <= 10%. The baseline's sibling row on the pic_tests.rs copy of this clause points at `pic_rf7_...`, which does NOT exercise it — recorded as a MEASURED-relevance finding (owner R-L2)."
+property = "measure_allocation_instructions_for_test"
+text     = "/// companions and must never touch permanent history — so its instruction cost"
+
+[[claim]]
+file     = "canisters/vault/src/lib.rs"
+marker   = "MEASURED"
+referent = "c8_domain_matches_cleared_action"
+property = "c8_logical_bytes"
+text     = "\"a payload-free action must not consume byte quota\""
+
+[[claim]]
+file     = "canisters/vault/tests/pic_tests.rs"
+marker   = "MEASURED"
+referent = "pic_rf3_allocation_instruction_cost_is_independent_of_history_depth"
+reason   = "RE-POINTED by lane R-11. The referent was `pic_rf7_upgrader_absent_companion_rejected_across_real_upgrade_and_inline`, which is a real fn — so the lint's referent-existence check passed — but it tests companion rejection across an upgrade and does not measure instruction cost at any history depth. The clause this row annotates is the doc comment ON `pic_rf3_allocation_instruction_cost_is_independent_of_history_depth`, which measures exactly it. A worked example of the MEASURED-relevance gap `claims.rs` cannot close by construction (register row, owner R-L2)."
+property = "measure_allocation_instructions_for_test"
+text     = "/// permanent history — so its instruction cost must not grow as terminal"
+
+[[claim]]
+file     = "canisters/verifier/src/lib.rs"
+marker   = "MEASURED"
+referent = "umc31_proof_endpoints_refuse_every_non_pool_caller"
+reason   = "MEASURE (lane R-11, BR-15 = UMC-31). `integration-tests/tests/verifier_tests.rs` calls both DEF-083-gated endpoints from `Principal::anonymous()` AND from an unrelated authenticated principal and asserts each is rejected at the canister boundary; `vk_hash` is asserted still publicly callable, so a blanket lockout cannot pass it for the wrong reason. Every pre-existing verifier test called these endpoints AS the authorized pool, so the refusal path had zero coverage."
+property = "test_pool_principal"
+text     = "/// cannot be used as a public verification/cycle-burn oracle."
+
+[[claim]]
+file     = "canisters/vetkeys/tests/crossdevice_acceptance.rs"
+marker   = "UNBACKED"
+reason   = "the baselined sentence states a limitation (advance_time cannot move the clock mid-drain, so the resulting interleaving is not externally reachable) that this referent does not measure — it measures a different, real claim (the rolling-24h vetkd_derive quota bound) in the same test. The referent's own doc comment says the limitation is proved instead at the unit level by admission::tests::a_pruned_predispatch_frees_capacity_but_kills_its_own_call and a_reservation_can_be_dispatched_only_once — a MEASURED row here would point a real, passing test at a claim it never checks. R-L2 AMBER-6, corrected V3->V4."
+text     = "/// middle of a drain. A call therefore always completes at the clock value at"
+
+[[claim]]
+file     = "integration-tests/tests/ext_regression_poc2_h3.rs"
+marker   = "UNBACKED"
+reason   = "the flagged text is a fixture guard's abort message in a live, passing test — it guards against a degenerate measurement, it does not report one; the test's real assertion is the O(1)-vs-O(N) slope comparison two lines below. A MEASURED row cannot honestly point at a guard string as if it were the measurement — R-L2 AMBER-1 row 13, corrected V2->V3 per SSA V2's own reading."
+text     = "\"STOP: PocketIC cycle deltas are degenerate (small={}, large={}); the metric cannot witness the slope — report, do not substitute.\","
+
+[[claim]]
+file     = "canisters/token/src/lib.rs"
+marker   = "MEASURED"
+referent = "h1_public_supply_query_cost_is_o1_and_bounded"
+reason   = "MEASURE (lane R-11, BR-35). `integration-tests/tests/r1_supply_integrity_tests.rs` measures `verify_supply_invariant()` at 1 / 1,000 / 10,000 balance rows via the new `measure_verify_supply_invariant_instructions_for_test` hook and asserts each cost sits inside a 5% band on cost(1) — true exactly when the O(1) claim is true — plus an absolute ceiling three orders of magnitude under the message instruction limit."
+property = "O1_TOLERANCE_NUM"
+text     = "// honest answer and can never trap on the instruction limit (H-1)."
+
+[[claim]]
+file     = "canisters/vetkeys/src/state.rs"
+marker   = "MEASURED"
+referent = "admission_state_refuses_a_foreign_layout_version"
+reason   = "RE-POINTED by lane R-L2, found by the `property` rule this lane adds. The referent was `registration_window_round_trips` (state.rs:1948) — a real fn, so the existence check passed — but the annotated sentence is the FAIL-CLOSED DECODE doc comment at :1958-1959, which belongs to `admission_state_refuses_a_foreign_layout_version` (:1961), the `#[should_panic(expected = \"unknown layout version\")]` test that actually exercises it. Populating `property` was what surfaced it: no token of the claim was present in the old referent's body, because the old referent does not test the claim. Second worked example of the MEASURED-relevance gap, alongside the R-11 vault re-point."
+property = "from_bytes"
+text     = "/// decode to a plausible default: \"quota never used\" and \"ticket unused\""
+
+# =============================================================================
+# LANE R-L2 (2026-09-08) — rows added by the CORPUS GROWTH of `claims_patterns.toml`.
+# =============================================================================
+#
+# R-L2 added eight `normative` and four `cost_rate` patterns, each measured to
+# produce at least one real hit over the governed corpus BEFORE it was added
+# (`unreachable` produced zero and was dropped outright: a pattern that cannot
+# fail is not a lint).  The rows below are the claims those patterns made
+# visible.  They were invisible, not absent — which is the whole point of the
+# growth.
+#
+# ALL BUT TWO ARE `UNBACKED`, and that is a deliberate, honest posture, not a
+# regression from R-11's clean sheet.  (The two exceptions are the SSA AMBER-3
+# re-marks of 2026-09-08: rows whose attached text is the MESSAGE ON A LIVE
+# `assert!`, where the assertion IS the measurement of the sentence it carries,
+# so `UNBACKED` was wrong in the opposite direction from a bad `MEASURED`.
+# Attached text that is a `//` or `///` COMMENT is NOT an assertion and stays
+# `UNBACKED`, with a reason that says so.)
+#
+#   * A `MEASURED` row must name a test that measures THE ATTACHED SENTENCE.
+#     Inventing one for 42 newly-visible claims would reproduce, forty-two
+#     times, the exact defect R-11 found once and this lane found a second time
+#     (a real, passing test pointed at a claim it never checks).  The file's own
+#     header says that is WORSE than no marker.
+#   * Fixing a claim listed here is the OWNING lane's job; this file labels.
+#     Each reason therefore says what is missing AND who owns it.
+#
+# A SUBSET IS A PATTERN FALSE POSITIVE, and each such reason says so in terms
+# rather than pretending a measurement is owed: `cycle` matching a DIRECTORY
+# cycle, `unbounded` matching `ic-stable-structures`' `Bound::Unbounded`,
+# `refund` matching an allowance-accounting refund, `per-call` matching a
+# per-call AUTHORIZATION token, `exhaust` matching an exhausted retry count.
+# There is no `#[allow]`-style escape hatch by design, so the honest place to
+# record a false positive is here, in data, where a reviewer sees it.  The
+# remedy is a NARROWER pattern, reviewed as data, and it is out of R-L2's scope
+# — this lane's additive set was adjudicated on hit count.  Recorded as a
+# found-not-fixed finding in packet R-L2 V1.
+
+[[claim]]
+file     = "MAINNET_DEPLOYMENT.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists here. The runbook line RESTATES a governance parameter's per-call cap (`MAX_BPS_CHANGE_PER_UPDATE`); the cap is a source constant enforced on the governance path, and a deployment document is not where it is measured. Missing: nothing in this file — the obligation belongs to the governance/token surface that enforces the constant. Surfaced by lane R-L2's `per call` addition."
+text     = "at `MAX_BPS_CHANGE_PER_UPDATE` ABSOLUTE bps per call; STSH-amount movement bounded by"
+
+[[claim]]
+file     = "canisters/nullifier-registry/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists, and the claim is STRUCTURAL rather than measured: there is no migration in this canister's `post_upgrade`, so there is no upgrade-time work to bound. Missing: a test that would fail if upgrade-time work were reintroduced (the shape `h3_post_upgrade_migration_budget_is_bounded_in_gate` has for the token). Owner: nullifier-registry."
+text     = "//   there is no upgrade-time work to do and no instruction ceiling to hit."
+
+[[claim]]
+file     = "canisters/shielded-pool/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is that the prune path's per-call work does not absorb redaction work — a partitioning argument about which loop does what, not an instruction measurement of either. Missing: a per-call instruction measurement of the prune path with redaction pending. Owner: the A-5 / F2-REDACT sweep surface."
+text     = "// prune path cannot become unbounded by absorbing redaction work."
+
+[[claim]]
+file     = "canisters/shielded-pool/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is that the paged query's per-call work follows the PAGE SIZE and not the map size — an O(page) claim of exactly the shape `h1_public_supply_query_cost_is_o1_and_bounded` measures for the token's supply query, with no counterpart here. Missing: the same two-size instruction measurement against this endpoint. Owner: the shielded-pool query surface."
+text     = "/// iterations — per-call work is bounded by the page size, not the map size."
+
+[[claim]]
+file     = "canisters/smoke-alarm-monitor/OPERATIONS.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in this repo. The figure is a PLATFORM price quoted from IC documentation (inter-canister call base cost), and `negligible` is an operator's judgement about the payload term on top of it. The 34-node value is that same quoted 13-node price scaled by 34/13 = 2.615 (subnet pzp6e; CTO handoff 2026-09-13 item 2, SSoT V9 D9-4) — an arithmetic re-derivation of an unmeasured figure, so it stays UNBACKED. Row text re-annotated 2026-09-14 by the T0-DOCS 34-node re-cut, which rewrote the claim; the claim itself is unchanged in kind. Missing: a measurement of this monitor's own per-refresh cost against that estimate. Owner: smoke-alarm-monitor operations."
+text     = "- Inter-canister call ≈ 2.6 M cycles fixed (13-node) → **≈ 6.8 M cycles** at 34 nodes + payload bytes ≈ negligible here"
+
+[[claim]]
+file     = "canisters/smoke-alarm-monitor/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The one-per-minute interval is a source constant and the parenthetical names cycle-drain as the reason for it, which is a rationale, not a measured bound. Missing: a test that the limiter admits at most one manual refresh per interval, and a cost figure for the refresh it gates. Owner: smoke-alarm-monitor."
+text     = "/// A manual request_refresh is accepted at most once per minute (cycle-drain"
+
+[[claim]]
+file     = "canisters/token/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists at this line. It is a SECTION BANNER restating `MAX_PRUNE_PER_CALL`; the constant is real and the loop reads it, but the banner names no test and no per-call figure. Missing: a per-call cap test of the prune loop of the shape `r11_treasury_migration_scan_per_call_cap_is_enforced` has for the treasury scan. Owner: the token dedup/prune surface."
+text     = "// ── prune removes at most MAX_PRUNE_PER_CALL per call (oldest-first) ───────"
+
+[[claim]]
+file     = "canisters/upgrader/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is that the sweep's per-call work is bounded so the sweep cannot become the exhaustion route it defends against — a design argument about the loop's bound, not a measurement of it. Missing: a per-call work measurement of the sweep. Owner: upgrader."
+text     = "/// Member-gated; work per call is bounded so the sweep cannot itself become"
+
+[[claim]]
+file     = "canisters/upgrader/src/tests.rs"
+marker   = "MEASURED"
+referent = "s8b_concurrency_burst_collapses_and_charges_once"
+reason   = "SSA AMBER-3 (2026-09-08) re-mark. The line is the MESSAGE on the final `assert_eq!` of a live `#[test]`, and that assertion IS the measurement: it calls `refresh_release(first)` and then asserts `refresh_ledger_for_test().last_accepted_at_ns` still equals `charged_at`, which is exactly \"release must NOT refund the allowance\". `UNBACKED` was wrong in the opposite direction from a bad `MEASURED` — the claim is backed by the line it is written on. `refund` is still the accounting sense, not cycles; the pattern-precision cost is disclosed in packet §V1a rather than by mis-marking the row."
+property = "refresh_release"
+text     = "\"release must NOT refund the allowance\""
+
+[[claim]]
+file     = "canisters/vault/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is that the per-call work is bounded BY CONSTRUCTION rather than by care — the strongest form of the claim and the one most in need of a measurement, since 'by construction' is precisely the argument shape that cannot be checked by reading. Missing: a per-call work measurement of the path. Owner: the vault custody surface."
+text     = "/// construction rather than by care: the work per call is bounded by the"
+
+[[claim]]
+file     = "canisters/vault/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "not a cost claim, and nothing is missing. `unbounded` here is `ic-stable-structures`' `Bound::Unbounded` TYPE property — a statement about what the library can serialise, which is why the purpose is hashed to a fixed width. Recorded because brief R-L2 V4 §2.4 adjudicated `unbounded` into `cost_rate` on hit count alone. Remedy is a narrower pattern, out of this lane's scope."
+text     = "/// `ic-stable-structures` cannot serialize a tuple containing an unbounded"
+
+[[claim]]
+file     = "canisters/vault/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is that an unbounded pass over never-pruned records grows without limit — the RATIONALE for the bound that follows, not a measurement of the bounded version. Missing: a measurement showing the bounded pass is in fact bounded at the stated cap. Owner: the vault history surface."
+text     = "/// never pruned, so any unbounded pass over them grows without limit and"
+
+[[claim]]
+file     = "canisters/vault/tests/pic_tests.rs"
+marker   = "UNBACKED"
+reason   = "STAYS `UNBACKED` under SSA AMBER-3 (2026-09-08): there is no attached assertion at all. The line is a `///` DOC COMMENT, not an `assert!` message — nothing on or adjacent to it measures anything, and the sentence's own content is that no measurement is possible (the instruction counter resets per message, so there is no single figure for one refresh). A `MEASURED` marker here would contradict the sentence it annotates. Missing: nothing further at this line — the limitation is real and correctly stated. Owner: the vault refresh measurement lane."
+text     = "/// resets per message — there is no single instruction figure for \"one refresh\""
+
+[[claim]]
+file     = "canisters/vetkeys/src/admission.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is that a freed admission slot can only ever be reused by a path that can no longer spend cycles — a reachability argument over the admission state machine. Missing: the unit-level interleaving test that would witness it (the doc block elsewhere in this crate names `admission::tests::a_pruned_predispatch_frees_capacity_but_kills_its_own_call` for the neighbouring property; no equivalent is named here). Owner: vetkeys admission."
+text     = "/// freed slot can only ever be reused by a path that can no longer spend cycles."
+
+[[claim]]
+file     = "canisters/vetkeys/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The line asserts a FAIL-CLOSED failure posture with `no drain` among its conjuncts — a claim that the failure path spends nothing, which is a cost claim and is not measured. Missing: a cost measurement of the failure path. Owner: vetkeys. This is the R6-1/P2-05 unmetered-drain register's own subject matter."
+text     = "// failure is fail-closed (no mint, no spend, no key leak, no drain — only"
+
+[[claim]]
+file     = "canisters/vetkeys/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The line classifies an instruction-burn drain on the fail-closed path as 'the same category as' another risk — a categorisation, not a bound. Missing: the instruction cost of that path. Owner: vetkeys, and it is the same unmetered-drain register item (P2-05 / R6-1) row 277 belongs to."
+text     = "/// instruction-burn drain on the fail-closed path, i.e. the same category as the"
+
+[[claim]]
+file     = "canisters/vetkeys/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists at this line and none is owed by it: it is the user-facing REFUSAL STRING that renders the pinned per-principal derivation limit and its window. The numbers are ruled constants read from the vetkeys pins module. Missing: nothing in this string; the limiter's own enforcement measurement is owned by the vetkeys quota surface."
+text     = "\"rate limit: at most {} vetKey derivations per principal per {} s; \\"
+
+[[claim]]
+file     = "canisters/vetkeys/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists, and the claim is an API-SURFACE argument: the type exposes no decrement, refund, release or remove-single-entry call, so it cannot reduce the recorded consumption. `refund` here names an absent API, not a cycles refund. Missing: nothing measurable at this line. Recorded under R-L2's `refund` addition; a narrower pattern is the remedy, out of scope here."
+text     = "/// decrement, refund, release or remove-single-entry API — it cannot reduce"
+
+[[claim]]
+file     = "canisters/vetkeys/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The claim is a per-call removal cap with cross-call drain (`at most K removals per call`), which is exactly the shape a per-call cap test witnesses. Missing: that test. Owner: vetkeys nonce/sighting prune."
+text     = "/// A backlog LARGER than `K` costs at most `K` removals per call and"
+
+[[claim]]
+file     = "canisters/vetkeys/src/state.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. Same shape as the `lib.rs` prune claim: `AT MOST pins::NONCE_PRUNE_MAX rows per call`, a real per-call cap read from a pinned constant, with no test that a backlog larger than the cap drains across calls rather than in one. Missing: that test. Owner: vetkeys nonce prune."
+text     = "/// removes AT MOST `pins::NONCE_PRUNE_MAX` rows per call instead of"
+
+[[claim]]
+file     = "canisters/vetkeys/tests/crossdevice_acceptance.rs"
+marker   = "UNBACKED"
+reason   = "no measurement exists. The comment argues that a refund on any branch cannot be written without adding an API the type deliberately lacks — a design argument in a test's prose, not something the test asserts. Missing: nothing measurable; the API-absence claim is the `lib.rs:397` claim restated in a test file. Owner: vetkeys."
+text     = "/// refund on ANY branch — including this one — cannot be written without adding"
+
+[[claim]]
+file     = "canisters/vetkeys/tests/crossdevice_acceptance.rs"
+marker   = "UNBACKED"
+reason   = "STAYS `UNBACKED` under SSA AMBER-3 (2026-09-08): the attached text is not an assertion and so cannot be the measurement. The line is a `//` COMMENT quoting the refusal string the test observed (`rate limit: at most 5 ...`) while explaining a correction to the test; the quoted numbers are the ruled pins, restated as prose, not asserted here. Nothing is missing at this line. Recorded under R-L2's `at most` addition; a narrower pattern is the remedy, out of scope here."
+text     = "// corrected — the wave-2 refusals came back as \"rate limit: at most 5"
+
+[[claim]]
+file     = "docs/DID_EXPORTS_CENSUS.md"
+marker   = "UNBACKED"
+reason   = "not a machine-cost claim, and nothing is missing. `cycle` here is a DIRECTORY cycle — a symlink loop in the tool's tree walk — and the claim is that each such cycle is walked at most once. Recorded because `cycle` is a `cost_rate` word and R-L2 added `at most` to `normative`, which is what made the pair fire. The walk's own termination is asserted by the tool's tests (SSA F1i). Remedy is a narrower pattern; out of this lane's scope."
+text     = "directory cycle is walked at most once and does not hang the gate. An entry with no"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell is a MemoryId row's design-rationale paragraph; its cost words describe why a CURSOR is required (a cursor-free sweep re-reads the redacted prefix until it spends its whole budget) and its normative words are about append-only allocation. Missing: nothing in this file — the sweep's per-tick bound is measured, if anywhere, in the shielded-pool A-5/F2-REDACT lane, which owns it."
+text     = "| shielded-pool | 22 | `REDACTION_CURSOR_CELL` | active | F2-REDACT (R1-F2/R1-F3, GRANTED by control 2026-08-22 17:21:27Z) — `RedactionCursor`: the KEY-BASED resumption state for the enforced redaction sweep (`last_deposit`, `last_spend`, `generation`). **APPEND, not a renumber or a recycle:** 0–21 were allocated, 22 is fresh, and nothing existing moves — which is the failure mode (silent reinterpretation of a decommissioned region) the append-only rule and this lint exist to prevent. **Why a cursor is REQUIRED at all:** redacted records stay in `TERMINAL_*_INDEX` until day 30, so a cursor-free window walk re-reads the already-redacted prefix at the oldest edge every tick; once that prefix reaches `MAX_REDACT_SCAN_PER_TICK` the sweep spends its entire budget re-reading redacted records and reaches ZERO eligible ones, and later records then age through the whole 7→30-day window unredacted while pruning cannot clear the prefix until day 30. The cursor walks past that prefix ONCE per sweep, which is what makes the monotone-sweep invariant (strict advance, no record examined twice, none skipped) provable independently of the cap magnitudes. **KEY-based rather than offset-based** (`CTO_RULING_A-5_cursor_keyed`, the same reasoning as MemoryId 21): pruning REMOVES entries, so an offset shifts under the walk and silently skips records; `range((Excluded(k), Unbounded))` stays well-defined even when `k` has since been pruned, which is exactly why the sweep-restart reset to a possibly-removed key is safe. **Fail-closed:** an absent or undecodable region decodes to the default — 'sweep not started', never 'sweep complete' — so a lost region can never cause the sweep to skip the window it has not walked. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell explains why the vault open-mutating-intent index replaced a full-map scan on the authorization path; the cost words are the rationale for the index, not a measured figure. Missing: nothing here. Owner of any measurement: the vault custody lane."
+text     = "| vault | 7 | `OPEN_MUTATING_INTENT_INDEX` | active | S2/R3.9, superseded by amended R3 item 10 — a BOUNDED AUTHORITATIVE COMPANION, `(target_principal, proposal_id) → ()`. Replaces `open_mutating_intent`'s full-map scan (a Candid decode per proposal per call) on the authorization-critical single-flight path. Key is COMPOSITE, not `target → id`: several proposals against one target can legally be `Executing` at once (propose-time single-flight blocks only a second PROPOSAL), so a 1:1 map would be last-writer-wins and the evicting proposal's own re-check — which excludes itself — would find nothing and proceed, silently breaking single-flight. Holds only `Executing \\| OutcomeUnknown`. **S5B W2: reclassified DERIVED → AUTHORITATIVE COMPANION** — maintained transactionally, validated against MemoryId 9, never rebuilt from MemoryId 1. **SSA CUST-SSA-S5B-COMP-01: this row previously read \"DERIVED index\".** Under amended R3 item 10 it is maintained transactionally with every record write, covered by MemoryId 9's accounting and seal, and VALIDATED never rebuilt — companions authorize active membership, history establishes existence and immutable terminal outcomes, and neither rebuilds the other. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. `unbounded` in this cell is `ic-stable-structures`' type bound — the reason the manifest purpose is hashed to a fixed 40-byte key. Missing: nothing here; it is a type-system statement, not a cost claim. Owner: the vault custody lane."
+text     = "| vault | 8 | `OPEN_CREATION_INTENT_INDEX` | active | S2/R3.9, superseded by amended R3 item 10 — a BOUNDED AUTHORITATIVE COMPANION, key `sha256(manifest_purpose) \\|\\| proposal_id` as a fixed 40-byte `Blob`, value the plaintext purpose. Creation single-flight keys on the manifest purpose because the created principal does not exist yet (L1-5). The purpose is hashed because `ic-stable-structures` cannot serialize a tuple containing an unbounded type and `String` is unbounded; the fixed-width big-endian encoding is also what makes the prefix range sound. Separate from 7: different key, different operation. **S5B W2: reclassified DERIVED → AUTHORITATIVE COMPANION** — maintained transactionally, validated against MemoryId 9, never rebuilt from MemoryId 1. **SSA CUST-SSA-S5B-COMP-01: this row previously read \"DERIVED index\".** Under amended R3 item 10 it is maintained transactionally with every record write, covered by MemoryId 9's accounting and seal, and VALIDATED never rebuilt — companions authorize active membership, history establishes existence and immutable terminal outcomes, and neither rebuilds the other. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records why the recovery plane's entry-rate ledger is durable — a member could otherwise drive unbounded audit growth — which is a threat rationale, not a measured bound. Missing: nothing here. Owner: the upgrader entry-gate lane."
+text     = "| upgrader | 9 | `ENTRY_RATE_LEDGER` | active | SSA landed-diff BLOCKER 2 (2026-08-08) — durable C9 entry-rate ledger for the RECOVERY plane, mirroring vault 10. W4 landed the entry gate on the Vault only, leaving this plane ungated: `MembershipRotationRejected` appended DIRECTLY into permanent history with no budget, so a member could drive unbounded audit growth with invalid rosters. Closing only the Vault moves the exhaustion route rather than removing it — the same reasoning that put the recovery plane in R3.8/R3.11. Admissions and audited rejections share ONE budget; the gate runs BEFORE the validator so the rejection append is inside a budgeted entry event, and a rate-limited refusal appends nothing (non-recursive by construction). Durable for the same pinned reason as the Vault's: a heap counter clears on upgrade, and the party who can trigger an upgrade is the governed path itself. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records why the permissionless refresh limiter holds NO per-caller state (a per-principal ledger would be an unbounded attacker-keyed map) and why its state is durable. Missing: nothing here; the refresh cost figure it alludes to is pinned and asserted in `canisters/upgrader/src/tests.rs`. Owner: the upgrader S8B/R6 lane."
+text     = "| upgrader | 12 | `INVARIANT_REFRESH_LEDGER` | active | S8B / R6 Option B (dispatch 4b61221b…, DID pre-auth 0d509960…) — durable rate-limiter state for the PERMISSIONLESS controller-invariant refresh. Bounded cell: `schema_version` + `last_accepted_at_ns` + `in_flight_since_ns`, rewritten in place, never appended. **DURABILITY IS PINNED** (R-3 acceptance criterion 3; addendum condition 4 refuses a heap counter explicitly) for the same reason as MemoryIds 9/10: a heap counter clears on every upgrade and the party who can trigger an upgrade is the governed path itself, so a resettable limiter is no limiter — an upgrade must not grant a free burst. **Holds NO per-caller state, deliberately:** the endpoint is permissionless, so a per-principal ledger would be an unbounded map keyed by an attacker-chosen principal — the exhaustion route rather than a defence against it. The single global interval is what makes the bound hold against an unbounded caller set. `last_accepted_at_ns` is set at CHARGE time, not completion, so a concurrent burst cannot each observe an unspent allowance; `in_flight_since_ns` collapses overlapping calls and is reclaimed after `min_interval_ns` (a ruled constant, not a second invented timeout) so a trap after the first await cannot wedge the endpoint permanently. A failed refresh still spends its allowance — rolling it back would make induced failures a retry loop with no meter. COUNT-OK: the three refresh values are RULED constants read from the named source constants, not counted from any corpus a tool scans, and are deliberately no longer restated here as literals (lane R-11). `INVARIANT_REFRESH_LEDGER_SCHEMA_VERSION` is distinct from the bootstrap, companion and MemoryId 11 versions: four independently-versioned records. Empty cell = never charged; undecodable or wrong-version = TRAP, never degraded. **The three R6 constants (`INVARIANT_REFRESH_PARAMS`) are now RULED and `Some`** (S11-3; this entry previously read \"remain `Option = None` on Route 2 pending the A1 pin\", which the A1 pin superseded): the min refresh interval (`INVARIANT_REFRESH_MIN_INTERVAL_SECS`), the refresh compute budget (`INVARIANT_REFRESH_CYCLE_BUDGET`), observation max age **24 h** (`INVARIANT_REFRESH_MAX_AGE_SECS`). No reallocation and no renumbering accompanies this — the pin changes what the limiter enforces, not where it lives. The `None` path is RETAINED and still fail-closed: while unruled the refresh endpoint refuses `NotRuled` before reading or writing anything, and (S11-2) `get_controller_invariant_proof` serves `max_age_ns = 0`, so every observation classifies `Stale` and `current_proof_ok` is false — an unruled freshness policy must never be able to produce a success-shaped proof. The max-age constant is the one S11-2's freshness contract classifies against; it is read from here and never retyped as a literal at a use site. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records that the replay set stores an expiry so it is PRUNABLE rather than unbounded — the structural reason the set is not a storage-exhaustion surface. Missing: nothing here. Owner: the vetkeys W-VETKEYS lane."
+text     = "| vetkeys | 6 | `CONSUMED_NONCES` | active | W-VETKEYS (D-1, brief V2 §C) — the approval/revoke replay set, keyed `(owner, issuer_device_id, nonce)`: the nonce scope the brief pins, so one device burning a nonce cannot burn it for another device or another owner. The VALUE is the transcript expiry, which is what makes the set PRUNABLE past expiry rather than unbounded — a replay set with no prune rule is a storage-exhaustion surface on a caller-writable path. Consumption is ordered BEFORE any state write. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records the pinned 5-per-rolling-24h revocation limit and where it is charged. The numbers are ruled constants read from the vetkeys pins module (the cell says so). Missing: nothing here. Owner: the vetkeys W-VETKEYS lane."
+text     = "| vetkeys | 12 | `REVOCATION_RATE` | active | W-VETKEYS (review-round fix brief V2, RED-2) — per-principal `revoke_device` attempt timestamps for the pinned 5-per-rolling-24 h limit, charged immediately after the anonymous check and BEFORE device-id parsing, stable reads, transcript construction or P-256 verification, whether the call succeeds or fails. `revoke_device` was the only update endpoint with no meter at all — one P-256 verify per call, charged to nobody. COUNT-OK: the 5-per-rolling-24 h figure is a RULED constant, read from the vetkeys pins module rather than counted from any corpus. Deliberately a SEPARATE window from 9 (`REGISTRATIONS`) and 11 (`REPLACEMENTS`): isolation is the point — exhausting revocation must not reduce the registration or replacement allowance, nor they it. Refusal is the distinct typed `RevocationRateExceeded { retry_after_ns }` (its DID delta expressly authorized by the V2 brief). Stable for the same reason as 9/11: an upgrade-cleared window is a free allowance. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records why the expiry index exists at all — a prune over the primary map alone would be a full-map scan on a caller-writable path — and states the per-call prune cap. Missing: nothing here; the per-call cap's own test is the missing item recorded against `canisters/vetkeys/src/state.rs`. Owner: the vetkeys W-VETKEYS lane."
+text     = "| vetkeys | 13 | `NONCE_EXPIRY_INDEX` | active | W-VETKEYS (review-round fix brief V2, RED-1) — the expiry-ordered index over 6 (`CONSUMED_NONCES`), keyed `(expiry_ns BIG-ENDIAN, canonical NonceKey bytes)` so expired rows are exactly the low prefix (`StableBTreeMap` iterates in encoded-byte order; only the BE u64 encoding sorts numerically). The primary map orders by `NonceKey`, so it CANNOT provide that prefix — a prune over it alone would be a full-map scan on a caller-writable path (the RED-1 exhaustion vector). Maintained both-or-neither with 6 inside single non-awaiting messages: a consume inserts both rows or (on the replay refusal, which precedes any write) neither, and any discovered mismatch TRAPS rather than committing a half-state. At each admission, at most `pins::NONCE_PRUNE_MAX = 16` rows with `expiry_ns < now` are removed from BOTH structures — `O(K log N)` per call; a backlog > K drains across calls, never in one. |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records the storage/admission constant split and why a tightening upgrade must not hand the fleet a free burst. `refund` appears as 'No refund path exists' — an accounting statement about spent compute. Missing: nothing here. Owner: the vetkeys C-26 global-budget lane."
+text     = "| vetkeys | 14 | `GLOBAL_DERIVE_BUDGET_WINDOW` | active | C-26 remedy (A1 fix brief V3 1eef5e87…; LAUNCH ON-RAMP RE-PIN by A1 fix brief V4 5a708339…, ratification addd59af… superseding bf90e062…) — the fleet-wide rolling derive-dispatch window: a `StableCell` holding a bounded ordered list of dispatch timestamps. **STORAGE AND ADMISSION ARE SEPARATE CONSTANTS, and that is load-bearing:** the cell is sized by `GLOBAL_DERIVE_WINDOW_MAX_ENTRIES` (= 100 entries, 802 bytes) and NEVER by `GLOBAL_DERIVE_BUDGET` (= 20 since 2026-09-01). Before the split both the `Bound::Bounded` size and the decode assertion derived from the budget, so LOWERING the budget made every cell holding more than the new value undecodable — a trap inside `post_upgrade`, unrecoverable, on the very upgrade that tightens the ceiling. Decode now accepts up to the STORAGE bound and, when a legacy cell exceeds the current budget, retains the NEWEST `GLOBAL_DERIVE_BUDGET` entries: retained entries hold capacity until they expire, so keeping the newest keeps capacity consumed LONGER — the fail-closed direction, since a tightening upgrade must never hand the fleet a free burst. Encode still refuses more than the budget (the write path is unchanged), and decode still traps beyond the storage bound (that cannot be a cell this code wrote). The storage constant only ever RISES; shrinking it re-creates the original trap. TRUE ROLLING, not a reset bucket: an entry expires iff `now.saturating_sub(ts) >= GLOBAL_DERIVE_WINDOW_NS` (1 h), pruned then length-checked at the dispatch fence; the budget admits iff the retained count is `< GLOBAL_DERIVE_BUDGET`. Written ONLY in the fence's COMMIT phase — after transport validation, eligibility and reservation revalidation have all succeeded — so a malformed transport key, an ineligible principal or a lapsed parked call consumes ZERO fleet capacity and an actual dispatch consumes exactly one. No refund path exists: after the fence the compute is genuinely spent, so a discarded late result's charge correctly stands. Stable, not heap, for the reason rows 7/9/11/12 give: an upgrade-cleared window is a free fleet-wide allowance. The R6-1 A-2 meter stays heap/ephemeral. Refusal is the typed `GlobalDerivationBudgetExceeded { retry_after_ns }` (exact, §4.2). |"
+
+[[claim]]
+file     = "docs/MEMORY_ID_REGISTRY.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists in the registry, by design. The cell records why a principal-keyed map alone cannot bound the expiry walk (it would be O(N) on a caller-reachable path) and states the per-call examine cap. Missing: nothing here. Owner: the vetkeys held-balance-age lane."
+text     = "| vetkeys | 16 | `SIGHTING_EXPIRY_INDEX` | active | Held-balance-age admission (A1 fix brief V5 911ef839…, RED-1 closure) — the expiry-ordered secondary over 15, keyed `(expiry_ns BIG-ENDIAN, PrincipalKey)`, `expiry_ns = first_seen_at_ns + pins::SIGHTING_RETENTION_NS` (7 days, checked). **WHY IT EXISTS AT ALL, AND WHY 15 ALONE CANNOT DO IT:** a `PrincipalKey`-ordered tree puts expired timestamps nowhere in particular, so finding K expired rows in 15 is `O(N)` over the whole table — on a caller-reachable admission path. The V4 brief cited row 13's K constant while specifying only a principal-keyed map, so the bound it claimed did not exist; the STRUCTURE, not the constant, is what supplies the bound. Exactly the MemoryId-13 (`NONCE_EXPIRY_INDEX`) precedent, for exactly the same reason. BIG-ENDIAN IS LOAD-BEARING: `StableBTreeMap` iterates in ENCODED-BYTE order and only the BE `u64` encoding sorts numerically, so expired rows are exactly the LOW PREFIX; fixed stable width `8 + 30 = 38 B`, `Bound::Bounded { is_fixed_size: true }`, and `from_bytes` asserts that exact width. Maintained BOTH-OR-NEITHER with 15 inside single non-awaiting messages across all four mutations — insert, renew (delete old key, insert new), success-delete, expiry-delete — and any discovered mismatch TRAPS rather than committing a half-state. At each admission at most `pins::SIGHTING_PRUNE_MAX = 16` rows with `expiry_ns < now` are EXAMINED (examined, not merely removed — the bound is over the walk) and removed from BOTH structures: `O(K log N)` per call, with a backlog larger than K draining across successive calls, never in one. A separate pin from `NONCE_PRUNE_MAX` despite the shared magnitude; either may move alone. |"
+
+[[claim]]
+file     = "integration-tests/tests/a5_upgrade_resume_tests.rs"
+marker   = "UNBACKED"
+reason   = "STAYS `UNBACKED` under SSA AMBER-3 (2026-09-08): the attached text is not an assertion and so cannot be the measurement. The line is a `//` COMMENT explaining WHY the following assertions are shaped as they are — it guards against a VACUOUS pass by naming what the fail-closed path is NOT (a rate-limited install produces the same observable). It states a negative about a neighbouring case rather than asserting the claim, so no assertion on this line measures it. Nothing is missing. Recorded under R-L2's `fail-closed` addition; a narrower pattern is the remedy, out of scope here."
+text     = "// Guard against proving nothing: a rate-limited install is NOT the fail-closed"
+
+[[claim]]
+file     = "integration-tests/tests/pnul_pagination_tests.rs"
+marker   = "MEASURED"
+referent = "pnul_retry_exhaustion_fails_closed"
+reason   = "SSA AMBER-3 (2026-09-08) re-mark. The line is the MESSAGE on the `assert_eq!` that closes a live `#[test]`, and that assertion IS the measurement: the harness mutates the snapshot on EVERY attempt and the test asserts the outcome is `WalkOutcome::StaleExhausted`, which is exactly \"exhaust retries and fail closed\". `exhaust` is still a retry count rather than a resource; that pattern-precision cost is disclosed in packet §V1a rather than by marking a backed claim `UNBACKED`."
+property = "StaleExhausted"
+text     = "\"perpetually-changing snapshot must exhaust retries and fail closed\""
+
+[[claim]]
+file     = "integration-tests/tests/r1_supply_integrity_tests.rs"
+marker   = "UNBACKED"
+reason   = "no measurement is claimed — the line states the ABSENCE of one, on purpose: it records that the measurement is in instructions and that there is no cycles term anywhere in it, so a reader cannot mistake the figure for a cycles cost. A `MEASURED` marker here would assert the opposite of the sentence. Missing: nothing. Owner: lane R-1."
+text     = "//   converted, calibrated or extrapolated. There is no cycles term anywhere in"
+
+[[claim]]
+file     = "scripts/cycle_monitor/OPERATIONS.md"
+marker   = "UNBACKED"
+reason   = "no measurement exists, and the claim is STRUCTURAL: there is no code path from fee accrual to a cycles top-up, by design, so the two are not coupled. Missing: a check that would fail if such a path were added. Owner: the cycle-monitor operations surface."
+text     = "automatically.** There is no path — by design — from fee accrual to a cycles"
+
+[[claim]]
+file     = "scripts/verify_did_exports/src/lib.rs"
+marker   = "UNBACKED"
+reason   = "not a machine-cost claim, and nothing is missing. `cycle` here is a DIRECTORY cycle in the tool's own tree walk; the claim is that the walk visits it at most once and terminates. Recorded because `cycle` is a `cost_rate` word and R-L2 added `at most` to `normative`. The walk's termination is asserted by this tool's own tests (SSA F1i). Remedy is a narrower pattern; out of scope here."
+text     = "/// walked at most once, and a cycle does not hang the gate (SSA F1i)."
+
+[[claim]]
+file     = "wallet/src/actors/authorization.ts"
+marker   = "UNBACKED"
+reason   = "not a machine-cost claim, and nothing is missing. `per-call token` here is an AUTHORIZATION token minted per call, not a per-call cost; the claim is that a user gesture cannot mint one. Recorded under R-L2's `per-call` addition. Remedy is a narrower pattern; out of scope here."
+text     = "* gesture fires, so a gesture cannot mint a per-call token and cannot even name"
+
+[[claim]]
+file     = "wallet/src/actors/authorization.ts"
+marker   = "UNBACKED"
+reason   = "not a machine-cost claim, and nothing is missing. The line records that the wallet harness mocks every actor, so there is no per-call latency to wait on in tests. Recorded under R-L2's `per-call` addition. Remedy is a narrower pattern; out of scope here."
+text     = "// wallet's harness mocks every actor, so there is no per-call latency to"

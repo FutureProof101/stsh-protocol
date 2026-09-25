@@ -1,0 +1,16 @@
+[package]
+name    = "stsh-fee-policy"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+# ── A2-2 fee-policy crate ────────────────────────────────────────────────────
+# Pure types + calculation functions for docs/STSH_FEE_POLICY.md.
+# Deliberately has NO ic-cdk / ic-stable-structures dependency so it can be
+# used as a plain library crate from shielded_pool, treasury, AND from
+# integration-tests / native unit tests without pulling in canister machinery.
+[dependencies]
+candid = { workspace = true }
+serde  = { workspace = true }

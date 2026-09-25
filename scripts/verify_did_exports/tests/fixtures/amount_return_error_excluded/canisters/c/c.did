@@ -1,0 +1,1 @@
+service : { withdraw : () -> (variant { Ok : null; Err : variant { BelowMinimum : record { minimum : nat } } }) };

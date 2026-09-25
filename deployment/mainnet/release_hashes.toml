@@ -1,0 +1,1668 @@
+# W2 HARDENING WASM BINDING, 2026-09-11.
+# Source S2: 8047a39c58d2eeaa2cbabd68ed14c0ee105826af.
+# Two builders made four pristine full thirteen-package observations with the
+# exact build.command below; all 52 raw Cargo Wasms agreed on SHA-256 and size.
+# Evidence: PRISTINE_WASM_S2_LEG_A_V1, PRISTINE_WASM_S2_LEG_B_V1, and
+# PRISTINE_WASM_S2_CROSS_LEG_COMPARISON_V1 under the 2026-09-10 hardening
+# evidence. Both builders used the same host, Git object store, registry and
+# toolchain caches; cross-machine independence remains open. No post-processing
+# was used. Ten shipped rows below bind the measured outputs; the three excluded
+# test outputs were measured but remain outside the release set. The wallet rows
+# below now bind the accepted fresh W2 pair; the R2 confirmation is not counted
+# as a third independent observation.
+#
+# HISTORICAL W HARDENING WASM BINDING, 2026-09-11.
+# Source S was 4e526027cbcce81f71d1108e2619d41fa9e78cd5. Evidence was
+# PRISTINE_WASM_LEG_A_V1, PRISTINE_WASM_LEG_B_V2, and
+# PRISTINE_WASM_CROSS_LEG_COMPARISON_V1. It was superseded by W2 after the
+# accepted testing-seam correction changed a frozen production build input.
+
+# W0 RELEASE-IDENTITY REBIND, 2026-09-08.
+# Frozen source: 5ae6b0ff5708aec4492a210f6d78805678404151.
+# Two separately launched builders reproduced the full thirteen-package build
+# and wallet bundle from fresh origin clones on the SAME host. Evidence:
+#   BUILDER_RELEASE_BINDING_LEG_A_EVIDENCE_V2_2026-09-08.md
+#   sha256 25413e1e4b023648db376dc31051560de2c96f6b9389372ee4043a30396129f5
+#   BUILDER_RELEASE_BINDING_LEG_B_EVIDENCE_V2_2026-09-08.md
+#   sha256 ade5437b54f0f2939f123134022937390f1abbda77c33e767bff9ea0eed942c5
+# Each leg performed two clean observations. All thirteen Wasms agreed across
+# all four observations; all ten shipped Wasms and the wallet matched the pins
+# below. No hash or byte count moved, and --repin was not used. Same-host
+# reproduction does not close cross-machine independence: CR-12 remains OPEN.
+
+# R-15 manual pin update, 2026-09-08. Source a22314cabe0ae3002712e197b046857da27c587e.
+# Authorized by DISPATCH_CTO_BUILDER_R15_2026-09-08 and V4 brief.
+# Exact gate env-i full thirteen-package production command, raw cargo Wasms,
+# then wallet build:wasm + build under Node22.23.1/npm10.9.8. No --repin used.
+# Pool, token, treasury, vault, upgrader and wallet changed; five Wasms reproduced.
+# Pool: immutable retries/control schema. Token: testing-only hook insertion
+# source-only testing hooks change bytes at equal size; production
+# hook isolation remains a mandatory gate test. Wallet: regenerated pool IDL.
+# Treasury/vault/upgrader: additive pool error mirrors required by conformance.
+# Final preparation ran on clean committed a22314c after custody/treasury
+# mirrors were completed; no source edits occurred during builds. Child binds
+# that source to these measured bytes. Final gate evidence is filed in
+# reviews/PACKET_R15_V1_2026-09-08.md in the office, not this repository.
+# The historical asserts_identity_at / R2.6 ceremony record below is retained;
+# this authorized lane pin does not claim a new independent release ceremony.
+# R-15 Cargo.lock sha256: 713d03565c4ab02b3d9dfa0c396b02024268cbaee2fd4c9a384fa49350713226
+
+# ── R2.5 — release identity record ───────────────────────────────────────────
+#
+# CUST-SSA-002 / brief V4.1 §R2.5, §11 row "SSA 4". Verified by
+# `verify_custody_manifest --deploy-time` via `check_release_identity`
+# (scripts/verify_custody_manifest/src/lib.rs:2023), which is reached from
+# `check_deploy_time` (:1578). Required fields are exactly those the checker
+# calls `require()` on (:2068-2072) plus `wasm.<pkg>.sha256` (:2076-2091);
+# everything else here is recorded provenance.
+#
+# WHY THE INVOCATION IS PART OF RELEASE IDENTITY: hashes were reproducible per
+# exact package-set command but DIFFERED ACROSS PACKAGE SELECTIONS (§R2.5).
+# `build.command` below is therefore the exact, complete, ordered package set —
+# not an abbreviation of it. Building a subset is a DIFFERENT release.
+#
+# STATUS AT THIS COMMIT: BINDING. This is the record the S10 binding-sequencing
+# note reserved: the binding run re-executed on the FINAL INTEGRATED COMMIT (the
+# master merge SHA caa2b2915657e9d6d3cc061f262f0e0744474b32, §12 conditions 2-4)
+# after the pre-merge holistic SSA pass and the CTO merge adjudication. The
+# rehearsal hashes previously recorded here are SUPERSEDED, here, by that run.
+#
+# WHAT BOUND THEM (CTO_CONVERGENCE_AND_DISPATCH_BINDING_COMMIT_CAA2B29_2026-08-13.md
+# §1): two independent builder legs, each a fresh clone of origin detached at
+# caa2b29 with its own CARGO_TARGET_DIR, no shared cache, no comparison of notes
+# before filing; canonical FULL 13-package `build.command` below, toolchain from
+# the committed root pin. Each leg additionally rebuilt from a WIPED target dir
+# (R2.6 within-leg) and each leg's two runs were identical. CTO normalized and
+# diffed both 13-row tables (name, sha256, bytes): IDENTICAL 13/13. Leg evidence
+# BUILDER_RELEASE_BINDING_LEG_{A,B}_EVIDENCE_V1_2026-08-13.md, sha256
+# A 08dcfa093b3235e41f85e67f3a2f66b35268df88bc0b3602f06598e46eb7ff0e /
+# B 69f7eaeec996af622099cab336b363c411f10e8513446ce5901ce12eec74c259.
+#
+# CARRIED OPEN, NOT CLOSED BY THIS RECORD: both legs ran on the SAME host, so
+# CROSS-MACHINE reproduction is still unproven and remains the disclosed
+# holistic-review condition. Two legs on one machine is independence of clone,
+# target dir, and builder — not of machine, and this record does not claim it.
+#
+# SSA's condition-10 re-review is against THESE hashes. Binding release IDENTITY
+# is not release AUTHORIZATION: nothing here authorizes release, install,
+# cutover, or mainnet, all of which remain HELD.
+
+[toolchain]
+rust_version  = "1.95.0 (59807616e 2026-04-14)"
+cargo_version = "1.95.0 (f2d3ce0bd 2026-03-21)"
+llvm_version  = "22.1.2"
+host_triple   = "x86_64-unknown-linux-gnu"
+target        = "wasm32-unknown-unknown"
+# NAMED GAP — CLOSED AT S11-4. The repository now pins the toolchain at root
+# (`rust-toolchain.toml`, channel "1.95.0"), so the versions above are ENFORCED,
+# not merely OBSERVED. This was the gap recorded here at S10 ("adding a toolchain
+# pin is a build-policy change outside S10's authorized scope") and raised as
+# REPRODUCIBLE_BUILD_REVIEW.md open finding #1; the holistic pass carried it and
+# the S11 corrective dispatch authorized it.
+#
+# THE PIN IS OUTPUT-NEUTRAL, DEMONSTRATED RATHER THAN ASSERTED: this commit's
+# base (c8b2142) rebuilt from a fresh worktree WITH the pin, using the exact
+# `build.command` package set below, reproduced [wasm.vault] and [wasm.upgrader]
+# EXACTLY as recorded here. The hashes below are therefore untouched by S11-4.
+#
+# ONLY THE COMMENT CHANGED. No hash in this file was re-pinned. The vault and
+# upgrader Wasms DO differ at the S11 corrective head, entirely because S11-1
+# and S11-2 change production source in both canisters — a legitimate,
+# attributable source delta, not a toolchain effect, and not something a builder
+# re-pins unilaterally. Per the binding-sequencing note above, the binding run
+# (canonical build, hash refresh, >=2 independent R2.6 reproductions) still
+# re-executes on the FINAL INTEGRATED COMMIT; these rehearsal hashes are
+# superseded there, not here.
+
+[build]
+# Discovered, not designed: run_gate.sh's Phase 2 block ("production Wasms"),
+# whose package set is the `PROD_PACKAGES` array in the same file. This is the
+# ONLY in-repo invocation that produces the artifacts the install path consumes
+# — see `measure_payloads` in scripts/verify_custody_manifest/src/lib.rs, which
+# reads target/wasm32-unknown-unknown/release/*.wasm for the
+# `INLINE_PAYLOAD_ARTIFACTS` set declared just above it, vault and upgrader
+# included.
+#
+# CITED BY SYMBOL, NOT BY LINE (lane R-11). The four line ranges this block used
+# to carry (run_gate.sh:276-284 / :253-257 and
+# verify_custody_manifest:1060-1065 / :1043-1054) had ALL rotted onto unrelated
+# code — the files moved under them and nothing re-read the citation. A name
+# survives an edit above it; a line number does not.
+#
+# ── D1 LAUNCH-SET EXCLUSION: THIS COMMAND BUILDS A SUPERSET ──────────────────
+# The `command` below builds a SUPERSET of the launch set. Specifically, its
+# `-p staking` output, staking.wasm, is a TEST FIXTURE ONLY and is NOT a launch
+# artifact (D1, ratified 2026-08-14). staking is not declared in dfx.json at
+# all — see the staking-absence block in
+# deployment/mainnet/custody_manifest.toml — so it is outside the launch set
+# entirely. The package is retained in the invocation solely because Phase 2's
+# staking.wasm feeds the protected P-STK suite and the other compile-time
+# env!(STAKING_WASM) consumers; removing it would break the test tree without
+# changing any release artifact. No staking hash appears in this file or in any
+# other release document.
+#
+# Precedent L1-B2 (CTO_RULING_L1_DFX_STAKING_REMOVAL_V2_2026-08-17 §1 B-2): a
+# release manifest MAY cite a build command broader than the release set
+# PROVIDED the exclusion is explicit and co-located with the command. This
+# annotation is that co-located exclusion.
+command = "cargo build --target wasm32-unknown-unknown --release -p stsh_token -p staking -p shielded_pool -p nullifier_registry -p merkle_tree -p treasury -p vesting -p stsh-verifier -p stsh-stub-verifier -p stub_bad_fee_token -p smoke_alarm_monitor -p vault -p upgrader"
+command_source = "run_gate.sh:280 (packages: run_gate.sh:253-257)"
+features  = "none — no --features flag; default features only. The `--features testing` build (run_gate.sh:266) is Phase 1 and produces *_test.wasm; Phase 2 OVERWRITES the plain names with these production builds (run_gate.sh:271 / 280). No production artifact carries the testing feature."
+profile   = "release — workspace Cargo.toml [profile.release]: lto=true, opt-level='z', strip=true, panic='abort', overflow-checks=true"
+rustflags = "none — RUSTFLAGS unset in the environment; no .cargo/config.toml at repo root; no build.rustflags anywhere in the workspace"
+source_sha = "8047a39c58d2eeaa2cbabd68ed14c0ee105826af"
+# ── WHERE THE BYTE-EQUALITY CLAIM HOLDS ──────────────────────────────────────
+#
+# CTO ruling S11 R5.3 (identity scope), shape (b), with the ARMING CONDITION
+# superseded by CTO_ADJUDICATION_S11_RETURN_AND_S11_6_DISPATCH_2026-08-13.md §2.
+#
+# The commit whose tree the [wasm.*] hashes below were built from
+# (recorded-ancestor semantics, as ratified for source_sha at S10). The
+# comparison is ARMED — byte-equality REQUIRED — while that commit is an
+# ancestor of (or equal to) HEAD **and no commit since has touched a production
+# build input** (`canisters/`, `Cargo.toml`, `Cargo.lock`,
+# `rust-toolchain.toml`). Once one has, `check_release_identity` reports the
+# typed `ReleaseIdentityNotAsserted` outcome — never byte-equality success,
+# never a skip.
+#
+# WHY NOT `HEAD == asserts_identity_at` (the S11-5 form): that is unsatisfiable
+# in a clean committed record. This is a COMMITTED file and a commit's SHA is a
+# hash over the tree containing it, so no commit can record its own SHA — the
+# arm could only ever fire on a DIRTY tree. SSA's S11 landed-diff review caught
+# it. Quiescence removes the self-reference the same way S10's
+# recorded-ancestor ruling removed it for source_sha.
+#
+# WHY THE FIELD EXISTS. The checker previously compared at ANY head, which bound
+# release identity to every future head of the branch: any legitimate vault or
+# upgrader source change — which correctives are, by SSA direction — turned the
+# gate red, leaving only re-pinning per corrective (laundering unreviewed bytes
+# into a "release" record) or a standing-red gate (which trains readers past the
+# VERDICT line). Both were rejected by the ruling.
+#
+# SET TO caa2b29 — THE FINAL BINDING ACT the paragraph above reserved. This is
+# no longer the rehearsal's c8b2142: the two-leg binding run rebuilt this exact
+# tree and the [wasm.*] hashes below ARE that run's output, so caa2b29 is the
+# head where the byte-equality claim is TRUE and twice independently reproduced.
+#
+# THE ARM FIRES HERE. The commit carrying this change touches ONLY this record,
+# so `caa2b29..HEAD` is quiescent over BUILD_INPUT_PATHS (`canisters/`,
+# `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`) and `check_release_identity`
+# takes the ARMED byte-equality branch: vault.wasm and upgrader.wasm are
+# COMPARED, not reported `ReleaseIdentityNotAsserted`. It keeps binding on every
+# subsequent doc/record-only head, and disarms — loudly and typed — the moment a
+# production build input moves. Re-arming after that is another binding act with
+# a fresh reproduction pair, never a hash refresh to make a gate go green.
+# VR-1 REBIND, 2026-09-13. Source 5572a0662fbdf0f42c85f1c9eb6b8a4b0c63e025 (code fb1467f + SSA landed-diff round 5572a06, test/doc only; Owner-sanctioned freeze exception, RULING_RECORD_VAULT_MGMT_RECONCILE_2026-09-13, office). ONLY [wasm.vault] moved (sha256/bytes from the run_gate.sh env -i build, reproduced at fb1467f and again at 5572a06 — byte-identical); the other nine rows re-measured at those heads are byte-identical to the W2 pins. SINGLE-LEG (one host, one builder) reproduction, disclosed. This commit touches ONLY this record.
+# T0-DOCS REBIND 2026-09-14. No [wasm.*] moved; source range 54bdc59..1a328de touches only docs/comments under canisters/*/OPERATIONS.md. This commit touches ONLY this record. CTO-authorized 2026-09-14; the previous bind 5572a066… was disarmed by 204a0de, a comment-only edit to canisters/smoke-alarm-monitor/OPERATIONS.md — the quiescence rule is PATH-based, so a documentation file under canisters/ disarms it even though no compiled byte moved. No sha256 and no bytes field is changed by this commit; re-arming the byte-equality branch is the whole of its effect.
+# HARDEN-03-CAPACITY REBIND 2026-09-17 — re-armed at 45819e5.
+#
+# The third pass below bound ef1c1217. That bind was disarmed by a400e1f
+# (HARDEN-03-CAPACITY), which edits `canisters/token/src/lib.rs`. Enumerated, not
+# assumed: over `ef1c1217..45819e5` exactly ONE commit touches a BUILD_INPUT_PATH,
+# and it is a400e1f, and the one path it touches is `canisters/token/src/lib.rs`.
+# b0244c8, faa68bb, 90afc0c and 45819e5 touch none.
+#
+# NO [wasm.*] ROW MOVES WITH THIS PASS, and unusually for a `src/lib.rs` edit that
+# is DEMONSTRATED rather than reasoned. a400e1f changes only the body and doc
+# comment of `inject_allowances_for_test`, which is `#[cfg(feature = "testing")]`
+# and therefore absent from every production Wasm, and it was written line-count
+# neutral on purpose (16 lines out, 16 in; the file is 5628 lines before and after)
+# so that no `panic!`/`expect`/`trap` site below it moves — the R-11 E-7 hazard. The
+# check that settles it is a byte comparison, not that argument: two forced release
+# rebuilds of `-p stsh_token` either side of the edit, same shell and same
+# environment, both real ~6.5 s builds rather than cargo no-ops, produced an
+# IDENTICAL `stsh_token.wasm` (sha256 8beb1f19de54d7cc7796b8bd7bae927fe7837f7741f1f9bfd74eff5166fa0b44,
+# `cmp` clean). That sha is an interactive-shell build and is NOT the recorded pin,
+# which only the run_gate.sh `env -i` build reproduces; the claim it supports is the
+# RELATIVE one — this lane moves no production byte — which is what quiescence lost
+# and what this rebind restores. `[wasm.stsh_token]`'s 960dae96… therefore still
+# describes the artifact 45819e5's tree produces, as do the other nine rows.
+#
+# Re-bound to 45819e5, the head this rebind sits on. The commit carrying THIS change
+# touches ONLY this record, so 45819e5..HEAD is quiescent over BUILD_INPUT_PATHS and
+# check_release_identity takes the ARMED byte-equality branch again for all ten
+# pinned Wasms. It cannot name its own commit, for the reason the first pass gives
+# below, which is why it names its parent and why the rebind is its own record-only
+# commit.
+#
+# WHY THIS LANE OWED IT AND THE LANE ABOVE IT DID NOT: 90afc0c/45819e5
+# (HARDEN-03-RELEASE-VARIANT) landed on top of a400e1f and touch no BUILD_INPUT_PATH,
+# so they neither disarmed anything nor could re-arm it. The obligation follows the
+# `canisters/*` touch, not the head position.
+#
+# ── third pass, superseded by the paragraph above; kept because it records why the
+#    bind moved off 83c1d860 ──
+# HARDEN-02 REBIND, THIRD PASS 2026-09-17 — re-armed at ef1c1217.
+#
+# The second pass below bound 83c1d860. That bind was disarmed by 08df784b, which
+# implements the AC-10 ruling in `canisters/token/src/lib.rs` — a real production
+# source change this time, not just a PATH touch: it drops the reclamation trigger
+# from `icrc2_transfer_from` and skips a redundant index remove+insert, and
+# `[wasm.stsh_token]` moved with it (3d036a17… -> 960dae96…, see the AC-10 re-pin
+# note above `[wasm.stsh_token]`).
+#
+# Re-bound to ef1c1217 — the re-pin commit, whose tree carries the record rows the
+# build at 08df784b produced. ef1c1217 changes only `deployment/mainnet/*` and the
+# generated wallet pins mirror, none of which is a BUILD_INPUT_PATH, so the Wasms
+# measured at 08df784b are the Wasms its tree produces. The commit carrying THIS
+# change touches only this record, so ef1c1217..HEAD is quiescent over
+# BUILD_INPUT_PATHS and check_release_identity takes the ARMED byte-equality branch.
+#
+# ── second pass, superseded by the paragraph above; kept because it records why
+#    the bind moved off 594628b3 ──
+# HARDEN-02 REBIND, SECOND PASS 2026-09-17 — re-armed at 83c1d860.
+#
+# The first pass below bound 594628b3, and that bind was DISARMED one commit later
+# by 83c1d860, which adds the reviewed `futures-macro` row to
+# `canisters/token/proc_macro_allowlist_transitive.toml`. Quiescence is PATH-based:
+# ANY file under `canisters/` disarms it, a `.toml` of reviewed data included, and a
+# revert would not re-arm it. This is the T0-DOCS pattern exactly — there, a
+# comment-only edit to `canisters/smoke-alarm-monitor/OPERATIONS.md` disarmed a bind
+# for the same reason.
+#
+# NO [wasm.*] ROW MOVES WITH THIS PASS, and that is the point worth stating: the
+# allowlist file is REVIEWED DATA read by a gate lint, not an input the compiler
+# sees, so `[wasm.stsh_token]`'s 3d036a17… still describes the built artifact at
+# this head. The hashes recorded below were measured at 594628b3, whose tree
+# differs from 83c1d860 only in that one non-compiled file. Re-arming the
+# byte-equality branch is the whole of this pass's effect.
+#
+# Re-bound to 83c1d860c2… (the allowlist commit). The commit carrying THIS change
+# touches only this record, so 83c1d860..HEAD is quiescent over BUILD_INPUT_PATHS
+# and check_release_identity takes the ARMED branch.
+#
+# ── first pass, superseded by the paragraph above; kept because it records why the
+#    bind moved off 1a328de in the first place ──
+# HARDEN-02 REBIND 2026-09-17. Source range 1a328de..594628b3 touches production
+# build inputs — HARDEN-02-CODE (782f43fb) edits canisters/token/src/lib.rs,
+# canisters/token/Cargo.toml and Cargo.lock — so the previous bind was DISARMED and
+# has to be re-established rather than left to report ReleaseIdentityNotAsserted.
+# Re-bound to 594628b3, the HARDEN-02-TOOLING commit, which is the head whose tree
+# produced the [wasm.*] hashes recorded below (one row moved, nine re-verified
+# byte-exact — see the note above [wasm.stsh_token]).
+#
+# THE ARM FIRES HERE, on the same reasoning every rebind above uses: the commit
+# carrying this change touches ONLY this record, so 594628b3..HEAD is quiescent
+# over BUILD_INPUT_PATHS (`canisters/`, `Cargo.toml`, `Cargo.lock`,
+# `rust-toolchain.toml`) and check_release_identity takes the ARMED byte-equality
+# branch. It cannot name its own commit — a commit's SHA is a hash over the tree
+# containing it — which is why it names the parent and why the rebind is its own
+# record-only commit. Quiescence is PATH-based, so the next change to any file
+# under canisters/, including a comment or a .md, disarms it again and owes another
+# binding act with a fresh reproduction.
+# ── HARDEN-03-SETTLEMENT REBIND + RE-PIN, 2026-09-17 — re-armed at 723ea43 ──
+#
+# The bind moves from 45819e5 (HARDEN-03-CAPACITY's rebind) to 723ea43, this
+# lane's code commit. That commit changes production source in BOTH
+# `canisters/token/src/lib.rs` and `canisters/shielded-pool/src/lib.rs`, so it
+# disarmed quiescence for both, and TWO pinned rows move with it:
+#
+#   [wasm.stsh_token]     960dae96… -> ac9336f2…   (849,092 -> 893,997 bytes)
+#   [wasm.shielded_pool]  77b719e2… -> e4f7f2d8…   (1,710,148 -> 1,764,436 bytes)
+#
+# THE OTHER EIGHT ROWS REPRODUCE BYTE-EXACT and are untouched. That is the check
+# law 7(f) asks for — "if any of them moves, stop; that is a signal, not noise" —
+# and it was run as a check rather than assumed: every row was re-measured at
+# this head with `sha256sum` over the `env -i` build's output and compared one by
+# one against the recorded value.
+#
+# `[wasm.vault]` and `[wasm.upgrader]` deserve the explicit note, because this
+# lane DOES touch one file under `canisters/custody-types/`:
+# `tests/fixtures/did/shielded_pool.did`, the pinned DID mirror, which the
+# verify_custody_manifest drift lock requires a lane to re-pin deliberately when
+# it changes the target DID. It is test DATA under `tests/`, not part of the
+# library that compiles into those two canisters — and both rows re-measured
+# byte-exact AFTER that change, which is the evidence rather than the argument.
+# D-11's actual prohibition (a comment edit in custody-types/src/lib.rs, which
+# would shift lines above panic sites and re-pin both custody-ring canisters for
+# prose) is observed and stays deferred.
+#
+# `cargo_lock_sha256` is unchanged: this lane adds no dependency, and
+# `sha256sum Cargo.lock` still reads 3330ddd3….
+#
+# ── RE-PINNED BY HAND, BECAUSE `--repin` IS BROKEN AT THIS HEAD. DISCLOSED. ──
+#
+# Law 7(f) prescribes `verify_custody_manifest --repin`. It WAS run first, and
+# its output was discarded because it CORRUPTED this file: it deleted 723 lines
+# and spliced hash rows into the middle of a comment paragraph. It exited 0.
+#
+# The defect, located precisely so the fix is a one-line change rather than a
+# hunt: `run_repin` locates each row with `text.find(&header)`
+# (`scripts/verify_custody_manifest/src/main.rs`, the `let old = match
+# text.find(&header)` arm) — an UNANCHORED substring search over the whole file,
+# with no line-start requirement and no comment awareness. The FIRST literal
+# `[wasm.vault]` in this file is at line 105, INSIDE A COMMENT ("reproduced
+# [wasm.vault] and [wasm.upgrader]"), prose written by an earlier lane. The tool
+# matched there, computed the row's end as the next "\n[", and replaced
+# everything between. The same happened for every other row whose name appears
+# in prose above, compounding to 723 deleted lines. It also MIS-REPORTED the old
+# hashes it was replacing — it printed `cargo_lock_sha256`'s value as
+# `stsh_token`'s previous sha256 — because the block it parsed was not a wasm
+# table at all.
+#
+# This is not specific to this lane. ANY lane that re-pins from this head
+# destroys the release record the same way, silently. Filed as an escalation in
+# the lane packet. The two rows below were therefore written by hand from
+# `sha256sum` and `stat -c%s` over the `env -i` build output.
+#
+# Otherwise this is the ordinary rebind: the commit carrying THIS change touches
+# ONLY `deployment/mainnet/*`, so 723ea43..HEAD is quiescent over
+# BUILD_INPUT_PATHS (`canisters/`, `Cargo.toml`, `Cargo.lock`,
+# `rust-toolchain.toml`) and `check_release_identity` takes the ARMED
+# byte-equality branch for all ten rows. It cannot name its own commit — a
+# commit's SHA is a hash over the tree containing it — which is why it names its
+# parent and why the rebind is its own record-only commit. Quiescence is
+# PATH-based, so the next change to any file under `canisters/`, including a
+# comment or a `.md`, disarms it again and owes another binding act.
+#
+# SINGLE-LEG (one host, one builder) — disclosed, not glossed. This is not an
+# R2.6 independent reproduction; SSA reproduces the ten hashes before
+# countersign.
+# HARDEN-03-SETTLEMENT CLOSE-OUT 2026-09-18: was 723ea432… — the pre-rebase
+# SETTLEMENT code commit, which `git rebase e1f4c72` turned into a NON-ANCESTOR
+# of this history (ReleaseIdentityUnbound + ten ReleaseIdentityNotAsserted
+# surplus keys, aborting the deploy-posture gate before any test leg). Re-armed
+# at the lane head; the range 6828c2d..HEAD is this record-only commit, so it
+# stays quiescent.
+# VETKEYS-AGE-2MIN 2026-09-23: was 6828c2d1… . The lane's commit c299701d
+# touched `canisters/vetkeys/**` (the unpinned, workspace-EXCLUDED role — no
+# [wasm.*] row) and, because quiescence is PATH-based over `canisters/`, that
+# disarmed the record for all ten rows (law 7(f) addendum). Re-armed at the
+# lane's last source commit e19736c3 (the wallet commit, child of c299701d);
+# the range e19736c3..HEAD is this record-only commit, touching only
+# `deployment/mainnet/*`. SSA LANDED-DIFF FIX ROUND (same lane, same day): was
+# e19736c3… — the lane then added 57e748ef (canisters/vetkeys test + run_gate.sh
+# prose only; the vetkeys Wasm is unchanged), which disarmed quiescence again, so
+# this value is re-armed at 57e748ef and the range 57e748ef..HEAD is the
+# record-only rebind commit. No [wasm.*] row moves, none is added, and
+# `cargo_lock_sha256` is unchanged: neither source commit touches the
+# workspace build inputs of the ten pinned Wasms, and this gate's ARMED
+# byte-equality branch re-checks all ten against its own `env -i` build.
+# LAUNCH-HARDEN-04 2026-09-24: was 57e748ef… . The lane's source commits 65f38e0
+# (canisters/vetkeys), e18dd74 (canisters/shielded-pool), adb1f8e
+# (canisters/vesting) and 6b300e7a (canisters/custody-types test fixtures +
+# MAINNET_DEPLOYMENT.md) touch `canisters/`, which disarms quiescence for all ten
+# rows (law 7(f) addendum). Re-armed at 6b300e7a, the lane's LAST commit touching a
+# build-input path; the range 6b300e7a..HEAD is this record-only commit
+# (deployment/mainnet/* + the generated wallet pin map), so it stays quiescent
+# through the lane's one gate. TWO rows move here ([wasm.shielded_pool],
+# [wasm.vesting]; notes at those rows); `cargo_lock_sha256` is unchanged (no
+# Cargo.lock/Cargo.toml touch in this lane).
+# TOKEN-METADATA 2026-09-24: was 6b300e7a… . The lane's source commit
+# 62a6d298 touches `canisters/token/**` (NAME renamed -> "STSH";
+# icrc1:logo SVG -> PNG data URL; assets/stsh-logo.png + rasterize_logo.py; the
+# dev003 note) plus integration-tests, which disarms quiescence for all ten rows
+# (law 7(f) addendum). Re-armed at 62a6d298, the lane's only commit touching a
+# build-input path; the range 62a6d298..HEAD is this record-only commit
+# (deployment/mainnet/* + the generated wallet pin map). ONE row moves
+# ([wasm.stsh_token]; note at that row); `cargo_lock_sha256` is unchanged (no
+# Cargo.lock/Cargo.toml touch in this lane).
+# VETKEYS-COMMENT-SCRUB 2026-09-24: was 62a6d298… . The lane's source commit
+# 6bd438bb rewrites ONE doc-comment line in place in canisters/vetkeys/src/lib.rs
+# (line count unchanged; Owner source-freeze override), which disarms quiescence
+# for all ten rows (law 7(f) addendum — path-based). Re-armed at 6bd438bb, the
+# lane's only commit touching a build-input path; the range 6bd438bb..HEAD is
+# this record-only commit (deployment/mainnet/* only). NO [wasm.*] row moves
+# (vetkeys is unpinned; its kit row moves in a7_install_kit.toml);
+# `cargo_lock_sha256` is unchanged.
+# TOKEN-APPROVE-TTL 2026-09-25: was 6bd438bb… . The lane's source commit
+# 43e42d99 touches `canisters/token/**` (icrc2_approve defaults an absent
+# expires_at to now + MAX_APPROVAL_TTL_NS and clamps an over-cap one, instead of
+# refusing; ICRC-21 consent text; retired codes 7/8; the dev007 register row;
+# Owner source-freeze override 2026-09-25, this crate only) plus
+# integration-tests, which disarms quiescence for all ten rows (law 7(f)
+# addendum). Re-armed at 43e42d99, the lane's only commit touching a
+# build-input path; the range 43e42d99..HEAD is record-only / wallet-test /
+# wallet-bundle commits (deployment/mainnet/*, the generated wallet pin map, the
+# wallet pin-test literal). ONE row moves ([wasm.stsh_token]; note at that row);
+# `cargo_lock_sha256` is unchanged (no Cargo.lock/Cargo.toml touch).
+#
+# KEEP THIS VALUE BARE, ON ITS OWN LINE. scripts/verify_custody_manifest's
+# finalize.rs reads it with `strip_prefix("asserts_identity_at = ")` and then
+# trims quotes — a trailing `#` comment on this line is swallowed into the
+# parsed value, the freeze's string replace never matches, and all 32 finalize
+# tests fail on "the freeze must actually rebind the record". `cargo_lock_sha256`
+# below is NOT read that way, which is why it may carry an inline comment and
+# this line may not.
+asserts_identity_at = "86d8c31aafbf9839677141e33442c9ef9cb77109"
+cargo_lock_sha256 = "3330ddd34f8c91e6b8d79b2c7919d0afc00381b491f836c44ae4c53bc10a65e1"  # HARDEN-02 2026-09-17: was 713d0356… — the lock gained ONE line (ic-cdk-timers in stsh_token's dependency list; the version "0.10" was already in the graph for shielded-pool and smoke-alarm-monitor, so no new package and no version move). Carried stale by earlier lanes and brought current here because this lane is the one that moved it.
+post_processing = "none. The install-consumed artifact is the RAW cargo Wasm at target/wasm32-unknown-unknown/release/<pkg>.wasm, read byte-for-byte by measure_payloads (lib.rs:1060-1065) and hashed by check_release_identity (lib.rs:2092-2108). No ic-wasm shrink, no wasm-opt, no gzip. scripts/embed_candid_metadata.sh exists in-tree but is NOT invoked by run_gate.sh and is NOT part of this path — verified by grep over run_gate.sh. This RESOLVES REPRODUCIBLE_BUILD_REVIEW.md open finding #5 (pre- vs post-shrink hash form) for the custody ring only: the canonical recorded hash is the pre-shrink raw cargo Wasm."
+locked = "no — run_gate.sh:280 does NOT pass --locked (contrast run_gate.sh:289-290, the excluded vetkeys crate, which does). Dependency versions are pinned by the committed Cargo.lock, whose sha256 is recorded above; --locked would additionally fail the build if the lock needed updating. Recorded as an observation of the discovered invocation, NOT changed here — altering the gate's build flags is outside S10's authorized scope."
+
+# source_sha is the commit whose tree these bytes were built from. The S10
+# record commit is a CHILD of it and is Wasm-neutral: it adds this data file
+# plus a test in scripts/verify_custody_manifest/tests/, neither of which is
+# compiled into any canister crate. That neutrality is not asserted — it is
+# demonstrated by the R2.6 rehearsal, which rebuilds from a clean root at the
+# S10 commit and reproduces exactly the hashes below.
+#
+# ── source_sha SEMANTICS: RECORDED-ANCESTOR (S10 corrective r1) ──────────────
+#
+# AUTHENTICATED, not merely present. `check_release_identity` now verifies that
+# source_sha (a) resolves to a real COMMIT OBJECT in this repository and (b) is
+# an ancestor of — or equal to — the HEAD being checked
+# (`check_source_provenance`, scripts/verify_custody_manifest/src/lib.rs).
+#
+# WHY ANCESTOR AND NOT EXACT-MATCH — this is forced, not preferred. The S10
+# adjudication offered both. Exact-match (`source_sha == HEAD`) is unsatisfiable
+# by construction: this record is a COMMITTED file, and a commit's SHA is a hash
+# over the tree containing it, so no commit can record its own SHA. Requiring
+# equality would fail on every commit that ever writes this record, including
+# the final integrated commit. That is the child-commit self-reference, and it
+# is solved here rather than used as an excuse to accept any string.
+#
+# WHAT THIS REJECTS: a fabricated value (the former `deadbeef` fixture) has no
+# commit object; a real commit from an unrelated branch or repository is not an
+# ancestor; a root with no usable git metadata fails closed rather than skipping.
+#
+# WHAT IT DOES NOT ESTABLISH, STATED: ancestry proves the recorded commit is
+# genuinely in the history leading to the checked tree. It does NOT alone prove
+# these bytes were produced at that commit — that binding comes from the
+# artifact SHA-256 comparison plus the R2.6 reproductions. The cross-machine
+# reproduction gap remains a disclosed holistic-review condition.
+#
+# The recorded [toolchain] versions are likewise authenticated against the
+# ACTIVE rustc/cargo at check time (`check_tool_version`). Because this
+# repository pins no toolchain (see the named gap above), that check is more
+# necessary, not less: nothing else would notice a version copied from another
+# machine.
+
+# BINDING VALUES — originally the two-leg run at caa2b29 (see STATUS above).
+# Both legs, both wiped-dir runs, all four observations agreed on those values.
+#
+# ── RE-PINNED 2026-08-21, lane A-5. A DELIBERATE, ATTRIBUTED CEREMONY STEP ────
+#
+# The pin exists to catch drift NOBODY CAN ACCOUNT FOR. A change with a named
+# cause, a ruled fence and a single commit behind it is the case this record was
+# built to PERMIT, not the case it was built to stop
+# (OWNER_RULING_A-5_repin_2026-08-21.md, principal ruling; the builder's
+# stop-and-report on the mismatch stands as the correct behaviour on record —
+# HALT_A-5_gate_red_out_of_fence.md, CTO_RULING_A-5_gate_red.md F3).
+#
+# CAUSE — one commit, one source delta: `5ceda0c020af5515bf30d2d5ee69c9fa4d30026f`
+# adds the single authorised `RecoveryInProgress : text` variant (lane A-5 FU1-1,
+# CTO_RULING_A-5_recovery_error_V2.md) to the pool's `PoolError` and to its mirror
+# in `canisters/custody-types`. `canisters/vault/Cargo.toml` and
+# `canisters/upgrader/Cargo.toml` BOTH depend on `stsh-custody-types`, so both
+# custody-ring Wasms recompile and their bytes move. No toolchain change: the
+# [toolchain] block above and `rust-toolchain.toml` are untouched, and the
+# rebuild ran under the same pinned rustc 1.95.0 / cargo 1.95.0.
+#
+# PRECEDENT — S11, recorded above verbatim: vault and upgrader Wasms differing
+# "entirely because S11-1 and S11-2 change production source in both canisters —
+# a legitimate, attributable source delta, not a toolchain effect". A-5 is the
+# same shape. What S11 also said, and what still holds: a builder does not do
+# this unilaterally. This re-pin happens ONLY on the principal's ruling.
+#
+# OLD → NEW, per row (`bytes` RE-DERIVED per row from the rebuilt artifact, never
+# carried across):
+#   [wasm.vault]     829d3a72fb20435a0fbd95dbf153331ecc644b8d1b416d0e38f3d3e4898cbcc6
+#                 →  7f7dd2579be7c52fdffeaa5a1ad959ce939966b86314adb00f7cf53a2e22d013
+#                    bytes 1527258 → 1527995
+#   [wasm.upgrader]  2c24dcad8b70c4810d67455fdafecb33a17465d977e9f8601854e2d0359f11eb
+#                 →  fc10716ac660e8fc5e4935885e32313ba91b42cc34da3859e41bbccbc9ad5427
+#                    bytes 1095475 → 1095475 — RE-DERIVED and coincidentally equal,
+#                    NOT carried over. Equal length, different bytes.
+#
+# HOW THEY WERE PRODUCED: `build.command` above, VERBATIM (full 13-package set —
+# a subset is a different release), from the lane worktree at the A-5 head, with
+# RUSTFLAGS unset and no post-processing (`post_processing` above still holds:
+# the raw cargo Wasm is the recorded artifact). Observed twice, in two SEPARATE
+# target directories (the lane's own `target/` and a scratch CARGO_TARGET_DIR
+# that did not exist beforehand); both observations agree on all four values.
+# That is within-lane corroboration by one builder, NOT R2.6 independence —
+# stated, not glossed. SSA independently rebuilds both Wasms and reproduces
+# these two pins before countersign (ruling condition 3: "a re-pin nobody
+# reproduces is a record refresh wearing ceremony clothes").
+#
+# WHAT DID NOT MOVE, AND IS STILL OWED (ruling condition 2 — these are CARRIED,
+# not folded in silently, and any other row moving in this file is a finding):
+#   • `cargo_lock_sha256` above is STALE against this tree and is left stale here.
+#   • the declarations-mirrors debt is likewise untouched.
+#   • `asserts_identity_at` is NOT moved: re-arming is a separate binding act.
+#
+# NOT THE FINAL WORD. Standing W0 sequencing requires a FULL rebind at the
+# pre-ceremony freeze; these two pins are re-verified there along with every
+# other row (B-2/B-5 carry that line).
+[wasm.vault]
+sha256 = "ee690263c1e0cf0ae33c4afdaf8fb77233791e0b741ee6e4302824c55d4ed8f8"
+bytes  = 1571579
+path   = "target/wasm32-unknown-unknown/release/vault.wasm"
+
+[wasm.upgrader]
+sha256 = "5ebf1a9b2087b9f88b8d43bb89c40801c02c23f0de2f00be2ab358a29527af07"
+bytes  = 1095475
+path   = "target/wasm32-unknown-unknown/release/upgrader.wasm"
+
+# ── R-3a — the EIGHT remaining shipped Wasms ─────────────────────────────────
+#
+# Before lane R-3a, `check_release_identity` iterated a two-element literal and
+# this file pinned only `vault` and `upgrader`. The other EIGHT artifacts that
+# `INLINE_PAYLOAD_ARTIFACTS` (verify_custody_manifest/src/lib.rs) actually
+# ships into the ceremony tree were pinned NOWHERE: they could be replaced with
+# bytes built from an unreviewed tree and every gate would still be green.
+# The checker now iterates `INLINE_PAYLOAD_ARTIFACTS` itself, so this file must
+# carry a row for each of the ten, and a missing row is a typed violation
+# (`RELEASE_RECORD_ARTIFACT pins no sha256 for <pkg>`) rather than a silence.
+#
+# `staking` is deliberately NOT here: D1 (2026-08-14) — not installed at
+# launch, absent from dfx.json. `stsh-stub-verifier` and `stub_bad_fee_token`
+# are test scaffolding and are never deployed. 13 PROD_PACKAGES − 3 = 10, and
+# `r3a_inline_payload_artifacts_matches_run_gate_prod_packages_minus_exclusions`
+# (verify_custody_manifest/tests/coverage.rs) binds that arithmetic.
+#
+# PRODUCED: at remed/r3a over master 4779816f, under the gate's own sanitised
+# re-exec (`/usr/bin/env -i HOME PATH CARGO_HOME RUSTUP_HOME /bin/bash
+# --noprofile --norc`), after `cargo clean --release --target
+# wasm32-unknown-unknown` over the thirteen production packages, with the exact
+# `[build] command` invocation above. rustc 1.95.0 (59807616e 2026-04-14),
+# cargo 1.95.0 (f2d3ce0bd 2026-03-21). The two pre-existing rows above were
+# RE-VERIFIED, not re-pinned, in that same build: both reproduced byte-exactly.
+
+# ── HARDEN-02 REBIND (2026-09-17) — ONE ROW, ONE NAMED CAUSE ─────────────────
+#
+# HAND REBIND. `--repin` WAS ATTEMPTED AND ITS OUTPUT WAS DISCARDED, and that is
+# worth recording here rather than only in a packet: run against this record it
+# computed all ten hashes CORRECTLY (independently re-derived below, identical)
+# but rewrote the file destructively — 388 lines deleted, the `[build]` narrative,
+# the R2.6 reproduction protocol and the whole `[wallet_bundle*]` method/procedure
+# section among them, every superseded paragraph with them (I-B4 forbids exactly
+# that), and bare `sha256 = …` lines spliced into the middle of comment
+# sentences. The tool's contract says it "rewrites `[wasm.*]` rows ONLY". On this
+# record it does not. Reverted with `git checkout --` and the two fields edited by
+# hand instead; the tool defect is reported, not worked around.
+#
+# WHAT MOVED AND WHY: HARDEN-02-CODE changed `canisters/token/src/lib.rs` and
+# `canisters/token/Cargo.toml` (H-01 + MD-01 — mandatory capped approval lifetime,
+# the ALLOWANCES_BY_EXPIRY index at MemoryId 7, the shared effective-allowance
+# notion, and the `ic-cdk-timers` dependency at the workspace-pinned "0.10"). So
+# `[wasm.stsh_token]` moves, and `cargo_lock_sha256` with it — the lock gained
+# exactly one line, `ic-cdk-timers` in stsh_token's dependency list, since that
+# version was already in the graph for shielded-pool and smoke-alarm-monitor.
+#
+#   [wasm.stsh_token]  a90318da268875caf8c8cfa4983a9039f4dda67e58a8a4d319ac979c0d19db0f
+#                   →  3d036a1715e32e19446e0f08094b087d8f28f540a21e18ac00455fb109aeb14b
+#                      bytes 808114 → 849075 (+40,961)
+#
+# AC-10 RE-PIN (2026-09-17, same lane, second movement of this row). CTO ruling
+# `cto-ruling-harden02-ac10-and-residuals-2026-09-17` dropped the reclamation
+# trigger from `icrc2_transfer_from` and a follow-on measurement removed a
+# redundant index remove+insert on the same path, so the token source moved again:
+#
+#   [wasm.stsh_token]  3d036a1715e32e19446e0f08094b087d8f28f540a21e18ac00455fb109aeb14b
+#                   →  960dae966e256a1eaa08edafbf96ed41f7c8b5a2ebb645be8187a43834e001f1
+#                      bytes 849075 → 849092 (+17)
+#
+# Same sanitised environment, same verbatim 13-package `build.command`. The other
+# NINE rows were re-verified in that build and every one reproduced BYTE-EXACTLY
+# again — shielded_pool included, which is the attribution check. `Cargo.lock` did
+# NOT move (no dependency change), so `cargo_lock_sha256` above is unchanged.
+#
+# MEASURED under the gate's own sanitised environment — `/usr/bin/env -i HOME
+# PATH CARGO_HOME RUSTUP_HOME /bin/bash --noprofile --norc` — with the exact
+# 13-package `build.command` above, VERBATIM, from /home/jonni/stsh at the
+# TOOLING commit (the tree this rebind commit's parent carries).
+#
+# THE OTHER NINE ROWS WERE RE-VERIFIED IN THAT SAME BUILD AND EVERY ONE
+# REPRODUCED BYTE-EXACTLY — shielded_pool, treasury, vesting,
+# nullifier_registry, merkle_tree, stsh-verifier, smoke_alarm_monitor, vault and
+# upgrader. That is the check that matters for attribution: the pool in
+# particular MUST NOT move (R-11 E-7 — even a comment above a panic site would
+# have shifted it), and it did not, so the delta is attributable to the token
+# source change and to nothing about the toolchain or the environment.
+#
+# SINGLE-LEG (one host, one builder) — disclosed, not glossed. This is not an
+# R2.6 independent reproduction; SSA reproduces the ten hashes before countersign.
+# TOKEN-METADATA (2026-09-24): ac9336f2… -> 994a77ff… (893997 -> 895317 bytes)
+# — token commit 62a6d298 (O-1 NAME renamed -> "STSH"; O-2 icrc1:logo
+# served as data:image/png;base64 of assets/stsh-logo.png, sha256 5642d58b…,
+# 2,908 B). Measured from a CLEAN-TARGET build (fresh CARGO_TARGET_DIR) under
+# the gate's sanitised `env -i` re-exec shape with the exact 13-package
+# `build.command`, at 62a6d298; the other nine rows re-measured in the same
+# build are byte-identical to their pins. Hand-copied: `--repin` REFUSES on
+# this worktree's untracked provisioning symlinks (target/,
+# canisters/vetkeys/target, circuits/node_modules, circuits/ptau) — the same
+# refusal LAUNCH-HARDEN-04 disclosed. SINGLE-LEG (one host, one builder),
+# disclosed; SSA reproduces before countersign. The live clv7x module stays
+# ac9336f2… until Vault Management.UPGRADE (#31, empty arg, expected_arg_hash
+# e3b0c442…b855 — post_upgrade takes no argument) executes. The operator page's
+# build-time pin map (wallet/src/generated/releasePins.json) follows in this
+# commit — the INSTALLED wallet (final-v12) still carries ac9336f2, so #31
+# cannot be proposed through the operator page until a wallet re-measure +
+# install lands (follow-on; not this lane).
+# TOKEN-APPROVE-TTL (2026-09-25): 994a77ff… -> 70786d0d… (895317 -> 895342
+# bytes) — token commit 43e42d99 (icrc2_approve: absent expires_at DEFAULTED to
+# now + MAX_APPROVAL_TTL_NS, over-cap CLAMPED, instead of refused; ICRC-21
+# consent text; codes 7/8 retired). Written by `verify_custody_manifest --repin
+# --write`, run under the gate's sanitised `/usr/bin/env -i ... /bin/bash
+# --noprofile --norc` shape in a fresh `git clone --no-local` of the lane at
+# 43e42d99 (clean tree, own CLEAN target/, no provisioning symlinks — so the
+# tool's dirty-tree guard did not refuse, unlike TOKEN-METADATA /
+# LAUNCH-HARDEN-04), after the exact 13-package `build.command`; the other nine
+# rows re-measured byte-identical. SINGLE-LEG (one host, one builder),
+# disclosed; SSA reproduces before countersign. The live clv7x module stays
+# 994a77ff… until Vault Management.UPGRADE (#33, empty arg, expected_arg_hash
+# e3b0c442…b855) executes. wallet/src/generated/releasePins.json follows in this
+# commit; the wallet is REBUILT in-lane (final-v14) and the wallet-bundle record rebound
+# (law 7(g)), so no `stale_pins` acknowledgment is carried.
+[wasm.stsh_token]
+sha256 = "70786d0db75b8409b00f7c7b94454c5e9e5c01457302009d2e39f7a7a46aa952"
+bytes  = 895342
+path   = "target/wasm32-unknown-unknown/release/stsh_token.wasm"
+
+# HARDEN-03-SETTLEMENT CLOSE-OUT (2026-09-18): e4f7f2d8… -> 5fa7176e… (1764436
+# -> 1767872 bytes). The pool source moved twice in this lane — the settlement
+# feature itself, then the Option B rework that gave settle_deposit_transfer its
+# own `SettlementError` instead of widening `PoolError`. Bytes are `sha256sum` of
+# the artifact built by THIS head's `env -i` gate re-exec, hand-copied; `--repin`
+# was NOT used (it is forbidden by the 2026-09-18 CTO ruling pending REPIN-FIX).
+#
+# `[wasm.stsh_token]` above did NOT move and is deliberately left alone: the
+# Option B rework's one-line touch of canisters/token/src/lib.rs did not shift
+# the emitted bytes, and this gate build reproduces ac9336f2… exactly. A re-pin
+# of an unmoved row would be a record refresh, not a binding act.
+# LAUNCH-HARDEN-04 (2026-09-24): TWO rows moved, eight did not.
+#   [wasm.shielded_pool]  5fa7176e… -> dca03f68…  (1767872 -> 1831023 bytes) —
+#     pool commit e18dd74 (O-1 private_spend admission control, O-5 verifier VK
+#     re-attestation, O-6 fee increase bound; MemoryIds 27/28).
+#   [wasm.vesting]        760488eb… -> 8b9c5860…  (614255 -> 624564 bytes) —
+#     vesting commit adb1f8e (O-7 Vault reconcile authority).
+# Measured from a CLEAN-TARGET build under the gate's sanitised `env -i` re-exec
+# shape with the exact 13-package `build.command`, at 6b300e7a (source identical
+# to cd35e86 for every build input), and re-read from the shared gate target —
+# byte-identical. The other eight rows re-measured in the same build are
+# byte-identical to their pins (vetkeys, unpinned, is the a7_install_kit row).
+# Hand-copied: `--repin` REFUSED on this worktree's untracked provisioning
+# symlinks (target/, canisters/vetkeys/target, circuits/node_modules,
+# circuits/ptau — the fresh-worktree gate prerequisites), so it could not run
+# from a "clean" tree here. SINGLE-LEG (one host, one builder), disclosed; SSA
+# reproduces before countersign. The operator page's build-time pin map
+# (wallet/src/generated/releasePins.json) follows in this commit — the
+# INSTALLED wallet (final-v11) still carries the OLD pool/vesting pins.
+[wasm.shielded_pool]
+sha256 = "dca03f68fbf3ddf4c1bb1c4c36689d9a3dcf124fb5aab2bff50d88cca51afd69"
+bytes  = 1831023
+path   = "target/wasm32-unknown-unknown/release/shielded_pool.wasm"
+
+[wasm.treasury]
+sha256 = "0e314c758ae2a96509dbe9660bf9255de0f11ac5e8f5b02621c1bb2179d8e4a1"
+bytes  = 714681
+path   = "target/wasm32-unknown-unknown/release/treasury.wasm"
+
+# LAUNCH-HARDEN-04 (2026-09-24): 760488eb… -> 8b9c5860… — see the note above
+# [wasm.shielded_pool].
+[wasm.vesting]
+sha256 = "8b9c58600198ed83d426430b55cdac38f61a612773628a82f778c95622225a2e"
+bytes  = 624564
+path   = "target/wasm32-unknown-unknown/release/vesting.wasm"
+
+[wasm.nullifier_registry]
+sha256 = "d4bf8493731351d53a589113e99b23261a8fb7255f1e2ac967e8c077e400a951"
+bytes  = 453528
+path   = "target/wasm32-unknown-unknown/release/nullifier_registry.wasm"
+
+[wasm.merkle_tree]
+sha256 = "ebbac752e4a48249d6ee105fe77dd517a3094cf7161eba6dfef162133ffcb221"
+bytes  = 655667
+path   = "target/wasm32-unknown-unknown/release/merkle_tree.wasm"
+
+# ── RE-PINNED 2026-09-12, lane A-3 FINALIZE. ONE ROW, ONE NAMED CAUSE ────────
+#
+# HAND REBIND, not `--repin` (the flag is forbidden in this lane). The A-3
+# re-encode recompiled the circuit and regenerated the DEV proving chain, which
+# replaces `circuits/verification_key.json`. `canisters/verifier/src/lib.rs:54`
+# `include_str!`s that file, so the verifier Wasm — and ONLY the verifier Wasm —
+# moves. No `canisters/` source, `Cargo.toml`, `Cargo.lock` or
+# `rust-toolchain.toml` byte changed in this lane, so `asserts_identity_at`
+# stays where it is: this is not a re-arming act.
+#
+#   [wasm."stsh-verifier"]  64ec8dd8d5ee31e3bb5909f6810086030ce7578d479d054104553b2fd1782158
+#                        →  c334a8ed2c819371d77c72b0647c6f40ef0de9d9fd656d49e98c812d0c596660
+#                           bytes 645860 → 645860 — RE-DERIVED from the rebuilt
+#                           artifact, not carried over. Equal length, different bytes.
+#
+# ── A-4 LANDING REBIND (2026-09-12) — the launch ceremony VK ─────────────────
+#   [wasm."stsh-verifier"]  c334a8ed2c819371d77c72b0647c6f40ef0de9d9fd656d49e98c812d0c596660
+#                        →  5a7dcc4997419e65cd16fa3436a9189b7535e5137beb01ee17edff7292c81141
+#                           bytes 645860 → 645860. Equal length, different bytes
+#                           — again RE-DERIVED from the rebuilt artifact.
+#
+# WHY ONLY THIS ROW MOVES. A-4 edited NO canisters/ source. The verifier Wasm
+# moves solely because canisters/verifier/src/lib.rs `include_str!`s
+# circuits/verification_key.json, and A-4 replaced that file with the mainnet-v2
+# ceremony VK (081e9e9b… → 84dba305…). The VK is DATA compiled into the binary,
+# so its bytes move and its length does not.
+#
+# HAND-EDITED (`--repin` is Owner-FORBIDDEN for this lane). MEASURED as a
+# BEFORE/AFTER PAIR on the same machine, both legs under the gate's own
+# sanitised environment (`/usr/bin/env -i HOME PATH CARGO_HOME RUSTUP_HOME
+# /bin/bash --noprofile --norc`) with the exact 13-package `build.command`
+# above, VERBATIM, from /home/jonni/stsh-a4:
+#   BEFORE leg — the old VK restored, everything else this lane's tree:
+#                ALL TEN rows reproduced the values recorded here byte-exactly.
+#   AFTER  leg — the ceremony VK in place: NINE rows byte-identical to the
+#                before leg, and ONLY stsh-verifier moved.
+# In particular shielded_pool is byte-identical across the pair
+# (77b719e2…caffd0), which is the check that A-4 did not touch pool source:
+# the pool's PINNED_VK_HASH is init state seeded from genesis_manifest, NOT a
+# source constant, so the pool Wasm MUST NOT move when the VK changes (brief V2
+# §4.2; R-11 E-7 — even a comment above a panic site would have shifted it).
+#
+# MEASURED under the gate's own sanitised environment (`/usr/bin/env -i HOME
+# PATH CARGO_HOME RUSTUP_HOME /bin/bash --noprofile --norc`) with the exact
+# 13-package `build.command` above, VERBATIM, from /home/jonni/stsh-a3. The
+# other NINE rows were RE-VERIFIED in the same before/after pair and every one
+# reproduced byte-exactly — the before leg ran on the unmodified lane base and
+# reproduced all ten rows as recorded here.
+[wasm."stsh-verifier"]
+sha256 = "5a7dcc4997419e65cd16fa3436a9189b7535e5137beb01ee17edff7292c81141"
+bytes  = 645860
+path   = "target/wasm32-unknown-unknown/release/stsh_verifier.wasm"
+
+[wasm.smoke_alarm_monitor]
+sha256 = "8428ee40bb4f3d73c53102ccd8b9d7ae6790d83fd19ed79e92cdb14e7414f8dc"
+bytes  = 599947
+path   = "target/wasm32-unknown-unknown/release/smoke_alarm_monitor.wasm"
+
+# ── R2.6 — independent reproduction protocol ─────────────────────────────────
+#
+# Brief V4.1 §R2.6 defines "independent reproduction" as >=2 reproductions, each
+# recording: separate clean root AND separate builder; locked dependencies;
+# exact source SHA and Cargo.lock; Rust/Cargo/target versions; RUSTFLAGS;
+# features; environment; full command; post-processing. TWO REBUILDS IN ONE
+# DIRTY TARGET DIRECTORY ARE NOT INDEPENDENT and do not satisfy this.
+#
+# Procedure — executed once per reproduction, by a DIFFERENT builder each time,
+# into a root that did not exist beforehand:
+#
+#   1. Create a fresh root from the pinned commit. It must carry no prior build
+#      state: a new worktree/clone, and a CARGO_TARGET_DIR inside it that does
+#      not exist yet. Never reuse the shared ~/stsh-integ target directory.
+#        git worktree add --detach <ROOT> <source_sha>
+#        export CARGO_TARGET_DIR=<ROOT>/target
+#   2. Record, BEFORE building: `rustc -vV`, `cargo -V`, `uname -a`,
+#      `git -C <ROOT> rev-parse HEAD`, `sha256sum <ROOT>/Cargo.lock`, and the
+#      values of RUSTFLAGS / CARGO_TARGET_DIR / CARGO_BUILD_* (stating "unset"
+#      explicitly where unset — absence is recorded, never omitted).
+#   3. Run `build.command` above VERBATIM, from <ROOT>. No added or removed
+#      package, no added flag.
+#   4. Record `sha256sum` and byte length of the resulting vault.wasm and
+#      upgrader.wasm, and state the post-processing applied (none).
+#   5. Compare against [wasm.vault] / [wasm.upgrader]. A mismatch is a
+#      stop-and-report, never a record refresh.
+#
+# The full session transcript of each run is written ONCE to
+# <EVID>/repro_rehearsal_{1,2}.log on the office mount (founder ruling
+# RULING_S10_ITEM3_DOC_DESTINATIONS_2026-08-13: <EVID> is the office, not the
+# repo) and SHA-256'd into <EVID>/SHA256SUMS.
+#
+# THE BINDING PAIR HAS NOW RUN, at caa2b29, per §11 row SSA 4 — it is the two-leg
+# run recorded under STATUS above, filed as the office documents
+# reviews/custody/BUILDER_RELEASE_BINDING_LEG_{A,B}_EVIDENCE_V1_2026-08-13.md
+# (hashes under STATUS). Those documents are this record's reproduction evidence.
+# One deviation from the procedure above is recorded rather than glossed: step 1
+# says a worktree of the existing repo; both legs instead used a FRESH CLONE of
+# origin, which is strictly stronger (no shared object store, no shared config).
+# The unmet part of §R2.6 is the DIFFERENT-MACHINE dimension, carried OPEN above.
+
+# ── R14-1 — WALLET FRONTEND BUNDLE (added by campaign lane A-1) ──────────────
+#
+# WHAT THIS IS NOT: this section is NOT part of the 13-package Wasm binding run
+# recorded above. It was not produced by `build.command`, it is not a canister
+# artifact, and `check_release_identity` neither requires nor reads it — it
+# iterates `wasm.<pkg>.sha256` for the known package set only. It is recorded
+# here because this file is the release-identity record and the wallet bundle is
+# a released artifact; it is deliberately NOT placed under `[wasm.*]`, where it
+# would be mistaken for one.
+#
+# THE METHOD IS PART OF THE ARTIFACT. A directory has no canonical hash, so the
+# digest below is defined by this exact procedure and is reproducible only with
+# it:
+#
+#   cd wallet && find dist -type f | sed 's|^dist/||' | LC_ALL=C sort \
+#     | while read -r f; do printf "%s  %s\n" \
+#         "$(sha256sum "dist/$f" | cut -d' ' -f1)" "$f"; done \
+#     | sha256sum
+#
+# i.e. a manifest of per-file `sha256  relative-path` lines, LC_ALL=C sorted by
+# path, hashed. Paths are included, so a renamed file changes the digest.
+
+# ── HARDEN-03 (2026-09-17) — THE PROCEDURE GAINS A TREE-SHAPE GUARD ──────────
+#
+# ADDITIVE, and no digest moved. The pipeline above is unchanged, is still the
+# definition of every `sha256` recorded in this section, and still reproduces
+# them exactly. What is added is a REFUSAL that must be run BEFORE it, because
+# the pipeline alone is SILENT about entries that `-type f` does not match:
+#
+#   cd wallet && [ -z "$(find dist \! -type f \! -type d -print -quit)" ] \
+#     || { echo "REFUSED: wallet/dist contains a non-regular entry"; exit 1; }
+#
+# WHY THE GUARD IS PART OF THE PROCEDURE. `find` defaults to `-P` (never
+# dereference), so:
+#
+#   * a symlink to a REAL file is `-type l`, and `-type f` OMITS it — the digest
+#     would not cover a file that ships inside the measured tree;
+#   * a symlinked DIRECTORY is likewise not descended, so nothing under it is
+#     covered either;
+#   * a DANGLING symlink (target absent) is skipped SILENTLY, and the pipeline
+#     still produces a perfectly ordinary-looking digest.
+#
+# An omitted file is exactly as dangerous as a doubled one, so the resolution is
+# neither to dereference these nor to ignore them: the measurement REFUSES a tree
+# that contains one, and the tree is fixed before it is measured.
+#
+# THE CHECKER IMPLEMENTS THE SAME REFUSAL, which is what keeps the two paths
+# reproductions of one another rather than two procedures that agree only on
+# trees that happen to be clean. `verify_custody_manifest`'s `measure_bundle_dir`
+# walks with `symlink_metadata` — so a dangling link is reported AS a link rather
+# than failing to stat, which is the case the two paths previously disagreed
+# about most sharply (the shell skipped it; the checker aborted with an opaque
+# `cannot stat` that reads like a disk fault) — and makes any entry that is not a
+# regular file or a real directory a hard error naming the offending entry:
+# symlinks, symlinked directories (which also closes the directory-cycle case),
+# FIFOs, sockets and device nodes.
+#
+# NO RECORDED DIGEST IS AFFECTED. A released `wallet/dist` is expected to be
+# ordinary files and directories only, and at the time of writing it contains
+# none of the above (`find wallet/dist -type l` and
+# `find wallet/dist \! -type f \! -type d` are both empty). Both pins in this
+# file were re-measured under the guarded procedure and under the fixed checker
+# and are UNCHANGED: `[wallet_bundle]` 74dd2180… (11 files / 14,103,504 bytes)
+# and `[wallet_bundle_transitional]` 5401d22c… (11 files / 14,103,435 bytes).
+# This paragraph corrects what the procedure SAYS about itself; it does not
+# restate why any digest moved, and it supersedes nothing below.
+
+# ── A-4 LANDING REBIND (2026-09-12) — hand-edited, `--repin` FORBIDDEN ───────
+#
+# The lane changed bundle INPUTS, so the recorded digest is stale and has to
+# move. What moved, exactly:
+#   wallet/src/zk/spendManifest.json  vkHash 081e9e9b… → 84dba305…; the
+#                                     spend_1.zkey pin 29a57f1b… → 4898655e…
+#                                     and its bytes 7527122 → 7527594
+#   wallet/src/crypto/notes.ts        PINNED_VK_HASH_D2 → 84dba305…
+#   wallet/src/zk/artifacts.ts        header comment names the launch VK
+#   wallet/src/generated/releasePins.json  regenerated: it carries
+#                                     [wasm."stsh-verifier"], which this same
+#                                     commit rebound to 5a7dcc49…
+#   wallet/dist/zk/spend_1.zkey       the SHIPPED PROVING KEY is now the
+#                                     ceremony output (staged from
+#                                     circuits/build/spend_1.zkey by
+#                                     scripts/verify_spend_artifacts.mjs)
+# `files` stays 10 and the toolchain tuple is unchanged; `sha256`, `bytes`
+# (+472, exactly the zkey's growth 7527594-7527122) and `source_sha` moved.
+#
+# ORDER MATTERS and was observed: [wasm."stsh-verifier"] was rebound FIRST,
+# because the wallet build injects the [wasm.*] pins into releasePins.json —
+# building before that edit would have bundled the stale verifier hash. The
+# bundle's OWN sha256 is never injected (asserted by
+# wallet/tests/operator_release_pins.test.ts), so there is no circularity here.
+#
+# source_sha: A-4 is ONE commit, so the commit that changed these wallet inputs
+# IS the commit carrying this record, and no commit can record its own SHA (the
+# same self-reference the [build] section documents above). The field therefore
+# names the lane BASE, and the bundle is reproduced by checking out the A-4
+# commit — base plus exactly the input changes enumerated above — and running
+# `command`. Verifiers: rebuild at the A-4 commit, not at b13ec079.
+# ── HARDEN-02 RECORD CORRECTION (2026-09-17) — NO DIGEST MOVED ───────────────
+#
+# This paragraph supersedes nothing about WHY the digest moved; it corrects three
+# statements this section makes about ITSELF, and it is the newest paragraph in
+# the section. HAND EDIT, `--repin` FORBIDDEN on this row, as always.
+#
+# `sha256`, `files`, `bytes`, `method`, `bytes_method`'s MEASUREMENT, `command`,
+# the toolchain tuple and `[wallet_bundle.asset_config]` are all UNCHANGED. No
+# bundle was rebuilt and no digest was re-measured by this lane — it has neither
+# the pinned toolchain on the host nor a release to measure. What changed:
+#
+#   (1) `bytes_method` said "sum of the 10 REGULAR FILE sizes" while `files = 11`.
+#       The two describe ONE measurement, so the record contradicted itself and a
+#       reader could not tell which half was stale. The STALE HALF IS THE PROSE:
+#       the WT-1 paragraph below records `files` moving 10 -> 11 when
+#       `wallet/public/.well-known/ii-alternative-origins` was added, and says in
+#       the same breath that `bytes_method` "still holds unchanged" — which is how
+#       the literal 10 survived a file-set change. Corroborated three ways, with
+#       no re-measure: the WT-1 F-1 narrative records `files` staying 11 with
+#       `bytes` +1,244; the WT-1b re-measure reproduced this row byte-identically
+#       at 11 files / 14,103,504 bytes; and `[wallet_bundle_transitional]` —
+#       measured from the same source tree, 11 files, `bytes_method` correctly
+#       stating 11 — records 14,103,435 bytes, exactly 69 fewer, which is the
+#       `wallet-config.json` variant delta and nothing else. An 11-file sum on
+#       both sides is the only reading those three agree on. The prose is
+#       corrected to 11; the number was already right.
+#
+#   (2) `source_sha` named `fad8c664062f4149f893048db1dcc18c798e319a`, a real
+#       commit object that is NOT an ancestor of HEAD and is contained in no
+#       branch — a pre-rebase copy left behind when the WT-1 F-1 work was rebased
+#       and the hand-rebound record was never updated to follow it. REBOUND to
+#       `e0c1f4dbe18b453ed6c4ba38e36a87b2cf5b4c67` ("fix(wallet): WT-1 F-1 —
+#       un-ignore the .well-known DIRECTORY, not just the file"), which IS an
+#       ancestor of HEAD.
+#
+#       The rebind is evidenced by TREE EQUALITY over ALL THREE trees that govern
+#       this bundle, re-derived in this lane with `git rev-parse <sha>:<path>`:
+#
+#         fad8c664:wallet                 = e0c1f4d:wallet                 = e6e5baf13fe4ef215a6abf2d2ca6272a3299d1b2
+#         fad8c664:circuits/poseidon-wasm = e0c1f4d:circuits/poseidon-wasm = 4196a68807b230cc2beab7d563ff706f844ab79a
+#         fad8c664:rust-toolchain.toml    = e0c1f4d:rust-toolchain.toml    = 1c394bcc5f1a5aa81517f0172e4645dae720a2ca
+#
+#       `wallet/` alone would NOT be sufficient evidence and a one-tree
+#       justification would be right to reject: `command` expands to
+#       `npm run build:wasm && tsc && vite build`, and `build:wasm` runs
+#       `wasm-pack build ../circuits/poseidon-wasm` — the emitted Poseidon wasm is
+#       ~1.58 MB of the measured directory, and `rust-toolchain.toml` governs the
+#       rustc that builds it. All three trees are identical, so the two commits
+#       produce the same bundle and the digest above stands unmoved.
+#
+#   (3) This section stated, in several paragraphs, that "`verify_custody_manifest`
+#       has NO wallet_bundle coverage, so this row is evidenced by the packet
+#       rather than by a checker". THAT IS NO LONGER TRUE, and the claim is
+#       superseded EVERYWHERE it appears in this section — including in the
+#       superseded paragraphs below, which are left otherwise intact
+#       (supersede-never-rewrite) and carry a pointer to this note. As of
+#       HARDEN-02 the record-coverage half of `check_wallet_bundles` runs on the
+#       CANONICAL gate path (`--deploy-posture`, and `--deploy-time` with it), so
+#       structure, field completeness, cross-table consistency,
+#       `files` <-> `bytes_method`, toolchain-tuple identity, `source_sha`
+#       ancestry and the release marker below are checked on every gate run. It
+#       reads no bytes of `wallet/dist`. The BYTE measurement is the separate
+#       `--wallet-bundle-bytes` mode, governed by `[wallet_bundle_release]`.
+#
+# Verifiers rebuilding this bundle: check out `e0c1f4d` (or any commit with those
+# three trees) and run `command` under the pinned tuple. `dist` must be REMOVED
+# first.
+#
+# WT-1 F-1 RE-MEASURE (2026-09-14), superseding the WT-1 re-measure below, which
+# is kept because it records why the PREVIOUS digest moved. HAND REBIND, not
+# `--repin`.
+#
+# WHY THE ROWS MOVED AGAIN. SSA landed-diff on head a83af6b was RED on one
+# blocking finding (reviews/SSA_LANDED_DIFF_WT1_a83af6b_2026-09-14.md, sha256
+# 70fb4b2e…): `wallet/public/.ic-assets.json5` un-ignored the alternative-origins
+# FILE but not the `.well-known` DIRECTORY. Asset canisters skip dot-prefixed
+# directories by default and do not descend into them, so dfx would never have
+# walked `.well-known/` to reach the entry — the asset would have shipped inside
+# this very bundle, satisfied every in-tree check, and never existed on `s3tyu`,
+# leaving logins from `app.stsh.fi` silently rooted at the alias. The fix mirrors
+# the in-repo precedent `website/solvency-status/public/.ic-assets.json5:2-9`
+# exactly: a `{"match": ".well-known", "ignore": false}` directory rule ahead of
+# the others.
+#
+# The ONLY bundle input that changed is `wallet/public/.ic-assets.json5` (the new
+# directory rule plus the comment that argues for it), so
+# `[wallet_bundle.asset_config].sha256` moves with it — see that section. `files`
+# stays 11: the rule changes what dfx UPLOADS, not what vite EMITS. `method`,
+# `bytes_method`, `command` and the toolchain tuple are unchanged; `sha256`,
+# `bytes` (+1,244) and `source_sha` moved. The extended AC-5 test arms in
+# `wallet/tests/wt1_canister_rooted_identity.test.ts` are NOT bundle inputs.
+#
+# The digest was computed with the exact procedure documented above this section,
+# over the `wallet/dist` produced by `cd wallet && npm run build` at the commit
+# now recorded in `source_sha` as
+# e0c1f4dbe18b453ed6c4ba38e36a87b2cf5b4c67 — HARDEN-02 (2026-09-17) rebound the
+# field from the pre-rebase copy of that same work, fad8c664, which is a real
+# commit object but is NOT an ancestor of HEAD and is contained in no branch. The
+# two commits carry byte-identical `wallet`, `circuits/poseidon-wasm` and
+# `rust-toolchain.toml` trees, so this build is reproduced at either and the
+# digest did not move; the field names the reachable one. Built on node 22.23.1 /
+# npm 10.9.8 / wasm-pack 0.12.1 (from wallet/node_modules/.bin, NOT the 0.13.1 on
+# PATH) / rustc 1.95.0 — the pinned tuple in `[wallet_bundle.toolchain]`,
+# re-checked in this worktree and unchanged. `dist` was REMOVED before the
+# measuring build.
+#
+# [SUPERSEDED BY THE HARDEN-02 CORRECTION NOTE ABOVE, item (3) — the sentence
+# that follows was true when written and is not true now.]
+# `verify_custody_manifest` has NO wallet_bundle coverage, so this row is
+# evidenced by the WT-1 packet rather than by a checker. SINGLE-LEG (one host,
+# one builder) — disclosed. `builds`/`identical` in
+# `[wallet_bundle.reproduction]` are NOT re-stated: this lane made ONE
+# observation at this digest.
+#
+# WT-1 RE-MEASURE (2026-09-14), SUPERSEDED by the paragraph above; kept because
+# it records why the PREVIOUS digest moved. Superseding the J-17e re-measure below. HAND
+# REBIND, not `--repin` (`--repin` is FORBIDDEN for this row, J-17e note below).
+#
+# WHY THE ROWS MOVED. The lane changed bundle INPUTS and, for the first time on
+# this row, the bundle's FILE SET:
+#   wallet/public/.well-known/ii-alternative-origins   NEW FILE, shipped. The
+#                                     certified Internet Identity
+#                                     alternative-origins asset by which the
+#                                     wallet canister vouches for app.stsh.fi.
+#                                     This is why `files` moves 10 -> 11 — the
+#                                     first change to that count since the row
+#                                     was created, and the reason `bytes_method`
+#                                     (sum of REGULAR FILE sizes) still holds
+#                                     unchanged.
+#   wallet/public/.ic-assets.json5    CSP narrowed: style-src / style-src-elem /
+#                                     font-src `*` -> 'self', and
+#                                     `http://localhost:*` dropped from
+#                                     connect-src; plus the new
+#                                     `.well-known/ii-alternative-origins` match
+#                                     rule (Content-Type, CORS, `ignore: false`).
+#                                     `[wallet_bundle.asset_config].sha256`
+#                                     moves with it — see that section.
+#   wallet/public/wallet-config.json  carries `derivationOrigin` alongside
+#                                     `launchOrigin` (the FINAL, Phase D.8 shape).
+#   wallet/src/session/config.ts      the six previously-empty canister ids as
+#                                     hardcoded DEFAULT_* constants; the
+#                                     permitted serving-origin SET and the
+#                                     pinned derivation origin.
+#   wallet/src/session/launchConfig.ts  `loadDerivationOrigin`.
+#   wallet/src/session/auth.ts        forwards `policy.derivationOrigin` to
+#                                     AuthClient.login.
+#   wallet/src/ui/app.ts              loads it and injects it before the policy.
+#   wallet/src/actors/token.ts        `expires_at` on icrc2_approve (15 min).
+#   wallet/src/wallet/oisy.ts         `expires_at` + `expected_allowance`.
+#   wallet/src/ui/pages/operator.ts, wallet/src/vite-env.d.ts  comment/type only.
+# `method`, `bytes_method`, `command` and the toolchain tuple are unchanged;
+# `sha256`, `bytes` (+4,995), `files` (10 -> 11) and `source_sha` moved. The
+# eleven changed test files and `wallet/.env.example` are NOT bundle inputs.
+#
+# The digest was computed with the exact procedure documented above this
+# section, over the `wallet/dist` produced by `cd wallet && npm run build` at
+# source_sha af8f3e28 — [HARDEN-02 (2026-09-17) DISCLOSURE, annotation only, the
+# paragraph is otherwise unedited: `af8f3e2850323a8e2220cf2fffa89e73c15bf525`
+# ("feat(wallet): WT-1 — root II principals at the wallet canister, bound shield
+# approvals, close CSP wildcards") is a SECOND known orphan of the same rebase
+# that stranded fad8c664. `git cat-file -t` says commit; it is NOT an ancestor of
+# HEAD and is contained in no branch. It is left in place because this paragraph
+# is superseded and superseded paragraphs are not rewritten — but a verifier
+# reaching for THIS reproduction recipe would be sent to a commit that cannot be
+# checked out. The live recipe is the current paragraph at the top of this
+# section.] — on node 22.23.1 / npm 10.9.8 / wasm-pack 0.12.1 (from
+# wallet/node_modules/.bin, NOT the 0.13.1 on PATH) / rustc 1.95.0 — the pinned
+# tuple in `[wallet_bundle.toolchain]`, re-checked in this worktree and
+# unchanged. `dist` was REMOVED before the measuring build, so the measured tree
+# is that build's own output and not a merge with an earlier one.
+#
+# [SUPERSEDED BY THE HARDEN-02 CORRECTION NOTE AT THE TOP OF THIS SECTION, item
+# (3) — the coverage sentence that follows was true when written and is not true
+# now: the record-coverage half runs on the canonical gate path. Annotation only;
+# the paragraph is otherwise unedited.]
+# COVERAGE, stated rather than implied: `verify_custody_manifest` has NO
+# wallet_bundle coverage (see the note at the foot of this section), so this row
+# is evidenced by the WT-1 packet rather than by a checker. SINGLE-LEG (one
+# host, one builder) — disclosed. `builds`/`identical` in
+# `[wallet_bundle.reproduction]` are NOT re-stated: this lane made ONE
+# observation at this digest.
+#
+# SECOND REBIND EXPECTED THIS LANE. V3 schedules TWO `s3tyu` installs — the
+# transitional (Phase B.1) and the final (Phase D.8) bundle — and both are hand
+# rebinds. This row records the build measured at the lane head; it is not
+# itself the claim that either install has happened.
+#
+# WT-1b (2026-09-14) DISCHARGES THAT EXPECTATION WITHOUT MOVING THIS ROW. The
+# two installs are now two BUILT bundles from one source tree, and the second
+# one has its own table: see `[wallet_bundle_transitional]` at the foot of this
+# file. THIS row is the FINAL bundle, installed at Phase D.8;
+# `[wallet_bundle_transitional]` is installed at Phase B.1. The WT-1b lane
+# re-measured this row's build and it reproduced `6af7b2cc…` BYTE-IDENTICALLY
+# (11 files, 14,103,504 bytes, asset_config `df836b12…`), so nothing here moved:
+# the lane's source changes are `wallet/vite.config.ts`,
+# `wallet/package.json`, `wallet/public/wallet-config.transitional.json` and a
+# new test file, none of which reaches an emitted byte of the FINAL bundle (the
+# vite config is a build driver, not bundle content; the variant asset is
+# removed from `dist` in both variants).
+#
+# ── HARDEN02-FOLLOWUPS REBIND (2026-09-17) — THE CURRENT NOTE FOR THIS ROW ────
+# Placed immediately above the table deliberately: it is the newest note and it
+# supersedes, for the VALUES below, every paragraph above it and every paragraph
+# below the table. All of those are kept unedited under I-B4 — they record why
+# each PREVIOUS digest moved and none of them is withdrawn.
+#
+# WHY THE ROWS MOVED. HARDEN-02 re-pinned `[wasm.stsh_token]` twice (8309d7f,
+# then ef1c121). `wallet/vite.config.ts` / `wallet/src/release/emitPins.ts`
+# generate `wallet/src/generated/releasePins.json` from the `[wasm.*]` pins;
+# `wallet/src/ui/pages/operator.ts:70` imports it and `wallet/src/ui/app.ts:98`
+# pulls it into the bundle graph. A Wasm re-pin is therefore a WALLET BUNDLE
+# INPUT change, which no checker catches: the gate's own Phase 2c wallet build
+# rewrites `releasePins.json` before the vitest leg reads it, so a stale
+# committed copy is structurally invisible. `git diff --name-only
+# e0c1f4db..b0244c8 -- wallet/` is seven files, and exactly one of them reaches
+# an emitted byte of the FINAL bundle: `releasePins.json`. (`package.json` gained
+# the `build:transitional` script; `vite.config.ts` is a build driver;
+# `public/wallet-config.transitional.json` is the variant INPUT and is removed
+# from `dist` in both variants; `BUILD_PLAN.md` is docs; two `tests/*.test.ts`
+# are not bundled. That this set does not move the final bundle is the same fact
+# WT-1b established when it re-measured this row to `6af7b2cc…` byte-identically.)
+# `releasePins.json`'s `stsh_token` value moved a90318da… -> 960dae96… — sixty-
+# four hex characters for sixty-four — which is why `sha256` moves and `bytes`
+# does NOT.
+#
+#   sha256      6af7b2cc…  ->  74dd2180…
+#   files       11         (unchanged)
+#   bytes       14103504   (unchanged)
+#   source_sha  e0c1f4db…  ->  b0244c82…   (an ancestor of the head carrying this
+#                                           record — S10)
+#
+# `method`, `bytes_method`, `command`, `command_expands`,
+# `[wallet_bundle.toolchain]` and `[wallet_bundle.asset_config]` (df836b12…,
+# re-measured in `dist` this lane and unchanged) are NOT rebound.
+#
+# HAND REBIND, `--repin` NOT run — FORBIDDEN for these rows (`:393-400`).
+# Measured with the exact manifest procedure documented above this section, over
+# the `wallet/dist` produced by `cd wallet && npm run build` with `dist` REMOVED
+# first, in a shell with `nvm use 22.23.1` active. The four probes, read in that
+# same shell, all match `[wallet_bundle.toolchain]`: node v22.23.1, npm 10.9.8,
+# `wallet/node_modules/.bin/wasm-pack` 0.12.1 (NOT the 0.13.1 on PATH), rustc
+# 1.95.0 (59807616e 2026-04-14). TWO observations of this digest were made at
+# this head — a no-commit rehearsal pass and the binding pass — and they agree.
+#
+# THIS ROW IS CHECKER-EVIDENCED, AND `[wallet_bundle_transitional]` IS NOT. The
+# two tables sit in the same file, look identical in form, and differ in
+# evidentiary status. `[wallet_bundle_release]` was flipped to `releasing` in
+# this lane's working tree with THIS bundle's `dist` on disk,
+# `verify_custody_manifest --wallet-bundle-bytes .` was run, it asserted all four
+# pinned tools before measuring, and its Rust `measure_bundle_dir` independently
+# reproduced `74dd2180…` — the same number the documented shell procedure
+# produced. The marker was then returned to `held` in the same lane and the
+# `releasing` state was never committed (see `[wallet_bundle_release].reason`).
+# No equivalent assertion exists or can exist for the transitional row: the byte
+# check reads `doc.get("wallet_bundle")` (`lib.rs:4347`) only. See the
+# HARDEN02-FOLLOWUPS note above `[wallet_bundle_transitional]`.
+#
+# SINGLE-LEG (one host, one builder) — disclosed. The two agreeing observations
+# are one host, so `[wallet_bundle.reproduction]` is NOT re-stated; the second
+# independent leg remains owed at the pre-ceremony full rebind.
+[wallet_bundle]
+sha256          = "9d4b4af9076868ff4c6c6c513723337c3da23db3f0301ee29455ce1b9dbfad6d"  # HARDEN02-FOLLOWUPS (2026-09-17): was 6af7b2cc…; re-measured after `releasePins.json` moved with `[wasm.stsh_token]` — see the rebind note directly above. | D8-BUILD (2026-09-21): was 74dd2180…; rebuilt and re-measured on the pinned tuple at 36e9fc5 after WALLET-AUTH G1/G1b and UPG-ROT-UI moved `wallet/src/**` — see the appended paragraph at the END of `[wallet_bundle_release].reason`. | VAULT-LIST-PAGING (2026-09-22): was e7c6bed4…; rebuilt and re-measured on the pinned tuple at 992de44c after the Vault listing walk and load-by-id moved `wallet/src/ui/pages/operator.ts` — see the appended paragraph at the END of `[wallet_bundle_release].reason`, which is the current note for this row. | VAULT-LIST-PAGING SSA FIX ROUND (2026-09-22): was 72ea6fda…, and the preceding segment's "current note" claim is superseded by THIS one. Rebuilt and re-measured on the same pinned tuple at 6b985687, the commit-3 code commit, which closes the SSA landed-diff review's C-4/C-5/C-8: the by-id form now repaints away the PREVIOUS proposal's approve/cancel controls BEFORE it awaits the new lookup, and an approve/cancel raw result stays anchored to its own proposal after that very call moves the row to a terminal outcome. 72ea6fda… is SUPERSEDED AND MUST NOT BE INSTALLED. Measured by the documented shell pipeline, HARDEN-03 tree-shape guard first, observed twice on ONE build's output on ONE host — two readings, not two builds. NOT CHECKER-EVIDENCED: the `--wallet-bundle-bytes .` cross-check needs `[wallet_bundle_release]` flipped to `releasing` / `variant = "final"` in the working tree, and the builder was again blocked from writing that key by its execution environment's permission policy and did not route around it. The CTO's independent re-measure of 72ea6fda… does NOT carry to this row: this is a DIFFERENT artifact, so SSA C-6 re-attaches here and the checker cross-check is OWED by Owner/CTO before board step 10. Staged at `~/stsh-walletdeploy/final-v4/` (dist + dfx.json f1a79c7b… + canister_ids.json e0fa2bc5… byte-copied from final-v3, plus DIGEST.txt in final-v3's shape). STAGED, NOT INSTALLED; the install is the Owner's at board step 10, AFTER 9a. `[wallet_bundle.reproduction]` `builds = 1` / `identical = false` is deliberately NOT re-stated and is not claimed for this digest — the second independent leg remains owed. `[wallet_bundle.toolchain]` and `[wallet_bundle.asset_config]` (df836b12…, re-measured in the built tree and unchanged) are NOT rebound by this round. | VAULT-LIST-PAGING SSA CLOSURE ROUND (2026-09-22): was 30195ea2…, and the preceding segment is superseded by THIS one. Rebuilt and re-measured on the same pinned tuple at 83976216, the commit-5 code commit, which closes the SSA closure review's C-4/C-8 remainders: when the walk is truncated the completed toggle now qualifies the COUNT ITSELF ("Show/Hide N completed (fetched rows only)") instead of leaving that qualification to the in-flight retained-payload line and the panel notice, and the retained terminal-row anchor no longer infers causality — it reads "Result of the approve/cancel call you sent for #N. Current proposal status: STATUS.", so a transport failure or a typed refusal followed by another signer's execution is never reported as though this call caused the outcome. 30195ea2… is SUPERSEDED AND MUST NOT BE INSTALLED. Measured by the documented shell pipeline, HARDEN-03 tree-shape guard first, observed twice on ONE build's output on ONE host — two readings, not two builds. NOT CHECKER-EVIDENCED: the `--wallet-bundle-bytes .` cross-check needs `[wallet_bundle_release]` flipped to `releasing` / `variant = "final"` in the working tree, which is outside this lane's authority and was not routed around. Any discharge of the 30195ea2… or 72ea6fda… digest does NOT carry to this row: this is a DIFFERENT artifact, so SSA C-6 re-attaches here and the checker cross-check is OWED by Owner/CTO before board step 10. Staged at `~/stsh-walletdeploy/final-v5/` (dist + dfx.json f1a79c7b… + canister_ids.json e0fa2bc5… byte-copied from final-v4, plus DIGEST.txt in final-v4's shape). STAGED, NOT INSTALLED; the install is the Owner's at board step 10, AFTER 9a. `[wallet_bundle.reproduction]` `builds = 1` / `identical = false` is deliberately NOT re-stated and is not claimed for this digest — the second independent leg remains owed. `[wallet_bundle.toolchain]` and `[wallet_bundle.asset_config]` (df836b12…, re-measured in the built tree and unchanged) are NOT rebound by this round. | WALLET-READ-ACTORS (2026-09-22): was 90dde46b…, and the preceding segment is superseded by THIS one. Rebuilt and re-measured on the same pinned tuple at b017dfc8, the commit-1 code commit, which stops the staking-absent launch posture (D1, stakingCanisterId "") from nulling ALL read actors: `createReadActors` now builds token and vesting unconditionally and staking only for a non-empty id, and `#/staking` shows its own D1 refusal. 90dde46b… is SUPERSEDED — DO NOT REINSTALL. Measured by the documented shell pipeline, HARDEN-03 tree-shape guard first, on TWO separate builds of b017dfc8 on ONE host (the lane worktree, and a fresh `git clone --no-local` with its own `npm ci` and cargo target), which agree byte-for-byte; the value here is COPIED FROM that measured output and then checked against a fresh re-measurement of the staged `final-v6/dist`. NOT CHECKER-EVIDENCED: the `--wallet-bundle-bytes .` cross-check needs the `releasing` / `variant = "final"` flip, outside this lane's authority; it is OWED by Owner/CTO before install. Staged at `~/stsh-walletdeploy/final-v6/`. See the WALLET-READ-ACTORS paragraph at the END of `[wallet_bundle_release].reason`, which is the current note for this row. | VETKEYS-AGE-2MIN (2026-09-23): was b5813e14…, and the preceding segment is superseded by THIS one. Rebuilt and re-measured on the same pinned tuple at e19736c3, the lane's wallet commit: login/restore observe the balance (non-blocking) and make ONE background first-derive attempt so the canister's 120 s eligibility clock starts at the first successful funded observation (the priming attempt, when the balance is already funded at sign-in — not unconditionally at sign-in: delayed funding, an unavailable read or sighting saturation move it), shield() under a live preparation deadline shows the wait and makes no canister call, and the preparation copy states the canister's returned wait. b5813e14… is SUPERSEDED — DO NOT REINSTALL. Measured by the documented shell pipeline, HARDEN-03 tree-shape guard first, on TWO separate builds of e19736c3 on ONE host (the lane worktree, and a fresh `git clone --no-local` with its own `npm ci` and cargo target), which agree byte-for-byte; the value here is COPIED FROM that measured output and checked against a fresh re-measurement of the staged `final-v7/dist`. NOT CHECKER-EVIDENCED: the `--wallet-bundle-bytes .` cross-check needs the `releasing` / `variant = "final"` flip, outside this lane's authority; it is OWED by Owner/CTO before install. Staged at `~/stsh-walletdeploy/final-v7/`. See the VETKEYS-AGE-2MIN paragraph at the END of `[wallet_bundle_release].reason`, which is the current note for this row. | WALLET-CSP-BLOB (2026-09-23): was 1c9a2a5b…, and the preceding segment is superseded by THIS one. Rebuilt and re-measured on the same pinned tuple at be3fae8c, the lane's wallet commit: the shipped CSP in `.ic-assets.json5` gains `blob:` on connect-src (deviation 4: the prover worker fetches its hash-verified S-16 object URLs) and a new `worker-src 'self' blob:` (deviation 5: ffjavascript's blob-spawned proving thread pool); script-src, default-src and child-src are unchanged. Without it every mainnet private spend on final-v7 failed "proof generation failed: Failed to fetch". 1c9a2a5b… is SUPERSEDED as the staged artifact — DO NOT REINSTALL — while it remains what is INSTALLED on s3tyu until the Owner installs final-v8. Measured by the documented shell pipeline, HARDEN-03 tree-shape guard first, on TWO separate builds of be3fae8c on ONE host (the lane worktree, and a fresh `git clone --no-local` with its own `npm ci` and cargo target), which agree byte-for-byte; the value here is COPIED FROM that measured output and checked against a fresh re-measurement of the staged `final-v8/dist`. NOT CHECKER-EVIDENCED: the `--wallet-bundle-bytes .` cross-check needs the `releasing` / `variant = "final"` flip, outside this lane's authority; it is OWED by Owner/CTO before install. Staged at `~/stsh-walletdeploy/final-v8/`. See the WALLET-CSP-BLOB paragraph at the END of `[wallet_bundle_release].reason`, which is the current note for this row.
+method          = "sha256 over the LC_ALL=C-sorted per-file `sha256  relpath` manifest of wallet/dist (see procedure above)"
+path            = "wallet/dist"
+files           = 15  # TOKEN-APPROVE-TTL (2026-09-25): RE-MEASURED and unchanged at 15 on final-v14 (both builds) — the lane changes the app chunk and index.html in place and adds no file. | WALLET-V13 (2026-09-24): RE-MEASURED and unchanged at 15 on final-v13 (both builds) — the lane changes the app chunk and index.html in place and adds no file. | WALLET-V12 (2026-09-24): RE-MEASURED and unchanged at 15 on final-v12 (both builds) — the lane changes the app chunk, the scanner worker chunk and index.html in place and adds no file. | WALLET-CACHE-II-ONLY (2026-09-23): RE-MEASURED and unchanged at 15 on final-v11 (both builds) — the lane changes the app chunk, the css and index.html in place and adds no file. | WALLET-SHIELD-LAYER1 (2026-09-23): was 13; RE-MEASURED 15 on final-v10 (both builds) — +2 SIL OFL 1.1 licence texts, fonts/DMSans-OFL.txt and fonts/JetBrainsMono-OFL.txt (OFL §2: the licence ships with the bundled fonts). | WALLET-UI (2026-09-23): was 11; RE-MEASURED 13 on final-v9 — +2 bundled font files (DMSans-*.woff2, JetBrainsMono-*.woff2); the third font the lane originally shipped was dropped for a system stack (licence), so 13, not the brief's 14. | VAULT-LIST-PAGING (2026-09-22): RE-MEASURED and unchanged at 11 — the lane's change emits no new file and removes none, so this value is measured, not carried. | VAULT-LIST-PAGING SSA FIX ROUND (2026-09-22): RE-MEASURED AGAIN on the final-v4 tree and still 11, for the same reason — the C-4/C-5/C-8 fixes are source changes inside the one emitted app chunk. Measured on this round's own tree, not carried from final-v3. | VAULT-LIST-PAGING SSA CLOSURE ROUND (2026-09-22): RE-MEASURED AGAIN on the final-v5 tree and still 11, for the same reason — the C-4/C-8 fixes are source changes inside the one emitted app chunk. Measured on this round's own tree, not carried from final-v4. | WALLET-READ-ACTORS (2026-09-22): was 11; RE-MEASURED on the final-v6 tree (both builds) and still 11 — the fix is a source change inside the one emitted app chunk. Measured, not carried. | VETKEYS-AGE-2MIN (2026-09-23): was 11; RE-MEASURED on the final-v7 tree (both builds) and still 11 — the change is source inside the one emitted app chunk. Measured, not carried. | WALLET-CSP-BLOB (2026-09-23): was 11; RE-MEASURED on the final-v8 tree (both builds) and still 11 — the change edits the one shipped `.ic-assets.json5` and adds or removes no file. Measured, not carried.
+bytes           = 14337769  # TOKEN-APPROVE-TTL (2026-09-25): RE-MEASURED and unchanged at 14337769 — the only change is the compiled `stsh_token` pin (994a77ff… -> 70786d0d…, same 64-hex length) in the app chunk, plus index.html's reference to the renamed chunk (same length). | WALLET-V13 (2026-09-24): was 14337491; +278 = the app chunk (logged-out Settings/Home gating, About STSH card, hoisted wipe result, the TOKEN-METADATA stsh_token pin compiled in). | WALLET-V12 (2026-09-24): was 14324522; +12,969 = the app chunk (+12,232: regenerated declarations, spend admission copy + same-id retry, the `Approve new devices` toggle) and the scanner worker chunk (+737: the regenerated shielded_pool idlFactory it bundles). | WALLET-CACHE-II-ONLY (2026-09-23): was 14301656; +22,866 = the app chunk (+22,079: the sign-in cache open, single-flight key acquisition, passcode/migration flows and the copy pass) and css (+787: the O-7 advisory styling). | WALLET-SHIELD-LAYER1 (2026-09-23): was 14291447; +10,209 = the two OFL texts (8,788) plus the app chunk (+1,040) and css (+381). | WALLET-UI (2026-09-23): was 14163209; +128,238 = the two fonts (83,336) plus the UI restyle in the app chunk and css. | D8-BUILD (2026-09-21): was 14103504. | VAULT-LIST-PAGING (2026-09-22): was 14153401; +4,752, the paging walk / load-by-id / local-result code in the one emitted app chunk. | VAULT-LIST-PAGING SSA FIX ROUND (2026-09-22): was 14158153; +555, the C-5 pre-await repaint and the C-8 retained-result re-anchoring, again in the one emitted app chunk (index-BwzjDKsd.js -> index-CP3JTlQM.js). Every other file in `dist` is byte-identical to final-v3's. | VAULT-LIST-PAGING SSA CLOSURE ROUND (2026-09-22): was 14158708; +4, the C-4 toggle-label qualification and the C-8 neutral anchor copy, again in the one emitted app chunk (index-CP3JTlQM.js -> index-4d1hkyNu.js). Every other file in `dist` is byte-identical to final-v4's. | WALLET-READ-ACTORS (2026-09-22): was 14158712; +345, the read-actor split and the staking-page D1 refusal in the one emitted app chunk (index-4d1hkyNu.js -> index-BD1G0YLf.js). Every other file in `dist` is byte-identical to final-v5's. | VETKEYS-AGE-2MIN (2026-09-23): was 14159057; +1,730, the login-time priming, the shield preparation notice and the ruled copy in the one emitted app chunk (index-BD1G0YLf.js -> index-xsyZyomo.js). Every other file in `dist` is byte-identical to final-v6's. | WALLET-CSP-BLOB (2026-09-23): was 14160787; +2,422, entirely `.ic-assets.json5` (7,474 -> 9,896 bytes: the two CSP tokens plus the deviation (4)/(5) provenance prose and the FIVE-deviation count). Every other file in `dist`, including `index.html` and every emitted chunk, is byte-identical to final-v7's.
+bytes_method    = "sum of the 15 REGULAR FILE sizes; directory entries are excluded"  # HARDEN-02 (1): was "10" — the stale half of a file-set change, corrected without re-measuring; see the correction note above
+command         = "cd wallet && npm run build"
+command_expands = "npm run build:wasm && tsc && vite build"
+source_sha      = "7a8e09450f4a08deb7e81da4940716f44f98c8f7"  # HARDEN02-FOLLOWUPS (2026-09-17): REBOUND from e0c1f4db… (itself HARDEN-02's rebind off the orphan fad8c664…). The wallet source commit this bundle was built from, an ancestor of the head carrying this record (S10). b0244c82 is this lane's Part C record-only commit; its `wallet/` tree is byte-identical to e6634ce's, Part C having touched only this file. | D8-BUILD (2026-09-21): REBOUND from b0244c82… to 36e9fc5477e018bb1ca44fd2be298ce9b6b43520 — the head this lane built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged). | VAULT-LIST-PAGING (2026-09-22): REBOUND from 36e9fc54… to 992de44c10421df33355f4a9a80e3b2e4cb5359a — this lane's code commit, the tree this bundle was built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged). | VAULT-LIST-PAGING SSA FIX ROUND (2026-09-22): REBOUND from 992de44c… to 6b985687fb082733e7abb7e58e2444a71fc5e8bc — this round's code commit (the SSA C-4/C-5/C-8 fixes), the tree final-v4 was built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged). | VAULT-LIST-PAGING SSA CLOSURE ROUND (2026-09-22): REBOUND from 6b985687… to 83976216a9d3e4003db75c9a6e9fcf51eb2d1496 — this round's code commit (the SSA C-4/C-8 fixes), the tree final-v5 was built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged). | WALLET-READ-ACTORS (2026-09-22): REBOUND from 83976216… to b017dfc8d7449fe8c0e4bb2a61d521167f4444e1 — this lane's code commit, the tree final-v6 was built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged). | VETKEYS-AGE-2MIN (2026-09-23): REBOUND from b017dfc8… to e19736c3ab9bc98d3b7ee904b52d9e11afb7bfa1 — this lane's wallet commit, the tree final-v7 was built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged). | WALLET-CSP-BLOB (2026-09-23): REBOUND from e19736c3… to be3fae8c780b5d973c43b55bb4c8d12c58e5c998 — this lane's wallet commit, the tree final-v8 was built from, and the parent of the record-only commit carrying this value, hence an ancestor of it (S10 semantics unchanged).
+
+[wallet_bundle.toolchain]
+# The PINNED tuple — the leg whose digest is recorded above and the one a verifier
+# should reproduce. Node and npm are recorded as an ACTUAL PAIRED TUPLE as
+# installed, never spliced across legs (an earlier revision of this section paired
+# node 22.23.1 with npm 10.8.2, which is the npm that ships with node 20.20.2 —
+# that tuple never existed on this host).
+node       = "22.23.1 (wallet/.nvmrc)"
+npm        = "10.9.8 (the npm bundled with node 22.23.1)"
+wasm_pack  = "0.12.1 (wallet/package.json devDependency ^0.12.0, resolved from node_modules/.bin — NOT the 0.13.1 on PATH)"
+rustc      = "1.95.0 (59807616e 2026-04-14) — rust-toolchain.toml"
+
+# J-17e RE-MEASURE (2026-09-12), superseding the J-17d re-measure below. The
+# rows moved because this lane changed bundle INPUTS: `applySession`'s three
+# new fail-soft guards and their two persistent notices in `wallet/src/ui/app.ts`,
+# the `journalAvailable` field and the three refusal strings in
+# `wallet/src/ui/context.ts`, and the null-actor/no-journal gating of
+# `renderTransferForm` in `wallet/src/ui/pages/account.ts`. `files` (10), the
+# method, `bytes_method`, the toolchain tuple and `[wallet_bundle.asset_config]`
+# are unchanged; `sha256`, `bytes` (+1,222) and `source_sha` moved. The new test
+# file and the three harness ctx-literal lines are NOT bundle inputs.
+#
+# HAND REBIND, not `--repin` (`--repin` is FORBIDDEN in this lane). The digest
+# was computed with the exact procedure documented above this section, over the
+# `wallet/dist` produced by `cd wallet && npm run build` at source_sha f1380697,
+# on node 22.23.1 / npm 10.9.8 / wasm-pack 0.12.1 / rustc 1.95.0 — the pinned
+# tuple in `[wallet_bundle.toolchain]`, re-checked in this worktree and
+# unchanged. `verify_custody_manifest` has NO wallet_bundle coverage, so this
+# row is evidenced by the packet rather than by a checker; `dist` was REMOVED
+# before the measuring build, so the measured tree is that build's own output
+# and not a merge with an earlier one. `builds`/`identical` in
+# `[wallet_bundle.reproduction]` are NOT re-stated: this lane made ONE
+# observation at this digest.
+#
+# J-17d RE-MEASURE (2026-09-12), SUPERSEDED by the paragraph above; kept because
+# it records why the PREVIOUS digest moved. The
+# rows moved because this lane changed a bundle INPUT: `verifyIdentity` in
+# `wallet/src/session/auth.ts` — the ceiling now applies to the chain's MINIMUM
+# expiration rather than to every delegation, an empty chain verdicts
+# "anonymous" before any reduce, a `targets != null` delegation is refused, and
+# the new `hasScopedDelegation` / `SCOPED_DELEGATION_REFUSAL` exports are
+# surfaced by `login()`. `files` (10), the method, `bytes_method`, the toolchain
+# tuple and `[wallet_bundle.asset_config]` are unchanged; `sha256`, `bytes`
+# (+378) and `source_sha` moved. The new test file is NOT a bundle input.
+#
+# HAND REBIND, not `--repin` (`--repin` is FORBIDDEN in this lane). The digest
+# was computed with the exact procedure documented above this section, over the
+# `wallet/dist` produced by `cd wallet && npm run build` at source_sha 2bd8db5d,
+# on node 22.23.1 / npm 10.9.8 / wasm-pack 0.12.1 / rustc 1.95.0 — the pinned
+# tuple in `[wallet_bundle.toolchain]`, re-checked in this worktree and
+# unchanged. `verify_custody_manifest` has NO wallet_bundle coverage, so this
+# row is evidenced by the packet rather than by a checker; `dist` was REMOVED
+# before the measuring build, so the measured tree is that build's own output
+# and not a merge with an earlier one. `builds`/`identical` in
+# `[wallet_bundle.reproduction]` are NOT re-stated: this lane made ONE
+# observation at this digest.
+#
+# J-17c RE-MEASURE (2026-09-11), SUPERSEDED by the paragraph above; kept because
+# it records why the PREVIOUS digest moved. The
+# rows moved again because this lane changed bundle INPUTS: `mountApp`'s three
+# fail-soft pre-router guards, the nullable `readActors` type and its refusal
+# sites in `app.ts`, the shared `READ_SERVICES_UNAVAILABLE` constant in
+# `context.ts`, and the refusal branches in `pages/staking.ts` /
+# `pages/vesting.ts`. `files` (10), the method, `bytes_method`, the toolchain
+# tuple and `[wallet_bundle.asset_config]` are unchanged; `sha256`, `bytes`
+# (+1,171) and `source_sha` moved. The new test file is NOT a bundle input.
+#
+# HAND REBIND, not `--repin` (`--repin` is FORBIDDEN in this lane). The digest
+# was computed with the exact procedure documented above this section, over the
+# `wallet/dist` produced by `cd wallet && npm run build` at source_sha 8dcd094c,
+# on node 22.23.1 / npm 10.9.8 / wasm-pack 0.12.1 / rustc 1.95.0 — the pinned
+# tuple in `[wallet_bundle.toolchain]`, re-checked in this worktree and
+# unchanged. `verify_custody_manifest` has NO wallet_bundle coverage, so this
+# row is evidenced by the packet rather than by a checker; `dist` was removed
+# before the build, so the measured tree is the build's own output and not a
+# merge with an earlier one.
+#
+# J-17b RE-MEASURE (2026-09-11), SUPERSEDED by the paragraph above; kept because
+# it records why the PREVIOUS digest moved. The lane changed bundle inputs: the
+# `#/operator` route and its page, the Vault/Upgrader actors and generated
+# declarations, the operator proposal/encoding module, the two new config keys,
+# the operator stylesheet rules, and the BUILD-TIME
+# `wallet/src/generated/releasePins.json` the page imports. That measurement was
+# made at source_sha ce15a3e1 against digest f53f21b4.
+#
+# `builds`/`identical` below are NOT re-stated for this digest: this lane made
+# ONE observation, not the two independent ones that line describes, and
+# inheriting a count measured at a superseded digest is exactly the error the
+# W2/W notes above were written to stop. The two-leg reproduction is owed at the
+# pre-ceremony full rebind.
+#
+# THE CIRCULARITY ARGUMENT IS UNCHANGED, and this lane additionally bound it.
+# The wallet build injects ONLY `[build].source_sha` (still the W0 freeze
+# 5ae6b0ff — it is the CANISTER build source), so the rows in this section reach
+# no emitted byte and re-pinning them cannot move the digest they record. J-17b
+# adds a SECOND build-time read of this file — the `[wasm.*]` pins — and it is
+# deliberately disjoint from `[wallet_bundle]` for the same reason:
+# `wallet/tests/operator_release_pins.test.ts` asserts the extractor never
+# returns the bundle's own sha256 and never names a `wallet_bundle` key, and
+# `wallet/tests/j25_build_identity.test.ts` continues to assert that perturbing
+# every `[wallet_bundle]` field leaves the injection identical.
+
+[wallet_bundle.reproduction]
+# HARDENING W2 REPRODUCTION (2026-09-11). `builds` and `identical` describe
+# exactly two fresh, independent observations at W2
+# 6681da3909ad83f1886f45f04f396f1eebf47882, not a running historical total.
+# Evidence directories: WALLET_REPRO_W2_LEG_A_V1, WALLET_REPRO_W2_LEG_B_V1,
+# and WALLET_REPRO_W2_CROSS_LEG_COMPARISON_V1. Both used
+# `npm ci --ignore-scripts` only for installation, then the normal
+# `npm run build` lifecycle including prebuild artifact verification,
+# build:wasm, TypeScript and Vite. Each used an independently copied and
+# SHA-verified wasm-pack 0.12.1 under the pinned Node 22.23.1/npm 10.9.8/Rust
+# 1.95.0 tuple. Both canonical all-regular-file manifests (including dotfiles)
+# matched: 10 files, 14,031,318 bytes, no symlinks or other nonregular entries.
+# Both ran on the same host with shared source/tool caches, so cross-machine
+# independence remains open. This R2 child confirms the same bytes but is not
+# counted as a third independent observation.
+#
+# HISTORICAL HARDENING W REPRODUCTION (2026-09-11). The superseded pair ran at
+# W 3fc4a169692c274d9cd3623f7d3b5355782c681a and was recorded in
+# WALLET_REPRO_LEG_A_W_V1, WALLET_REPRO_LEG_B_W_V1, and
+# WALLET_REPRO_CROSS_LEG_COMPARISON_V1. Its two same-host fresh observations
+# used the same normal lifecycle and produced 10 files totaling 14,031,318
+# bytes. W2 supersedes that digest because [build].source_sha is injected into
+# the bundle.
+# J-17b (2026-09-11): these two fields describe the CURRENT pin, and the current
+# pin has ONE observation. They are moved rather than left reading 2/true, which
+# would silently transfer the W2 pair's evidence onto a digest they never saw.
+# `identical = false` here does NOT mean two builds disagreed — it means the
+# only claim a single observation can support is "not established", and a lone
+# build cannot establish identity with anything. The second independent leg is
+# OWED at the pre-ceremony full rebind, exactly as the W2 note says.
+builds    = 1
+identical = false
+
+# HISTORICAL J-25 REPRODUCTION (2026-09-08). The following prose described the
+# then-recorded J-25 digest and does not describe the 2026-09-11 pair:
+# `builds` and `identical` described that digest and nothing else — they were
+# not a running total across superseded pins. Two CLEAN legs at the J-25
+# fix-wave code commit b544192, both on this host, had `dist/` AND
+# `wallet/src/wasm/` removed before each leg; `npm ci` used the committed
+# lockfile (sha256 75f4bf9cf869f3cac3f0355b732d24cd1fa424d671c6e23f9853690b4634e2fa,
+# unchanged before and after both legs), node 22.23.1 / npm 10.9.8, wasm-pack
+# 0.12.1 resolved from wallet/node_modules/.bin, and rustc 1.95.0. The working
+# tree was clean before and after both legs. Both produced the identical
+# per-file manifest, hence the identical digest.
+#
+# NOT COUNTED in that historical record: the confirming build made at its
+# record-only commit, which existed to catch a self-referential build. Its
+# result could not be written into the rows it tested, so it was reported in
+# the J-25 packet instead. `builds = 2` was what had actually run when that
+# historical line was written.
+
+# J-25 FIX-WAVE RE-MEASURE (2026-09-09). The rows above moved again because the
+# fix wave for reviews/SSA_J25_LANDED_DIFF_2026-09-09.md changed bundle INPUTS:
+# AMBER-1 added the release panel's stylesheet rules to wallet/src/styles.css,
+# and RED-1/RED-2 changed wallet/src/release/{proverVerification,poolIdentity}.ts
+# and wallet/src/ui/{releaseFooter,context,app}.ts. `files` (10), the method, the
+# toolchain tuple and `[wallet_bundle.asset_config]` are unchanged; `sha256`,
+# `bytes` (+1552) and `source_sha` moved. RED-3's new work is test-only
+# (wallet/tests/**) and reaches no emitted byte.
+#
+# `[build].source_sha` is UNCHANGED and remains the W0 freeze 5ae6b0ff — it is
+# the CANISTER build source, and it is still the ONLY value this file injects.
+# The circularity argument above is unchanged and is now additionally bound by
+# the RED-3 tests, which resolve the PRODUCTION wallet/vite.config.ts against
+# fixture records and fail if the shipped config stops reading `[build]`.
+
+# J-25 RE-MEASURE (2026-09-08). The rows above were re-measured because J-25
+# changed the bundle's INPUTS: the wallet now carries a "Release" panel and the
+# one build-time injection that feeds it — `[build].source_sha`, selected from
+# THIS file. `files` (10) and the method are unchanged; `sha256`, `bytes` and
+# `source_sha` moved.
+#
+# WHY THIS IS NOT CIRCULAR, and why it is testable rather than asserted: the
+# wallet build injects ONLY `[build].source_sha`, which J-25 did not touch. The
+# rows in this section reach no emitted byte, so re-pinning them cannot move the
+# digest they record. wallet/tests/j25_build_identity.test.ts asserts exactly
+# that in both directions — perturbing every `[wallet_bundle]` field leaves the
+# injection identical, and moving `[build].source_sha` changes it.
+#
+# `[build]`, `[wasm.*]`, `[wallet_bundle.toolchain]` and
+# `[wallet_bundle.asset_config]` are UNCHANGED by J-25. In particular
+# `[build].source_sha` remains the W0 freeze 5ae6b0ff: it is the CANISTER build
+# source, and the panel's own copy says so rather than presenting it as the
+# commit that produced the UI.
+#
+# ── HISTORY BELOW THIS LINE ──────────────────────────────────────────────────
+# The immediately preceding pin was
+# 108b515eba0b0738c27c01133e59992ba5ccf04e8bf96329c88a6c29f16d30c5 at
+# source_sha 5ae6b0ff (W0 rebind), measured under the A6.6 note that follows.
+#
+# A6.6 RE-PIN (2026-09-08). The rows above were re-measured because A6.6 changed
+# the bundle's INPUTS materially: vkHash, circuitVersion, both staged zk artifact
+# digests (dist/zk/spend.wasm, dist/zk/spend_1.zkey), DENOMINATIONS, and the
+# shield disclosure copy. SSA landed-diff AMBER-2 is the reason this section was
+# revisited at all: packet §3 asserted "wallet/dist is gitignored and carries no
+# pin," which is false — this section IS a pin.
+#
+# Leg 1-3 — worktree at cc3e1ad, node 22.23.1 / npm 10.9.8 (the .nvmrc pin),
+#   wasm-pack 0.12.1 from wallet/node_modules/.bin, rustc 1.95.0. `dist/` AND
+#   `wallet/src/wasm/` wiped before every leg, so the poseidon WASM is
+#   REGENERATED, not reused. Three legs, one digest, byte-identical.
+#
+# TWO ROWS MOVED FOR A REASON THAT IS NOT A6.6, and it is disclosed rather than
+# folded in: `files` 9 -> 10 and the matching `bytes_method` text. The tenth file
+# is `dist/.ic-assets.json5`, added to `wallet/public/` by commit 078fa6b, which
+# is AFTER the `source_sha = d2b0bd07` this section was last measured at. The row
+# was therefore already stale at A6.6's base 429a8b6 — `[wallet_bundle.asset_config]`
+# below already documented the file as shipped INTO dist and inside the digest,
+# which the `files = 9` count contradicted.
+#
+# The historical variation legs below were run at d2b0bd07 and are RETAINED as
+# evidence about the pins, not re-run here:
+# Legs at d2b0bd07 — node 20.20.2 vs 22.23.1 (major version varied); wasm-pack
+#   0.12.1 (pinned) vs 0.13.1 (PATH); two CLEAN-TREE legs (no dist/, no
+#   src/wasm/, no node_modules) extracted from the tracked file set.
+
+# The interesting results, recorded because they are evidence ABOUT the pins:
+node_is_load_bearing      = false  # 20.20.2 and 22.23.1 produced the IDENTICAL digest (measured at d2b0bd07, NOT re-varied at cc3e1ad)
+wasm_pack_is_load_bearing = false  # 0.12.1 (pinned) and 0.13.1 (PATH) produced the IDENTICAL digest (measured at d2b0bd07, NOT re-varied at cc3e1ad)
+# Stated as a hypothesis, NOT a measurement: poseidon-wasm disables wasm-opt
+# (circuits/poseidon-wasm/Cargo.toml [package.metadata.wasm-pack.profile.release]),
+# so the wasm bytes come from rustc, which is pinned at 1.95.0. The rustc
+# dimension was NOT varied and is therefore unproven either way.
+#
+# LIMITS, stated plainly: every build, historical and A6.6, ran on ONE machine, so cross-machine
+# reproduction of the bundle is UNPROVEN, exactly as it remains unproven for the
+# Wasm rows above. The clean-tree legs had node_modules provisioned by COPY (no
+# network in the harness), so `npm ci` itself is not part of this evidence.
+
+[wallet_bundle.asset_config]
+# Shipped INTO dist and therefore inside the digest above.
+# WALLET-CSP-BLOB (2026-09-23) — DISCLOSED STALE, NOT REBOUND. final-v8 ships
+# `dist/.ic-assets.json5` = 7c2ce4c20d20e71a349cb8e982f6ffc4268bffb1bdb5398feca13be78388234a
+# (connect-src `blob:`, new `worker-src 'self' blob:`, FIVE deviations), NOT the
+# df836b12… below. The row is left at df836b12… because check (7) of
+# `check_wallet_bundles` requires it to EQUAL
+# `[wallet_bundle_transitional.asset_config].sha256`, and the transitional bundle
+# (built at 36e9fc5) genuinely shipped df836b12…; moving both would falsify the
+# transitional row, moving one would fail the checker. The final-v8 bytes of the
+# file ARE bound, through `[wallet_bundle].sha256` (8375128b…). Reconciling rule
+# (7) with an asset config that now differs by bundle is OWED to the CTO; the
+# `note` below still describes the THREE-deviation policy and is historical.
+file   = "wallet/public/.ic-assets.json5 -> dist/.ic-assets.json5"
+sha256 = "df836b12a5a8fcbe0898e73b017bcb278a2c7fdb63020b42f3aa196e31947de2"
+note   = "WT-1 F-1 (2026-09-14) supersedes 5a9e247b…, which supersedes 2d81c2d5…. The F-1 change adds a `{\"match\": \".well-known\", \"ignore\": false}` DIRECTORY rule ahead of the others, mirroring website/solvency-status/public/.ic-assets.json5:2-9: the file rule alone left dfx skipping the dot-prefixed directory, so the alternative-origins asset would have shipped in the bundle and never reached the canister (SSA landed-diff 70fb4b2e…, F-1). Both the directory rule and the file rule are required, and rule ORDER matters — the specific rule must follow `**/*` or the catch-all overwrites its Content-Type and CORS header; both facts are asserted in wallet/tests/wt1_canister_rooted_identity.test.ts. The earlier WT-1 note, still accurate about the CSP, read: supersedes the prior value 2d81c2d5…, which recorded the policy as dfx 0.28.0 `dfx info security-policy` VERBATIM plus 'wasm-unsafe-eval' on script-src and nothing else. There are now THREE named deviations, each argued in the file itself: (1) 'wasm-unsafe-eval' appended to script-src, unchanged; (2) style-src / style-src-elem / font-src narrowed from `*` to 'self' — dfx ships these wide open, and third-party CSS can exfiltrate attribute values through background-image URLs, which in a wallet means principals and amounts; 'unsafe-inline' is RETAINED on the two style directives for a named failing case (runtime-computed inline element styles, and Vite's injected inline <style>); (3) `http://localhost:*` removed from connect-src — a production mainnet page has no legitimate use for connections to arbitrary ports on the visitor's own machine, and `vite dev` does not apply this file at all, so loopback development is unaffected. The file also gained a second match rule for `.well-known/ii-alternative-origins` (Content-Type: application/json, Access-Control-Allow-Origin, and `ignore: false` — without which dfx skips the dot-prefixed path and the asset silently never reaches the canister). Release checklist item B-4 re-derives the policy against the dfx version in use at release and diffs it against this copy; expect exactly the three deviations above and nothing else."
+
+# ── HARDEN02-FOLLOWUPS REBIND (2026-09-17) — BOTH BUNDLE DIGESTS MOVED ───────
+#
+# WHY THIS ROW MOVED. HARDEN-02 re-pinned `[wasm.stsh_token]` twice (8309d7f,
+# then ef1c121). That pin is not a leaf: `wallet/vite.config.ts` /
+# `wallet/src/release/emitPins.ts` generate `wallet/src/generated/releasePins.json`
+# from the `[wasm.*]` pins, `wallet/src/ui/pages/operator.ts:70` imports it and
+# `wallet/src/ui/app.ts:98` pulls it into the bundle graph — so a Wasm re-pin
+# silently moves a WALLET BUNDLE INPUT. `git diff --name-only e1940d00..b0244c8
+# -- wallet/` is three files, of which `releasePins.json` is the only bundle
+# input (`BUILD_PLAN.md` is docs; `tests/*.test.ts` is not bundled). Its
+# `stsh_token` value moved a90318da… -> 960dae96… — sixty-four hex characters
+# for sixty-four, which is why `sha256` moves and `bytes` does NOT: 11 files and
+# 14,103,435 bytes are unchanged, and `[wallet_bundle_transitional.asset_config]`
+# (df836b12…) is unchanged and is NOT rebound.
+#
+#   sha256      d9bb1bfd…  ->  5401d22c…
+#   files       11         (unchanged)
+#   bytes       14103435   (unchanged)
+#   built_at    2026-09-14 ->  2026-09-17
+#   source_sha  e1940d00…  ->  b0244c82…   (an ancestor of the head carrying
+#                                           this record — S10)
+#
+# HAND REBIND, `--repin` NOT run — it is FORBIDDEN for these rows (it has no
+# notion of this table at all, and it deletes superseded paragraphs I-B4
+# protects, `:393-400`). Measured with the exact manifest procedure documented
+# above `[wallet_bundle]`, over the `wallet/dist` produced by
+# `cd wallet && npm run build:transitional` with `dist` REMOVED first, in a shell
+# with `nvm use 22.23.1` active. The four probes were read in that same shell and
+# all four match `[wallet_bundle_transitional.toolchain]`: node v22.23.1, npm
+# 10.9.8, `wallet/node_modules/.bin/wasm-pack` 0.12.1 (NOT the 0.13.1 on PATH),
+# rustc 1.95.0 (59807616e 2026-04-14). TWO observations of this digest were made
+# at this head — a no-commit rehearsal pass and the binding pass — and they agree.
+#
+# EVIDENCE BASIS, stated in the record rather than left to be inferred from
+# source. `verify_custody_manifest --wallet-bundle-bytes` does NOT and CANNOT
+# measure this row. `check_wallet_bundle_bytes` reads
+# `let table = doc.get("wallet_bundle");`
+# (`scripts/verify_custody_manifest/src/lib.rs:4347`) — the FINAL table,
+# hardcoded; BOTH this table and `[wallet_bundle]` record
+# `path = "wallet/dist"`, so one directory serves two bundles; and
+# `[wallet_bundle_release]` is a ONE-BIT marker
+# (`WALLET_BUNDLE_RELEASE_STATES = ["held", "releasing"]`, `lib.rs:3674`) with no
+# per-bundle discriminator. There is therefore NO state in which the byte check
+# can be told the `dist` on disk is the transitional one. **This row's digest is
+# PACKET-EVIDENCED, not checker-evidenced** — a continuation of the coverage gap
+# already recorded below (`COVERAGE GAP, stated rather than implied`), not a new
+# concession. It is the sharper form of that gap: the record half
+# (`check_wallet_bundles`) does cover both tables, so the gap is on the BYTE half
+# only, and `lib.rs:3624-3629` states the principle this violates — "THERE ARE
+# TWO TABLES, INSTALLED IN A FIXED ORDER, ONTO THE SAME CANISTER… Covering one
+# and not the other would leave the install that happens FIRST unverified". Phase
+# B.1 IS the install that happens first. Closing the gap (a per-bundle
+# discriminator plus a byte check taught both tables, OR an explicit signed
+# acceptance that B.1 installs against a packet-evidenced digest) is owed BEFORE
+# B.1 and is out of scope for this lane, which was scoped to RECORD the
+# limitation, not to close it. Recording a gap is not accepting it.
+#
+# SINGLE-LEG (one host, one builder) — disclosed. The two agreeing observations
+# above are one host, so `builds`/`identical` are still NOT stated; the second
+# independent leg remains owed at the pre-ceremony full rebind.
+
+# ── WT-1b — THE TRANSITIONAL (PHASE B.1) WALLET BUNDLE ───────────────────────
+#
+# WHICH BUNDLE GOES WHERE, stated once, plainly, because getting it backwards is
+# governance-fatal and silent:
+#
+# [THE TWO DIGESTS NAMED ON THE NEXT TWO LINES ARE SUPERSEDED BY THE
+# HARDEN02-FOLLOWUPS REBIND NOTE ABOVE (2026-09-17). The PHASE-TO-TABLE MAPPING
+# they state is UNCHANGED and remains correct — B.1 takes the transitional table,
+# D.8 takes the final one — but do NOT install against these two digest prefixes:
+# the current values are `[wallet_bundle_transitional].sha256 = 5401d22c…` and
+# `[wallet_bundle].sha256 = 74dd2180…`. Read the digest from the table itself,
+# never from this navigational note. Kept unedited under I-B4.]
+#   Phase B.1 — install `[wallet_bundle_transitional]` (sha256 d9bb1bfd…).
+#   Phase D.8 — install `[wallet_bundle]`              (sha256 6af7b2cc…).
+#
+# WHY TWO BUNDLES EXIST. SSA rehearsal risk R-3 (CRITICAL,
+# reviews/SSA_REHEARSAL_MAINNET_SEQUENCE_R1_2026-09-14.md) found that WT-1
+# recorded ONE digest for the TWO installs brief V3 schedules. The transitional
+# bundle must forward NO `derivationOrigin`, so that a login at
+# `https://app.stsh.fi` still derives from the alias and yields the OLD II
+# principals — the principals the OLD Vault and Upgrader signers must hold in
+# order to propose and approve the step-7 rotation — while a login at the native
+# `s3tyu` origin already yields the NEW ones, which is how Phase B.2 collects
+# them. Installing the FINAL bundle at B.1 re-roots `app.stsh.fi` immediately:
+# the old principals become unproducible, the Vault is reachable only as the
+# machine signer `4f6wg` (1 of a threshold of 2), and the rotation can be
+# neither proposed nor approved. Nothing errors and nothing on screen says so.
+#
+# WHAT DIFFERS BETWEEN THE TWO. The CODE is identical — same commit, same
+# `command`, same toolchain tuple, same eleven files. The ONLY difference is the
+# emitted `wallet-config.json` asset, which in the transitional bundle omits the
+# `derivationOrigin` KEY (absent, not null and not ""; `evaluateSessionPolicy`
+# refuses a present-but-wrong value and PERMITS an absent one). That is the
+# whole 69-byte delta: 14,103,504 - 14,103,435 = 69, exactly the length of the
+# `derivationOrigin` member and its separator. The variant source
+# `wallet/public/wallet-config.transitional.json` is a build INPUT and is removed
+# from `dist` in BOTH variants, which is why `files` is 11 for both.
+#
+# HAND-EDITED record fields, `--repin` NOT run (it is FORBIDDEN for the wallet
+# rows, J-17e note above; and it has no notion of this row at all). Measured with
+# the exact manifest procedure documented above `[wallet_bundle]`, over the
+# `wallet/dist` produced by `cd wallet && npm run build:transitional` with `dist`
+# REMOVED first, on the pinned tuple in `[wallet_bundle.toolchain]` (node
+# 22.23.1, npm 10.9.8, wasm-pack 0.12.1 from wallet/node_modules/.bin — NOT the
+# 0.13.1 on PATH — rustc 1.95.0), re-checked in this worktree and unchanged.
+#
+# SINGLE-LEG, disclosed: one host, one builder, ONE observation of this digest.
+# No `builds`/`identical` pair is stated for it, for the same reason
+# `[wallet_bundle.reproduction]` was moved to 1/false — a count measured at
+# another digest is not evidence about this one. The second independent leg is
+# owed at the pre-ceremony full rebind, together with `[wallet_bundle]`'s.
+#
+# COVERAGE GAP, stated rather than implied: `verify_custody_manifest` has NO
+# `wallet_bundle` coverage of any kind — `check_release_identity` parses this
+# file as a generic `toml::Value` and requires only the `toolchain.*` and
+# `build.*` keys, and `grep -rn wallet_bundle scripts/verify_custody_manifest/`
+# returns nothing. So this table adds no obligation the checker can see, and it
+# cannot break its parse; equally, the row is evidenced by the WT-1b packet and
+# by nothing else. `cargo test --locked -p verify-custody-manifest` was run for
+# law 7(e-i) and is reported in that packet.
+#
+# NOT A CLAIM THAT ANY INSTALL HAS HAPPENED. Both tables record BUILDS. The
+# install evidence is the ceremony's: `dfx canister info` plus the AC-8 `curl`
+# of `.well-known/ii-alternative-origins` and, for B.1, the AC-9 old-vs-new
+# principal read-back at the two origins.
+[wallet_bundle_transitional]
+sha256          = "f8f6232eb9cae2c9505f170f9daa044f910ffec9c61c7e2b7c34d65a13d90c2c"  # HARDEN02-FOLLOWUPS (2026-09-17): was d9bb1bfd…; re-measured after `releasePins.json` moved with `[wasm.stsh_token]` — see the rebind note above. PACKET-EVIDENCED, not checker-evidenced. | D8-BUILD (2026-09-21): was 5401d22c…; rebuilt and re-measured on the pinned tuple at 36e9fc5. THIS ROW IS NOW CHECKER-EVIDENCED TOO — the HARDEN-03 `variant = "transitional"` discriminator was used, which is the first time that capability has been exercised; see the appended paragraph at the END of `[wallet_bundle_release].reason`.
+method          = "sha256 over the LC_ALL=C-sorted per-file `sha256  relpath` manifest of wallet/dist (the same procedure documented above `[wallet_bundle]`)"
+path            = "wallet/dist"
+files           = 11
+bytes           = 14153332  # D8-BUILD (2026-09-21): was 14103435.
+bytes_method    = "sum of the 11 REGULAR FILE sizes; directory entries are excluded"
+command         = "cd wallet && npm run build:transitional"
+command_expands = "WALLET_CONFIG_VARIANT=transitional npm run build:wasm && tsc && vite build"
+built_at        = "2026-09-21"  # HARDEN02-FOLLOWUPS: was "2026-09-14". | D8-BUILD (2026-09-21): was "2026-09-17".
+source_sha      = "36e9fc5477e018bb1ca44fd2be298ce9b6b43520"  # HARDEN02-FOLLOWUPS (2026-09-17): REBOUND from e1940d00… (WT-1b). The wallet source commit this bundle was built from, an ancestor of the head carrying this record (recorded-ancestor semantics, S10). b0244c82 is this lane's Part C record-only commit; its `wallet/` tree is byte-identical to e6634ce's, Part C having touched only this file. | D8-BUILD (2026-09-21): REBOUND from b0244c82… to 36e9fc5477e018bb1ca44fd2be298ce9b6b43520 — the head this lane built from, and the parent of the record-only commit carrying this value.
+install_phase   = "B.1 — the transitional install on s3tyu-aaaaa-aaaab-qhdjq-cai; superseded on the same canister by [wallet_bundle] at Phase D.8"
+
+[wallet_bundle_transitional.toolchain]
+# The SAME pinned tuple as `[wallet_bundle.toolchain]`, restated rather than
+# cross-referenced: a reader reproducing this digest must not have to infer which
+# tuple applied, and a future edit to one table must not silently re-describe the
+# other.
+node       = "22.23.1 (wallet/.nvmrc)"
+npm        = "10.9.8 (the npm bundled with node 22.23.1)"
+wasm_pack  = "0.12.1 (wallet/package.json devDependency ^0.12.0, resolved from node_modules/.bin — NOT the 0.13.1 on PATH)"
+rustc      = "1.95.0 (59807616e 2026-04-14) — rust-toolchain.toml"
+
+[wallet_bundle_transitional.asset_config]
+# Shipped INTO dist and therefore inside the digest above. IDENTICAL to
+# `[wallet_bundle.asset_config]` — the header policy, the CSP and the
+# `.well-known` directory/file rules do not vary by config variant, and the WT-1
+# F-1 fix applies to both bundles.
+file   = "wallet/public/.ic-assets.json5 -> dist/.ic-assets.json5"
+sha256 = "df836b12a5a8fcbe0898e73b017bcb278a2c7fdb63020b42f3aa196e31947de2"
+
+[wallet_bundle_transitional.launch_config]
+# The one asset that differs between the two bundles, recorded so the difference
+# is checkable at the ceremony by reading ONE served file rather than by
+# re-deriving a directory digest.
+file            = "wallet/public/wallet-config.transitional.json -> dist/wallet-config.json"
+launch_origin   = "https://app.stsh.fi"
+derivation_origin = "ABSENT — the key is omitted, not null and not empty. This is the property the step-7 rotation depends on."
+curl_check      = "curl -s https://s3tyu-aaaaa-aaaab-qhdjq-cai.icp0.io/wallet-config.json — after the B.1 install it MUST NOT contain `derivationOrigin`; after the D.8 install it MUST contain `\"derivationOrigin\": \"https://s3tyu-aaaaa-aaaab-qhdjq-cai.icp0.io\"`."
+
+# ── [wallet_bundle_release] — the M-02 (B-ii) release-state marker ────────────
+#
+# ADDED BY HARDEN-02 (2026-09-17). This table says whether a wallet bundle is
+# being RELEASED at this head, and therefore whether the BYTE measurement of
+# `wallet/dist` is owed here. It is read by
+# `verify_custody_manifest --wallet-bundle-bytes`, and its presence and value are
+# checked by the record-coverage half on every gate run — so "the measurement did
+# not run" is a state this file DECLARES, never an inference from an absent file.
+#
+# WHY A MARKER AT ALL. The byte check stands between two failure modes that are
+# both worse than a declaration:
+#
+#   * SKIP WHEN IT CANNOT RUN. `wallet/dist` is gitignored (`.gitignore:12`), so
+#     absent is the NORMAL state on a fresh clone, and the gate deliberately skips
+#     the whole wallet leg on a host without node/npm/wasm-pack. A check that
+#     skips on absence restores exactly the gap it was added to close, and this
+#     record's own history is the argument: two real defects in the tables above
+#     sat green across several lanes because the only checker that would have seen
+#     them was opt-in and never invoked.
+#
+#   * FAIL WHENEVER IT CANNOT RUN. That turns every routine gate run on every
+#     host without the pinned wallet toolchain red, which trains readers to work
+#     around the check.
+#
+# So the record states which it is. Under `state = "releasing"` the byte check
+# asserts the pinned toolchain tuple BEFORE measuring and REFUSES on a mismatch
+# (a digest measured under a different tuple is a different number, not weaker
+# evidence about the pinned one), and an absent or non-matching `dist` fails
+# closed. Under `state = "held"` it reports, in its own output, that the
+# measurement is DECLARED not owed and names this reason. An absent table, an
+# absent `state`, an unrecognised `state`, or an absent `reason` is a
+# `WalletBundleUnbound` violation — and that kind is NOT in `DECLARABLE_KINDS`, so
+# it cannot be declared pending in `[deploy_gate].expected_pending` either.
+#
+# FLIPPING THIS TO "releasing" IS A RELEASE ACTION, not a lane convenience. The
+# host must be running the pinned tuple and `dist` must be the bundle actually
+# being installed. If the resulting digest differs from `[wallet_bundle].sha256`,
+# that is a Phase-D.8-affecting event and goes back to the CTO and the Owner
+# BEFORE any packet closes — never a silent hand rebind inside another lane.
+#
+# ── HARDEN-03 (2026-09-17) — THE MARKER GAINS `variant` ──────────────────────
+#
+# ADDITIVE, and this table is UNCHANGED at this head. A third key now exists:
+#
+#   variant = "final" | "transitional"
+#
+# REQUIRED when `state = "releasing"`, and FORBIDDEN when `state = "held"` —
+# which is why nothing below needs editing: this head is terminally `held`, so a
+# `variant` here would itself be a violation. The key is added when a release
+# lane flips the marker, and removed when it flips back.
+#
+# WHY IT WAS NEEDED. `check_wallet_bundle_bytes` read `doc.get("wallet_bundle")`
+# unconditionally, and BOTH tables record `path = "wallet/dist"`. There was
+# therefore NO STATE in which a Phase B.1 lane could have its transitional `dist`
+# measured: flipping this marker compared the transitional tree against the FINAL
+# digest and failed. That is the gap clause (3) of the `reason` below discloses,
+# and it is now closed — see the HARDEN-03 paragraph at the end of `reason`.
+#
+# `final` selects `[wallet_bundle]` and `transitional` selects
+# `[wallet_bundle_transitional]`; an absent or unrecognised value is REFUSED, not
+# defaulted, for the same reason an unrecognised `state` is — defaulting to
+# `final` restores exactly the mis-comparison above. The violation kind is
+# unchanged (`WalletBundleUnbound`), so nothing here became declarable in
+# `[deploy_gate].expected_pending`.
+#
+# THE GATE STILL BUILDS THE FINAL VARIANT ONLY. `run_gate.sh`'s wallet phase runs
+# `npm run build`, and the wallet vitest leg reads the built
+# `dist/wallet-config.json` and asserts the FINAL variant's `derivationOrigin` —
+# so the gate must NOT be taught to build the transitional bundle; it would red
+# its own leg. A transitional qualification pass is an OUT-OF-GATE step:
+# `rm -rf wallet/dist && npm run --prefix wallet build:transitional`, then
+# `verify_custody_manifest --wallet-bundle-bytes .` with `state = "releasing"`
+# and `variant = "transitional"`, and the marker returned to `held` before the
+# lane's one law-7(e) gate. `releasing` is never committed except by the lane
+# that is actually installing.
+
+[wallet_bundle_release]
+state  = "held"
+reason = "No wallet bundle is being released at this head. Both `[wallet_bundle]` (Phase D.8) and `[wallet_bundle_transitional]` (Phase B.1) record builds measured by earlier lanes and neither has been installed on s3tyu; the WT-1 Phase B-D install sequence is still ahead. HARDEN-02 corrected this record's own self-description and rebound an orphaned `source_sha` WITHOUT rebuilding or re-measuring any bundle, which is why the digests above are unchanged. Additionally, and disclosed rather than worked around: this canonical machine is NOT running the pinned tuple (measured 2026-09-17 — node v20.20.2 against a pinned 22.23.1, npm 10.8.2 against a pinned 10.9.8; wasm-pack 0.12.1 in wallet/node_modules/.bin and rustc 1.95.0 DO match), so a measuring build here could not produce evidence about the pinned tuple even if a release were owed. The lane that performs the B.1 or D.8 build flips this to `releasing` on a host running the pinned tuple. TERMINAL STATE FOR THIS HEAD — HARDEN02-FOLLOWUPS Part A (2026-09-17). This paragraph supersedes the AMENDED paragraph that follows it, which is kept unedited under I-B4 and was accurate when written, one commit earlier in the same lane. `state` is `held` because no bundle is being released at THIS head — NOT because the tuple is unobtainable, and NOT because no measurement was made. A measuring build WAS performed at this head, on the pinned tuple, and both bundle rows above were rebound to it. The four probes, read in the shell that performed the binding builds: node v22.23.1; npm 10.9.8; `wallet/node_modules/.bin/wasm-pack` 0.12.1 (NOT the 0.13.1 on PATH); rustc 1.95.0 (59807616e 2026-04-14) — all four match `[wallet_bundle.toolchain]`. `wallet/dist` was REMOVED immediately before each of the two measuring builds. The digests produced, each observed TWICE at this head (a no-commit rehearsal pass and the binding pass, agreeing): `[wallet_bundle_transitional]` = 5401d22c1cfade0ec75ae7cfb5afc9b01cbd6ca5b03b3a795ea7c5e49b0e2624 (11 files, 14,103,435 bytes, `cd wallet && npm run build:transitional`); `[wallet_bundle]` = 74dd2180b9d9abc2ed71449cde1eb86158d16ee9c61a78487b9fcf741c1d9ceb (11 files, 14,103,504 bytes, `cd wallet && npm run build`). The 69-byte delta is the `derivationOrigin` member of `wallet-config.json`, the ONLY file that differs between the two `dist` trees — the key is ABSENT in the transitional copy and is `\"derivationOrigin\": \"https://s3tyu-aaaaa-aaaab-qhdjq-cai.icp0.io\"` in the final one, checked in the built output of both. BOTH rows therefore now describe artifacts built from this head's wallet tree (`source_sha b0244c82…`), which DISCHARGES the KNOWN STALE finding recorded in the paragraph below, for both rows. THE FLIP WAS DELIBERATE AND IS REVERTED: this marker was set to `releasing` in this lane's working tree, as a release action and not a lane convenience, with the FINAL `dist` on disk; `verify_custody_manifest --wallet-bundle-bytes .` then asserted all four pinned tools (four `==` lines, no mismatch) and reported `measured files=11 bytes=14103504 sha256=74dd2180b9d9abc2ed71449cde1eb86158d16ee9c61a78487b9fcf741c1d9ceb` with ZERO violations — its Rust `measure_bundle_dir` independently reproducing the same number the documented shell procedure at `:587-590` produced, which is the cross-check `bii_measurement_reproduces_the_records_own_documented_pipeline` exists to guarantee. The marker was returned to `held` in the same lane and `releasing` was NEVER committed. WHAT THIS DOES NOT DISCHARGE, carried forward rather than dropped on returning to `held`: (i) `[wallet_bundle]`'s digest is checker-evidenced by that run, and `[wallet_bundle_transitional]`'s is PACKET-EVIDENCED ONLY — `check_wallet_bundle_bytes` reads `doc.get(\"wallet_bundle\")` (`scripts/verify_custody_manifest/src/lib.rs:4347`), both tables record `path = \"wallet/dist\"`, and this marker is one bit with no per-bundle discriminator, so clause (3) below still stands and a B.1 lane still must NOT flip this marker; closing that gap is owed BEFORE B.1 and was out of this lane's scope. (ii) Both digests go stale again the moment ANY later lane moves a `[wasm.*]` pin or a `wallet/src` bundle input, because `releasePins.json` is GENERATED from the pins and no checker sees the staleness — the gate's own wallet build rewrites it before the vitest leg reads it. A lane that moves either owes a rebind before the next wallet install step. AMENDED 2026-09-17 (SSA F-1; A1 §0.3(a); A1 §6.1(c) via SSA C-2), additively — the sentences above are kept as written and are not withdrawn. (1) 'which is why the digests above are unchanged' is incomplete: the lane ALSO changed a bundle input, `wallet/src/generated/releasePins.json` (imported by `wallet/src/ui/pages/operator.ts:70`, reached from `wallet/src/ui/app.ts:98`), whose `stsh_token` value moved with `[wasm.stsh_token]`. Both `[wallet_bundle]` (`source_sha e0c1f4db…`) and `[wallet_bundle_transitional]` (`source_sha e1940d00…`) therefore record digests that PREDATE this head and are KNOWN STALE — not merely un-re-measured. The lane that performs the B.1 or D.8 build MUST rebuild and re-measure BOTH rows; neither recorded digest may be installed against as it stands. (2) 'a measuring build here could not produce evidence about the pinned tuple' overstates the measured fact it rests on: the mismatch recorded above is the DEFAULT shell. The pinned pair node 22.23.1 / npm 10.9.8 IS installed on this machine at `~/.nvm/versions/node/v22.23.1`, and `nvm use 22.23.1` makes all four probes — node, npm, `wallet/node_modules/.bin/wasm-pack` 0.12.1, rustc 1.95.0 — match the pinned tuple. A measuring build on this machine, from a shell with that version selected, IS evidence about the pinned tuple. (3) 'the lane that performs the B.1 or D.8 build flips this to `releasing`' is correct for D.8 and WRONG for B.1. `check_wallet_bundle_bytes` reads `[wallet_bundle]` only (`scripts/verify_custody_manifest/src/lib.rs:4347`); both tables record `path = \"wallet/dist\"`; and this marker carries no per-bundle discriminator. There is therefore no state in which the byte check can be told the `dist` on disk is the transitional one, and a B.1 lane that flips this marker will have its transitional directory compared against the FINAL digest and fail. `[wallet_bundle_transitional]`'s digest is PACKET-EVIDENCED, not checker-evidenced — a continuation of the coverage gap recorded above this section, not a new concession. Closing that gap (a per-bundle discriminator, or an explicit signed acceptance) is owed BEFORE B.1 and is not this amendment's scope. `state` stays `held` because no bundle is being released at this head — not because the tuple is unobtainable. HARDEN-03 (2026-09-17), APPENDED under I-B4 — every sentence above is kept exactly as written, nothing is withdrawn, and no digest moved. THIS PARAGRAPH DISCHARGES CLAUSE (3) OF THE AMENDMENT ABOVE, and the half of carried-forward item (i) that describes the same gap. Clause (3) states that flipping this marker is correct for D.8 and WRONG for B.1, because `check_wallet_bundle_bytes` read `doc.get(\"wallet_bundle\")` only, both tables record `path = \"wallet/dist\"`, and this marker carried no per-bundle discriminator — so there was no state in which the byte check could be told the `dist` on disk is the transitional one. THE DISCRIMINATOR NOW EXISTS: this table takes a `variant` key (`final` | `transitional`), REQUIRED under `state = \"releasing\"` and FORBIDDEN under `held`, and the byte check measures against the table that variant names. A B.1 lane MAY now flip this marker, with `variant = \"transitional\"`, and have its transitional directory compared against `[wallet_bundle_transitional]` — see the HARDEN-03 note above this table for the out-of-gate procedure. WHAT THIS DOES NOT DISCHARGE, kept distinct because the two are easy to conflate: the gap that is closed is the CAPABILITY, not the evidence. `[wallet_bundle_transitional]`'s digest is still PACKET-EVIDENCED at this head — HARDEN-03 is a checker lane, it built no bundle and measured no release, and `state` remains `held`. The transitional row becomes checker-evidenced when a lane running the pinned tuple actually performs that measurement, which is now possible and was not before. Carried-forward item (ii) — that both digests go stale the moment any later lane moves a `[wasm.*]` pin or a `wallet/src` bundle input, because `releasePins.json` is GENERATED from the pins — is UNAFFECTED and still stands. ALSO RECORDED HERE because it is a statement about how these digests are produced: the measurement procedure documented above `[wallet_bundle]` now carries an explicit tree-shape guard (no symlinks, no symlinked directories, no special files), and `measure_bundle_dir` refuses the same shapes, because `find -P` OMITS a symlink to a file and skips a DANGLING one silently while the checker previously resolved the first and aborted on the second. `wallet/dist` contains none of these, and BOTH pins were re-measured under the guarded procedure and the fixed checker and are UNCHANGED — `[wallet_bundle]` 74dd2180… (11 files / 14,103,504 bytes), `[wallet_bundle_transitional]` 5401d22c… (11 files / 14,103,435 bytes). ONE READING NOTE, disclosed rather than fixed: paragraphs above this one cite `scripts/verify_custody_manifest/src/lib.rs:4347` as the site of the unconditional `doc.get(\"wallet_bundle\")`. That citation was accurate when written and describes PRE-HARDEN-03 code; the line has since moved and the read is now variant-selected. Those paragraphs are kept unedited under I-B4, so the line number is historical, not current. WALLET-AUTH G1 (2026-09-19), APPENDED under I-B4 — every sentence above is kept exactly as written, nothing is withdrawn, no digest moved, and no measurement was performed by this lane. THIS PARAGRAPH RECORDS CARRIED-FORWARD ITEM (ii) AS TRIGGERED, for BOTH rows. This lane changed `wallet/src/**` — the verified-read scan path (`actors/authorization.ts`, `actors/pool.ts`, `crypto/scanner.ts`, `storage/noteCache.ts`, `workers/scanner.worker.ts`, `ui/app.ts`) — so the bundle's own inputs have moved and BOTH `[wallet_bundle]` (74dd2180…) and `[wallet_bundle_transitional]` (5401d22c…) are STALE FROM THIS HEAD. NEITHER MAY BE INSTALLED AGAINST AS IT STANDS. NO GATE-SOURCED REBIND WAS TAKEN, deliberately: `run_gate.sh`'s wallet phase runs `npm run build` in whatever shell the gate re-execs into, which on this canonical machine is NOT the pinned tuple (default node v20.20.2 against a pinned 22.23.1), and `state` is `held`, which the paragraphs above declare TERMINAL FOR THIS HEAD. A digest measured from the wrong tuple and recorded here would be worse than a disclosed stale one, because it would read as a release measurement. THE D.8 BUILD LANE rebuilds and re-measures BOTH rows on the pinned tuple (`nvm use 22.23.1`, the four probes as documented above), flips this marker to `releasing` with `variant = \"final\"`, and returns it to `held` — per this record's own procedure, unchanged by this lane. `~/stsh-walletdeploy/final` is STALE after this lane and must be re-staged by the Owner from the D.8 build before Phase D.8. `state` stays `held` because no bundle is being released at this head. D8-BUILD (2026-09-21), APPENDED under I-B4 — every sentence above is kept exactly as written and nothing is withdrawn. Where a sentence above states an EVIDENCE STATUS for either bundle row, this paragraph SUPERSEDES it for current use; the older sentences remain as the record of what was true when they were written. THIS LANE PERFORMED THE D.8 BUILD the WALLET-AUTH G1 paragraph above says the D.8 build lane owes. BOTH rows were rebuilt and re-measured on the pinned tuple at master 36e9fc5477e018bb1ca44fd2be298ce9b6b43520, and both were rebound to it. WHY THE ROWS MOVED — four movement groups, all of them bundle-input changes since the HARDEN02-FOLLOWUPS measurement, recorded here because two of them were never disclosed on this row. (1) `0209eb5` — the settlement/re-pin lane. Two things happened that are easy to conflate and are therefore separated: the RECORD pin `[wasm.shielded_pool]` moved e4f7f2d8… -> 5fa7176e…, AND the GENERATED mirror `wallet/src/generated/releasePins.json` moved on TWO keys — `shielded_pool` 77b719e20aeb938786549509b052f8a6434c1f5b5bb7151112b7f5a6c2caffd0 -> 5fa7176e15548db1740fa184842db279b10f5621e1d9400a641caccc82910dc5 and `stsh_token` 960dae966e256a1eaa08edafbf96ed41f7c8b5a2ebb645be8187a43834e001f1 -> ac9336f2111b76e25f8afd0957dd5c0c619166c96192e7de5bc8fcf944c354b6. The pool moved in BOTH the record and the mirror; the TOKEN moved in the MIRROR ONLY — `[wasm.stsh_token]` was already ac9336f2… and is UNCHANGED, the mirror merely catching up to HARDEN-02's `ef1c121` re-pin, which it had never followed. Writing \"the token pin moved\" would be false. The mirror is the bundle input (`wallet/src/ui/pages/operator.ts:70`, reached from `wallet/src/ui/app.ts:98`), so both mirror digests are inside the measured bytes. (2) WALLET-AUTH G1 — `6e96764` and `f2b52e9`, the verified-read scan path; already disclosed in the G1 paragraph above. (3) WALLET-AUTH G1b — `6049224`; NOT previously disclosed on this row, disclosed here. (4) UPG-ROT-UI — `a7f46f7` and `68649e1`; NOT previously disclosed on this row, disclosed here. `68649e1` is TEST-ONLY and reaches no emitted byte; `a7f46f7` is the one that moved bundle inputs. THE MEASUREMENT, per variant, per this record's own out-of-gate procedure. In a shell with `nvm use 22.23.1` active, after `npm ci` in `wallet` (lockfile 75f4bf9cf869f3cac3f0355b732d24cd1fa424d671c6e23f9853690b4634e2fa, unchanged by it), the four probes read in that same shell: node v22.23.1; npm 10.9.8; `wallet/node_modules/.bin/wasm-pack` 0.12.1 (the 0.13.1 on PATH was NOT used); rustc 1.95.0 (59807616e 2026-04-14) — all four byte-match `[wallet_bundle.toolchain]`. BOTH `wallet/dist` AND the generated `wallet/src/wasm` tree were REMOVED immediately before EACH measuring build, so no measured tree is a merge with an earlier one. The transitional variant was measured FIRST: `cd wallet && npm run build:transitional` -> f8f6232eb9cae2c9505f170f9daa044f910ffec9c61c7e2b7c34d65a13d90c2c, 11 files, 14,153,332 bytes. Then the final variant: `cd wallet && npm run build`, with `WALLET_CONFIG_VARIANT` verified UNSET in that shell and the build's own `[plugin stsh-wallet-config-variant]` line reading `final` -> e7c6bed40e784b35d441c94f5ec7e12af5fe313c081959dc21b443a2a6813ecd, 11 files, 14,153,401 bytes. EACH digest was observed TWICE at this head, from two separate full builds, and the two observations agree. The guarded procedure was used both times — the HARDEN-03 tree-shape refusal ran BEFORE the manifest pipeline on every measured tree and passed (no symlinks, no symlinked directories, no special files). `[wallet_bundle.asset_config]` / `[wallet_bundle_transitional.asset_config]` df836b12… was re-measured in both built trees and is UNCHANGED, so it is not rebound. THE MARKER FLIP, TWICE, AND ITS REVERSAL. This marker was set to `releasing` in this lane's working tree TWICE, as a release action: once with `variant = \"transitional\"` and the transitional `dist` on disk, and once with `variant = \"final\"` and the final `dist` on disk. In each case the row being measured had first been rebound PROVISIONALLY to the shell-measured values, and `verify_custody_manifest --wallet-bundle-bytes .` then asserted all four pinned tools (four `==` lines, no mismatch) and reported the measured triple with ZERO violations: `measured files=11 bytes=14153332 sha256=f8f6232eb9cae2c9505f170f9daa044f910ffec9c61c7e2b7c34d65a13d90c2c` under `transitional`, and `measured files=11 bytes=14153401 sha256=e7c6bed40e784b35d441c94f5ec7e12af5fe313c081959dc21b443a2a6813ecd` under `final` — the checker's Rust `measure_bundle_dir` independently reproducing, for BOTH rows, the same numbers the documented shell pipeline produced. The transitional half is the FIRST exercise of the HARDEN-03 `variant` discriminator, which is what makes `[wallet_bundle_transitional]` checker-evidenced rather than packet-evidenced for the first time; the HARDEN-03 paragraph above says exactly this would happen \"when a lane running the pinned tuple actually performs that measurement\", and this is that lane. The marker was returned to `held` and the `variant` key was REMOVED ENTIRELY before the commit; `releasing` was NEVER committed, and the committed state was verified by PARSING this file and asserting `state == \"held\"` and that `variant` is absent — not by eye, because an empty or whitespace `variant` would degrade to absent under a visual check. THE 69-BYTE DELTA, checked rather than asserted. A recursive comparison of the two built `dist` trees reports exactly ONE differing file, `wallet-config.json`, 44 bytes transitional against 113 bytes final — a delta of 69, which is also 14,153,401 - 14,153,332. The transitional copy carries `launchOrigin` only, with the `derivationOrigin` KEY ABSENT; the final copy carries `\"derivationOrigin\": \"https://s3tyu-aaaaa-aaaab-qhdjq-cai.icp0.io\"`. Both trees carry `.well-known/ii-alternative-origins` with the 47-byte body `{\"alternativeOrigins\":[\"https://app.stsh.fi\"]}`. WHAT THE TRANSITIONAL DIGEST DOES AND DOES NOT ESTABLISH — three separate edges, deliberately not collapsed into one claim. EDGE 1: `reviews/COS_RETURN_UPG_ROT_UI_2026-09-21.md` §4 records the bundle staged at `~/stsh-walletdeploy/transitional-v2/dist` as f8f6232e…, 11 files, 14,153,332 bytes, and says \"Nothing installed.\" EDGE 2: this lane's fresh build from 36e9fc5 reproduces that digest, and a recursive diff against that staged tree reports NO differences at all — source-to-staged byte identity, and nothing more. (`68649e1..36e9fc5` contains no `wallet/` commit, so this head is a valid build source for it.) EDGE 3: the install itself is evidenced by `reviews/CEREMONY_RECORD_BOARD_STEP_7_ROTATION_2026-09-21.md` (sha256 60dcb79ef42701bdb557b6273de1fb6dd27f61e78b5ebb4681330387e09fa70c), preamble line 6 and §1 line 12: transitional-v2 installed on `s3tyu` as controller 4f6wg, `--mode upgrade`, controllers pre-check [4f6wg, cnbb4], and post-install `wallet-config.json` = `launchOrigin` only with `/.well-known/ii-alternative-origins` a certified HTTP/2 200, `application/json`, 47-byte body. RESIDUAL LIMIT, STATED: that record evidences the install EVENT and TWO SERVED FILES. It records NO post-install digest of the canister's complete asset set, so edge 3 establishes which bundle was installed by operator attestation plus two served-file checks, NOT by byte equality. Local digest equality is NOT proof of the complete bundle now on s3tyu, and must not be written as if it were. THE FINAL DIGEST IS WHAT BOARD STEP 10 INSTALLS AGAINST. e7c6bed4… is staged at `~/stsh-walletdeploy/final-v2/` — dist plus the `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) released from `HOLDBACK_until_rotation_readback/` now that the rotation read-back exists — together with a `DIGEST.txt` carrying the digest and the exact measurement command. It is STAGED AND NOT INSTALLED; the install is the Owner's at board step 10, AFTER 9a. The WALLET-AUTH G1 paragraph's sentence that `~/stsh-walletdeploy/final` is STALE is CONFIRMED, not withdrawn: that directory has been marked `STALE_superseded_by_final-v2.txt` and must not be installed. REPRODUCTION IS NOT RE-STATED. `[wallet_bundle.reproduction]` `builds = 1` / `identical = false` is left UNCHANGED and is NOT claimed for these digests: this lane made two observations of ONE artifact on ONE host, with shared cargo and wasm-pack caches, which is not the independent second leg that line describes. The second independent leg remains OWED, as every paragraph above says. CARRIED-FORWARD ITEM (ii) IS RESTATED AND REMAINS IN FORCE, unchanged in substance: both digests go stale again the moment ANY later lane moves a `[wasm.*]` pin or a `wallet/src` bundle input, because `releasePins.json` is GENERATED from the pins and no checker sees the staleness — the gate's own wallet build rewrites it before the vitest leg reads it. A lane that moves either owes a rebind before board step 10. TWO THINGS THIS PARAGRAPH DOES NOT CLAIM. First, the gate run on the head carrying this paragraph is a `held` gate: `--wallet-bundle-bytes` under `held` DECLARES the measurement not owed and measures nothing, so a GREEN gate here is NOT verification of either digest and is not evidence that these measurements occurred. The evidence for them is this paragraph and the D8-BUILD packet. Second, `state` is `held` at this head for the ordinary reason — no bundle is being INSTALLED from this commit — and not because no measurement was made. VAULT-LIST-PAGING (2026-09-22), APPENDED under I-B4 — every sentence above is kept exactly as written and nothing is withdrawn. Where a sentence above states an EVIDENCE STATUS or a digest for `[wallet_bundle]`, this paragraph SUPERSEDES it for current use; the older sentences remain as the record of what was true when they were written. `[wallet_bundle_transitional]` IS NOT TOUCHED BY THIS LANE and is not re-measured: it remains the HISTORICAL artifact recorded by D8-BUILD at 36e9fc5, NOT a fresh build of this code head, and the D8-BUILD paragraph above is its current note. WHY `[wallet_bundle]` MOVED. Carried-forward item (ii) — restated by D8-BUILD and still in force — says both digests go stale the moment any later lane moves a `[wasm.*]` pin or a `wallet/src` bundle input. This lane moved a `wallet/src` bundle input and NO pin: `wallet/src/ui/pages/operator.ts` gained the full-listing paging walk, the load-a-proposal-by-id control, the terminal/non-terminal split with its collapsed completed section, the 40-window truncation notice, and the per-control local result. `wallet/src/generated/releasePins.json` is UNCHANGED — `git status --short` was empty after the measuring build, which is the evidence that no pin moved under the lane. The one other file in the code commit, `wallet/tests/operator_vault_paging.test.ts`, is a test and reaches no emitted byte. THE MEASUREMENT. In a shell with `nvm use 22.23.1` active, after `npm ci` in `wallet` (lockfile unchanged by it), the four probes read in that same shell: node v22.23.1; npm 10.9.8; `wallet/node_modules/.bin/wasm-pack` 0.12.1 (the 0.13.1 on PATH was NOT used); rustc 1.95.0 (59807616e 2026-04-14) — all four byte-match `[wallet_bundle.toolchain]`. BOTH `wallet/dist` AND the generated `wallet/src/wasm` tree were REMOVED immediately before the measuring build, so the measured tree is that build's own output and not a merge with an earlier one. `WALLET_CONFIG_VARIANT` was verified UNSET in that shell and the build's own `[plugin stsh-wallet-config-variant]` line read `final`. `cd wallet && npm run build` -> 72ea6fda5d8d5f737575548b7f7ff0ba202ba33158ddba182be5afceeab0f678, 11 files, 14,158,153 bytes. The HARDEN-03 tree-shape refusal ran BEFORE the manifest pipeline on the measured tree and passed (no symlinks, no symlinked directories, no special files). The digest, the file count and the byte total were each measured TWICE on the staged tree and the two observations agree; `[wallet_bundle.asset_config]` df836b12… was re-measured in the built tree and is UNCHANGED, so it is not rebound. `files` was RE-MEASURED and is 11 — recorded as measured, not carried. The +4,752-byte delta against e7c6bed4… is confined to the one emitted app chunk and the `index.html` reference to it: a recursive comparison of the two `dist` trees reports exactly that, with `wallet-config.json` (113 bytes, carrying `\"derivationOrigin\": \"https://s3tyu-aaaaa-aaaab-qhdjq-cai.icp0.io\"`) and `.well-known/ii-alternative-origins` (47 bytes) byte-identical to final-v2's. THE CHECKER CROSS-CHECK WAS NOT PERFORMED BY THIS LANE, and this is a DISCLOSED GAP rather than a silent one. The D8-BUILD discipline is to flip this marker to `releasing` with `variant = \"final\"` in the working tree, run `verify_custody_manifest --wallet-bundle-bytes .` so the checker's Rust `measure_bundle_dir` independently reproduces the shell digest, and return the marker to `held` before the commit. The builder was BLOCKED from writing `state = \"releasing\"` into this file by its execution environment's permission policy, and did not attempt to route around it. `72ea6fda…` is therefore PACKET-EVIDENCED, from the documented shell pipeline observed twice, and is NOT checker-evidenced — the status `[wallet_bundle_transitional]` held before D8-BUILD. The second, independent reproduction of this digest by `measure_bundle_dir` is OWED before board step 10 and is a one-command lane; until it is done, `[wallet_bundle]` carries one fewer cross-check than it did at 36e9fc5. `state` is `held` at the committed head and `variant` is absent, as they were before this lane. STAGING. 72ea6fda… is staged at `~/stsh-walletdeploy/final-v3/` — dist plus the `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) byte-copied from `final-v2/`, together with a `DIGEST.txt` in final-v2's shape carrying the digest and the exact measurement command. It is STAGED AND NOT INSTALLED; the install is the Owner's at board step 10, AFTER 9a. `~/stsh-walletdeploy/final-v2` is SUPERSEDED and must not be installed; `~/stsh-walletdeploy/final` remains stale as the WALLET-AUTH G1 paragraph says. REPRODUCTION IS NOT RE-STATED. `[wallet_bundle.reproduction]` `builds = 1` / `identical = false` is left UNCHANGED and is NOT claimed for this digest: this lane made two measurements of ONE build on ONE host, with shared cargo and wasm-pack caches, which is not the independent second leg that line describes. The second independent leg remains OWED, as every paragraph above says. CARRIED-FORWARD ITEM (ii) IS RESTATED AND REMAINS IN FORCE, unchanged in substance, and now applies to 72ea6fda… exactly as it applied to its predecessors. TWO THINGS THIS PARAGRAPH DOES NOT CLAIM, restated from D8-BUILD because they are equally true here. First, the gate run on the head carrying this paragraph is a `held` gate: `--wallet-bundle-bytes` under `held` DECLARES the measurement not owed and measures nothing, and the gate's own wallet phase rebuilds `wallet/dist` in whatever shell it re-execs into — which on this machine is NOT the pinned tuple. A GREEN gate here is NOT verification of this digest, NOT an independent reproduction of it, and NOT evidence about what is installed on `s3tyu`. The staged `final-v3/dist` was re-hashed BEFORE and AFTER the gate and was unchanged; it was never replaced by the gate's output. Second, `state` is `held` at this head for the ordinary reason — no bundle is being INSTALLED from this commit.VAULT-LIST-PAGING SSA FIX ROUND (2026-09-22), APPENDED under I-B4 — every sentence above is kept exactly as written and nothing is withdrawn. Where a sentence above states an EVIDENCE STATUS or a digest for `[wallet_bundle]`, THIS paragraph supersedes it for current use, including the VAULT-LIST-PAGING paragraph immediately above; the older sentences remain as the record of what was true when they were written. `[wallet_bundle_transitional]` IS AGAIN NOT TOUCHED and not re-measured; the D8-BUILD paragraph remains its current note. WHY `[wallet_bundle]` MOVED AGAIN. The SSA landed-diff review of 189fa60 (`reviews/SSA_LANDED_DIFF_VAULT_LIST_PAGING_189fa60_2026-09-22.md`) returned GREEN-with-conditions with C-4, C-5 and C-8 blocking merge, two of them behavioural, and the fixes moved a `wallet/src` bundle input — `wallet/src/ui/pages/operator.ts` — so carried-forward item (ii) triggered a second time in the same lane. C-5: the by-id loader cleared `state.vaultLookup` before the read but, for a VALID id, painted only AFTER `await getProposal(id)` resolved, so the PREVIOUS proposal's approve and cancel controls stayed live in the DOM throughout a lookup naming a DIFFERENT id; the paint now happens before any request is awaited. C-8: a quorum-completing approve EXECUTES the proposal and a cancel CANCELS it, so the next refresh moved that row out of the Pending branch that rendered the O-3 local result and into the default-collapsed completed section, losing the raw result of the very call the operator had just made; the retained result is now re-anchored on the terminal card and the section holding it is opened. C-4 was test-only and moved no emitted byte. `wallet/src/generated/releasePins.json` is UNCHANGED — `git status --short` was empty after the measuring build, which is the evidence that NO pin moved under this round either. THE MEASUREMENT. Same procedure, same host, same pinned tuple: `nvm use 22.23.1`, `npm ci` in `wallet` against the unchanged lockfile 75f4bf9cf869f3cac3f0355b732d24cd1fa424d671c6e23f9853690b4634e2fa, four probes read in that shell — node v22.23.1; npm 10.9.8; `wallet/node_modules/.bin/wasm-pack` 0.12.1 (the 0.13.1 on PATH was NOT used); rustc 1.95.0 (59807616e 2026-04-14) — all four byte-matching `[wallet_bundle.toolchain]`, which this round does NOT rebind. BOTH `wallet/dist` AND the generated `wallet/src/wasm` tree were REMOVED immediately before the build. `WALLET_CONFIG_VARIANT` was verified UNSET and the build's own `[plugin stsh-wallet-config-variant]` line read `final`. `cd wallet && npm run build` -> 30195ea255adc45456d1337ee792cfe179957fc665d77edef1c5950a4b2d92c9, 11 files, 14,158,708 bytes. The HARDEN-03 tree-shape refusal ran BEFORE the manifest pipeline on the measured tree and passed. The digest, the file count and the byte total were each observed TWICE on the staged tree and the two observations agree — two READINGS of ONE build on ONE host, not two builds and not two hosts. `[wallet_bundle.asset_config]` df836b12… was re-measured in the built tree and is UNCHANGED, so it is not rebound. `files` was RE-MEASURED and is again 11, recorded as measured and not carried. The +555-byte delta against 72ea6fda… is confined to the one emitted app chunk and the `index.html` reference to it (`index-BwzjDKsd.js` -> `index-CP3JTlQM.js`); a recursive comparison of the two `dist` trees reports exactly that, with `wallet-config.json`, `.ic-assets.json5` and `.well-known/ii-alternative-origins` byte-identical to final-v3's. THE CHECKER CROSS-CHECK WAS AGAIN NOT PERFORMED BY THIS ROUND, disclosed rather than silent, and SSA C-6 RE-ATTACHES TO THIS ARTIFACT. The builder was BLOCKED from writing `state = \"releasing\"` into this file by its execution environment's permission policy and did not route around it. 30195ea2… is therefore PACKET-EVIDENCED, from the documented shell pipeline observed twice, and is NOT checker-evidenced. THE CTO HAS STATED that an independent CTO re-measure discharges DEVIATION-1 for 72ea6fda… — that discharge DOES NOT CARRY HERE: this round changed the wallet bytes, so 30195ea2… is a DIFFERENT artifact and owes its OWN `measure_bundle_dir` cross-check before board step 10. SSA C-9 is a packet correction and carries no record change. STAGING. 30195ea2… is staged at `~/stsh-walletdeploy/final-v4/` — dist plus the `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) byte-copied from `final-v3/`, together with a `DIGEST.txt` in final-v3's shape carrying the digest, the exact measurement command and the C-6 re-attachment. It is STAGED AND NOT INSTALLED; the install is the Owner's at board step 10, AFTER 9a. `~/stsh-walletdeploy/final-v3` is NOW SUPERSEDED and must not be installed — it has the listing walk but carries the C-5 and C-8 defects above; `final-v2` and `final` remain superseded and stale as their own paragraphs say. REPRODUCTION IS NOT RE-STATED: `[wallet_bundle.reproduction]` `builds = 1` / `identical = false` is left UNCHANGED and is NOT claimed for this digest; the second independent leg remains OWED. CARRIED-FORWARD ITEM (ii) IS RESTATED AND REMAINS IN FORCE, unchanged in substance, and now applies to 30195ea2… exactly as it applied to its predecessors. THE TWO NON-CLAIMS ARE RESTATED AND EQUALLY TRUE HERE: the gate run on the head carrying this paragraph is a `held` gate, so a GREEN gate is NOT verification of this digest, NOT an independent reproduction of it, and NOT evidence about what is installed on `s3tyu`; and `state` is `held` at this head for the ordinary reason — no bundle is being INSTALLED from this commit. The staged `final-v4/dist` is re-hashed BEFORE and AFTER the gate and recorded in the packet. VAULT-LIST-PAGING SSA CLOSURE ROUND (2026-09-22). The SSA closure review returned C-5 and C-9 CLOSED but held C-4 and C-8 open on two narrow remainders, both merge blockers, and this round closes them. C-4: when the walk was truncated the completed toggle read a bare `Show N completed`, leaving the fetched-rows-only qualification to the derived in-flight retained-payload line and the panel-level truncation notice, so the COUNT itself read as a total; the toggle now reads `Show/Hide N completed (fetched rows only)` in that shape and the all-terminal capped test asserts that qualification on the toggle itself, separately from the in-flight retained-payload wording and the truncation notice, with the exact bigint cursor/order assertions and the 40-window bound preserved. C-8: the retained anchor on a now-terminal row asserted `That call is what moved this proposal to STATUS` for ANY retained approve/cancel result, with no success or causality check, so a transport failure followed by a manual reload showing Executed displayed BOTH the may-or-may-not-have-reached-the-Vault wording AND an unsupported claim that this call caused the execution; the anchor now reads `Result of the approve/cancel call you sent for #N. Current proposal status: STATUS.` — what was sent, and the status as observed now — with the raw result and the transport-uncertainty wording preserved verbatim. New tests cover transport-failure and typed-refusal transitions through a manual reload to a terminal row, retaining the uncertain or refused result beside its anchor with no causal claim, and the existing Pending refusal and transport cases now assert EXPLICIT adjacency — the result is the immediate next sibling of the row holding the triggering approve control — rather than only sharing the proposal card; one attempted update and absence from unrelated forms are preserved throughout. `90dde46b19…` is the rebuild on the same pinned tuple from 83976216, the commit-5 code commit, with `wallet/dist` and the generated `wallet/src/wasm` removed first, the HARDEN-03 tree-shape guard run before the manifest pipeline, and the digest, file count and byte total each observed twice on the staged tree — two READINGS of ONE build on ONE host, not two builds and not two hosts. `files` was RE-MEASURED and is again 11, recorded as measured and not carried. The +4-byte delta against 30195ea2… is confined to the one emitted app chunk and the `index.html` reference to it (`index-CP3JTlQM.js` -> `index-4d1hkyNu.js`); a recursive comparison of the two `dist` trees reports exactly that, with `wallet-config.json`, `.ic-assets.json5` and `.well-known/ii-alternative-origins` byte-identical to final-v4's. THE CHECKER CROSS-CHECK WAS AGAIN NOT PERFORMED BY THIS ROUND, disclosed rather than silent, and SSA C-6 RE-ATTACHES TO THIS ARTIFACT. Writing `state = \"releasing\"` into this file, even transiently, is outside this lane's authority and was not routed around. 90dde46b… is therefore PACKET-EVIDENCED, from the documented shell pipeline observed twice, and is NOT checker-evidenced. Any CTO discharge of DEVIATION-1 for 30195ea2… or 72ea6fda… DOES NOT CARRY HERE: this round changed the wallet bytes, so 90dde46b… is a DIFFERENT artifact and owes its OWN `measure_bundle_dir` cross-check before board step 10. STAGING. 90dde46b… is staged at `~/stsh-walletdeploy/final-v5/` — dist plus the `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) byte-copied from `final-v4/`, together with a `DIGEST.txt` in final-v4's shape carrying the digest, the exact measurement command and the C-6 re-attachment. It is STAGED AND NOT INSTALLED; the install is the Owner's at board step 10, AFTER 9a. `~/stsh-walletdeploy/final-v4` is NOW SUPERSEDED and must not be installed — it has the C-5/C-8 repairs but carries the C-4 and C-8 remainders above; `final-v3`, `final-v2` and `final` remain superseded and stale as their own paragraphs say. REPRODUCTION IS NOT RE-STATED: `[wallet_bundle.reproduction]` `builds = 1` / `identical = false` is left UNCHANGED and is NOT claimed for this digest; the second independent leg remains OWED. CARRIED-FORWARD ITEM (ii) IS RESTATED AND REMAINS IN FORCE, unchanged in substance, and now applies to 90dde46b… exactly as it applied to its predecessors. THE TWO NON-CLAIMS ARE RESTATED AND EQUALLY TRUE HERE: the gate run on the head carrying this paragraph is a `held` gate, so a GREEN gate is NOT verification of this digest, NOT an independent reproduction of it, and NOT evidence about what is installed on `s3tyu`; and `state` is `held` at this head for the ordinary reason — no bundle is being INSTALLED from this commit. The staged `final-v5/dist` is re-hashed BEFORE and AFTER the gate and recorded in the packet. WALLET-READ-ACTORS (2026-09-22). APPENDED — every sentence above is kept exactly as written and nothing is withdrawn. final-v5 (`90dde46b190704d2a2daee2c904e9401f772e1ea3e7f2760274f2ac5384d4403`, 11 files, 14158712 bytes) is SUPERSEDED — DO NOT REINSTALL. This paragraph makes no claim about what is currently installed on `s3tyu`; it records a build. The defect: staking is NOT INSTALLED at launch (D1), so the shipped config carries `stakingCanisterId: \"\"`; `createReadActors` constructed the staking actor unconditionally, the agent refused the empty id, and the J-17c boot catch set ALL read actors to null — every page showed the read-services notice, and balance, public transfer, spend, the spend fee basis, shield and vesting all refused (observed live 2026-09-22 at A-5 step R-1). The fix, commit b017dfc8d7449fe8c0e4bb2a61d521167f4444e1 (`wallet/` only): `ReadActors.staking` is nullable, token and vesting are built unconditionally and staking only for a non-empty id, and `#/staking` renders its own D1 refusal at mount; a token or vesting construction failure still nulls every reader and shows the global notice. `[wallet_bundle]` now records `b5813e14567c33a3a0c27d3912236dfa3f6d9a2e1b04d30717b98856ee0a3095`, 11 files, 14159057 bytes, source b017dfc8. BUILDS = 2: the FINAL variant was built twice from b017dfc8 on the pinned tuple (node 22.23.1 / npm 10.9.8 / wallet-local wasm-pack 0.12.1 / rustc 1.95.0, `WALLET_CONFIG_VARIANT` unset) — once in the lane worktree with `wallet/dist` and the generated `wallet/src/wasm` removed first, once in a fresh `git clone --no-local` with its own `npm ci` and cargo target — and each tree, measured independently by the documented pipeline with the HARDEN-03 guard first, gave the same digest, count and total; a recursive comparison of the two trees reported no difference. Both builds ran on ONE host, so this is not a second-host reproduction. The +345-byte delta against 90dde46b… is confined to the one emitted app chunk and the `index.html` reference to it (`index-4d1hkyNu.js` -> `index-BD1G0YLf.js`); `wallet-config.json` (launchOrigin plus derivationOrigin `https://s3tyu-aaaaa-aaaab-qhdjq-cai.icp0.io`), `.ic-assets.json5` and `.well-known/ii-alternative-origins` are byte-identical to final-v5's. REPRODUCTION FIELDS UNCHANGED: `[wallet_bundle.reproduction]` (`builds = 1`, `identical = false`) is deliberately NOT edited by this lane; the two-build evidence lives in `final-v6/DIGEST.txt`, the lane packet and this paragraph. THE CHECKER CROSS-CHECK WAS NOT PERFORMED, disclosed: `verify_custody_manifest --wallet-bundle-bytes .` needs `state = \"releasing\"` / `variant = \"final\"`, and writing that into this file, even transiently, is outside this lane's authority. It stays OWED by Owner/CTO before install, exactly as recorded for final-v4 and final-v5, and no earlier discharge carries to this DIFFERENT artifact. STAGING: `~/stsh-walletdeploy/final-v6/` — dist plus `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) byte-copied from `final-v5/`, with a `DIGEST.txt` in final-v5's shape. STAGED, NOT INSTALLED. THE TWO NON-CLAIMS ARE RESTATED: the gate run on the head carrying this paragraph is a `held` gate, so a GREEN gate is NOT verification of this digest, NOT an independent reproduction of it, and NOT evidence about what is installed on `s3tyu`; and `state` stays `held` because no bundle is being INSTALLED from this commit. VETKEYS-AGE-2MIN (2026-09-23): `final-v6` (`b5813e14…`) is SUPERSEDED — DO NOT REINSTALL. It lacks the wallet half of the a7l2d vetkeys upgrade this lane stages: with the canister's first-derive age at 120 s counted from its first sighting of a funded balance, the wallet now observes the balance at login and on session restore (without blocking the mount or the login), then makes ONE background first-derive attempt per principal per page mount so that clock starts at the first successful funded observation (at sign-in only when the balance is already funded then; delayed funding, an unavailable read or sighting saturation move it — C-4); the expected age refusal is stored as a per-principal deadline, never toasted, and never retried by the helper; `shield()` under a live deadline shows the wait and makes no canister call; the preparation copy states the canister's returned wait (C-4 Option 1). `[wallet_bundle]` now records `1c9a2a5b6175d9e25e37a111018d7e02e2efb6389d99936158168c4635847eec`, 11 files, 14160787 bytes, source e19736c3. BUILDS = 2: the FINAL variant was built twice from e19736c3 on the pinned tuple (node 22.23.1 / npm 10.9.8 / wallet-local wasm-pack 0.12.1 / rustc 1.95.0, `WALLET_CONFIG_VARIANT` unset) — once in the lane worktree with `wallet/dist` and the generated `wallet/src/wasm` removed first, once in a fresh `git clone --no-local` with its own `npm ci` and cargo target — and each tree, measured independently by the documented pipeline with the HARDEN-03 guard first, gave the same digest, count and total; a recursive comparison of the two trees reported no difference. Both builds ran on ONE host, so this is not a second-host reproduction. The +1,730-byte delta against b5813e14… is confined to the one emitted app chunk and the `index.html` reference to it (`index-BD1G0YLf.js` -> `index-xsyZyomo.js`); `wallet-config.json`, `.ic-assets.json5` and `.well-known/ii-alternative-origins` are byte-identical to final-v6's. REPRODUCTION FIELDS UNCHANGED: `[wallet_bundle.reproduction]` (`builds = 1`, `identical = false`) is deliberately NOT edited; the two-build evidence lives in `final-v7/DIGEST.txt`, the lane packet and this paragraph. THE CHECKER CROSS-CHECK WAS NOT PERFORMED, disclosed: it needs `state = \"releasing\"` / `variant = \"final\"`, outside this lane's authority, and stays OWED by Owner/CTO before install; no earlier discharge carries to this DIFFERENT artifact. PAIRING: final-v7 is meant to be installed together with the a7l2d vetkeys upgrade (`~/a7-kit/vetkeys_age2min_envcap.wasm`, 144fb314…) — the device envelope the wallet builds only registers once the canister's raised 1024-byte bound is live. STAGING: `~/stsh-walletdeploy/final-v7/` — dist plus `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) byte-copied from `final-v6/`, with a `DIGEST.txt` in final-v6's shape. STAGED, NOT INSTALLED. THE TWO NON-CLAIMS ARE RESTATED: the gate run on the head carrying this paragraph is a `held` gate, so a GREEN gate is NOT verification of this digest, NOT an independent reproduction of it, and NOT evidence about what is installed on `s3tyu`; and `state` stays `held` because no bundle is being INSTALLED from this commit. WALLET-CSP-BLOB (2026-09-23): `final-v7` (`1c9a2a5b…`) is SUPERSEDED as the staged artifact — DO NOT REINSTALL — but it remains what is INSTALLED on `s3tyu` until the Owner installs final-v8; this paragraph makes no install claim. On mainnet every private spend under final-v7 failed at once with \"proof generation failed: Failed to fetch\": the shipped CSP refused the prover worker's `fetch()` of its `blob:` object URLs (S-16: the artifacts are length- and SHA-256-verified in `artifacts.ts` before the object URLs are made), and, once that is allowed, would refuse ffjavascript's `new Worker(blob:…)` thread pool because worker creation falls back to `script-src`. final-v8 changes `.ic-assets.json5` only: deviation (4) `blob:` appended to `connect-src`; deviation (5) a new `worker-src 'self' blob:` (`'self'` keeps the same-origin prover and scanner workers); `script-src`, `default-src` and `child-src` unchanged; the provenance prose and the B-4 note now say exactly FIVE deviations and describe (5) as a real bounded capability (same-origin script can turn arbitrary strings into worker code), per SSA plan-stage condition 2. `artifacts.ts`, `prover.worker.ts` and `spendFlow.ts` are untouched (CTO addendum 1, Option A). `[wallet_bundle]` now records `8375128bf8cdea2e2859e38b564856e7f44258b59dd52d520d10052be12dbc3a`, 11 files, 14163209 bytes, source be3fae8c. BUILDS = 2: the FINAL variant was built twice from be3fae8c on the pinned tuple (node 22.23.1 / npm 10.9.8 / wallet-local wasm-pack 0.12.1 / rustc 1.95.0, `WALLET_CONFIG_VARIANT` unset) — once in the lane worktree with `wallet/dist` and the generated `wallet/src/wasm` removed first, once in a fresh `git clone --no-local` with its own `npm ci` and cargo target — and each tree, measured independently by the documented pipeline with the HARDEN-03 guard first, gave the same digest, count and total; a recursive comparison of the two trees reported no difference. Both builds ran on ONE host, so this is not a second-host reproduction. The +2,422-byte delta against 1c9a2a5b… is exactly one file, `.ic-assets.json5` (df836b12… -> 7c2ce4c2…); `index.html`, every emitted chunk, `wallet-config.json`, the zk artifacts and `.well-known/ii-alternative-origins` are byte-identical to final-v7's. `[wallet_bundle.asset_config].sha256` is deliberately NOT moved and is disclosed stale in place (check (7) requires it to equal the transitional row, whose bundle really shipped df836b12…); that reconciliation is OWED to the CTO. REPRODUCTION FIELDS UNCHANGED: `[wallet_bundle.reproduction]` (`builds = 1`, `identical = false`) is deliberately NOT edited; the two-build evidence lives in `final-v8/DIGEST.txt`, the lane packet and this paragraph. THE CHECKER CROSS-CHECK WAS NOT PERFORMED, disclosed: it needs `state = \"releasing\"` / `variant = \"final\"`, outside this lane's authority, and stays OWED by Owner/CTO before install; no earlier discharge carries to this DIFFERENT artifact. STAGING: `~/stsh-walletdeploy/final-v8/` — dist plus `dfx.json` (f1a79c7b…) and `canister_ids.json` (e0fa2bc5…) byte-copied from `final-v7/`, with a `DIGEST.txt` in final-v7's shape. STAGED, NOT INSTALLED. Browser acceptance (a private spend succeeding in Chrome on app.stsh.fi) is the Owner's post-install check and is NOT claimed by any static test. THE TWO NON-CLAIMS ARE RESTATED: the gate run on the head carrying this paragraph is a `held` gate, so a GREEN gate is NOT verification of this digest, NOT an independent reproduction of it, and NOT evidence about what is installed on `s3tyu`; and `state` stays `held` because no bundle is being INSTALLED from this commit. WALLET-UI (2026-09-23): `final-v8` (`8375128b…`) is SUPERSEDED as the staged artifact by final-v9 — DO NOT INSTALL final-v8 over it — and neither is claimed installed here; this paragraph makes no install claim. final-v9 = the WALLET-UI restyle (Home/Activity/Settings, simple Shield/Send, verified-sweep cooldown, plain-language spend modes) rebased onto f0311ac0, source `822a6f25…`: `e4f3e71e…`, 13 files, 14291447 bytes. Two builds on ONE host (lane worktree + fresh `git clone --no-local` detached at 822a6f25, own `npm ci`, own cargo target), HARDEN-03 guard run first on each, identical, `diff -r` empty; not an independent second-host reproduction. DELTA vs final-v8: +2 files, the bundled fonts `DMSans-*.woff2` (94d4f47e…, SIL OFL 1.1) and `JetBrainsMono-*.woff2` (8fe3acf3…, SIL OFL 1.1), plus changed `index.html`, app chunk and css; the prover and scanner workers, the poseidon wasm, `wallet-config.json`, the zk artifacts, `.well-known/ii-alternative-origins` and `.ic-assets.json5` (7c2ce4c2…, unchanged from final-v8 — this lane does not touch it) are byte-identical. `files` is 13, not the brief's 14: the third font was dropped for a system stack (not OFL). `[wallet_bundle.asset_config].sha256` stays disclosed stale exactly as WALLET-CSP-BLOB left it (check (7)); reconciliation still OWED to the CTO. REPRODUCTION FIELDS UNCHANGED. THE CHECKER CROSS-CHECK (`--wallet-bundle-bytes` under `releasing`/`final`) WAS NOT PERFORMED and stays OWED by Owner/CTO before install. STAGING: `~/stsh-walletdeploy/final-v9/` (dfx.json f1a79c7b…, canister_ids.json e0fa2bc5…, byte-copied from final-v8). STAGED, NOT INSTALLED. The gate on this head is a `held` gate and is NOT verification of this digest; `state` stays `held`. WALLET-SHIELD-LAYER1 (2026-09-23): `final-v9` (`e4f3e71e…`) is SUPERSEDED as the staged artifact by final-v10 — DO NOT INSTALL final-v9 over it — and neither is claimed installed here; this paragraph makes no install claim. final-v10 = AD-8 (shield takes the vetKey from the session's Layer-1 device envelope, as scan and spend do — one line in `shieldDepsOrExplain`) plus Owner Addendum A (shield over-balance guard, dismissable status banner, Whole-note spend default, copper selected segment, human-time daily key-limit copy) and the two OFL licence texts in the bundle, source `ae9fc771…`: `1f3fd498…`, 15 files, 14301656 bytes. Two builds on ONE host (lane worktree + fresh `git clone --no-local` detached at ae9fc771, own `npm ci`, own cargo target), HARDEN-03 guard run first on each, identical, `diff -r` empty; not an independent second-host reproduction. DELTA vs final-v9: +2 files, `fonts/DMSans-OFL.txt` (2af94f4f…) and `fonts/JetBrainsMono-OFL.txt` (a76abf00…), byte-identical to `wallet/src/assets/fonts/`; changed app chunk, css and `index.html`; the prover and scanner workers, the poseidon wasm, both fonts, `wallet-config.json`, the zk artifacts, `.well-known/ii-alternative-origins` and `.ic-assets.json5` (7c2ce4c2…, unchanged — this lane does not touch it; `.txt` needs no asset rule, dfx infers text/plain) are byte-identical. `[wallet_bundle.asset_config].sha256` stays disclosed stale exactly as WALLET-CSP-BLOB left it (check (7)); reconciliation still OWED to the CTO. REPRODUCTION FIELDS UNCHANGED. THE CHECKER CROSS-CHECK (`--wallet-bundle-bytes` under `releasing`/`final`) WAS NOT PERFORMED and stays OWED by Owner/CTO before install. STAGING: `~/stsh-walletdeploy/final-v10/` (dfx.json f1a79c7b…, canister_ids.json e0fa2bc5…, byte-copied from final-v9). STAGED, NOT INSTALLED. The gate on this head is a `held` gate and is NOT verification of this digest; `state` stays `held`. WALLET-CACHE-II-ONLY (2026-09-23): `final-v10` (`1f3fd498…`) is SUPERSEDED as the staged artifact by final-v11 — DO NOT INSTALL final-v10 over it — and neither is claimed installed here; this paragraph makes no install claim. final-v11 = Internet Identity sign-in opens the note cache through the derive-free Layer-1 envelope path (O-1, Addendum 3), single-flight key acquisition shared with the login-time priming (SSA C1), the opt-in device passcode and the one-time move of Argon2id passphrase records (O-2/O-3, SSA C3), plus the plain-language copy pass, disclosure-sweep rows DS-51..DS-57/DS-61 and the copper advisory styling (O-4/O-6/O-7), source `27bfe0bd…`: `db5f740b…`, 15 files, 14324522 bytes. Two builds on ONE host (lane worktree + fresh `git clone --no-local` detached at 27bfe0bd, own `npm ci`, own cargo target), HARDEN-03 guard run first on each, identical, `diff -r` empty; not an independent second-host reproduction. DELTA vs final-v10: no file added or removed; changed app chunk (`assets/index-CICqI0Ip.js` 640,591 B -> `assets/index-D4xY9pZP.js` 662,670 B, e037613a…), css (`assets/index-DuQNbqcf.css` 24,451 B -> `assets/index-C1cZO1g6.css` 25,238 B, b60ab7e5…) and `index.html` (same 495 B, c2a771d4… -> f443bbc0…); the prover and scanner workers, the poseidon wasm, both fonts and both OFL texts, `wallet-config.json`, the zk artifacts, `.well-known/ii-alternative-origins` and `.ic-assets.json5` (7c2ce4c2…, unchanged — this lane does not touch it) are byte-identical. `[wallet_bundle.asset_config].sha256` stays disclosed stale exactly as WALLET-CSP-BLOB left it (check (7)); reconciliation still OWED to the CTO. REPRODUCTION FIELDS UNCHANGED. THE CHECKER CROSS-CHECK (`--wallet-bundle-bytes` under `releasing`/`final`) WAS NOT PERFORMED and stays OWED by Owner/CTO before install. STAGING: `~/stsh-walletdeploy/final-v11/` (dfx.json f1a79c7b…, canister_ids.json e0fa2bc5…, byte-copied from final-v10). STAGED, NOT INSTALLED. The gate on this head is a `held` gate and is NOT verification of this digest; `state` stays `held`. WALLET-V12 (2026-09-24): `final-v11` (`db5f740b…`) is SUPERSEDED as the staged artifact by final-v12 — DO NOT INSTALL final-v11 over it — and neither is claimed installed here; this paragraph makes no install claim. final-v12 = the wallet rebuilt on the LAUNCH-HARDEN-04 record so the operator page compiles the re-pinned `[wasm.shielded_pool]` (dca03f68…) and `[wasm.vesting]` (8b9c5860…) and can build Vault Upgrades #29/#30 (O-2), with `src/declarations/{vetkeys,shielded_pool,vesting}` regenerated by `dfx generate` 0.28.0 plus their dependency cascade (stsh_token, nullifier_registry, merkle_tree; pre-existing drift, SSA F-4) (O-1), the spend admission refusal copy with same-id retry and the C-3 resubmission check (O-3; E-1, E-2 per Addendum 1a) and the Settings `Approve new devices` toggle (O-4/O-8), source `4df4d785…`: `8b38cbfb…`, 15 files, 14337491 bytes. Two builds on ONE host (lane worktree + fresh `git clone --no-local` detached at 4df4d785, own `npm ci --ignore-scripts` under node 22.23.1 — the host cannot reach github.com, so the wasm-pack npm postinstall download was replaced by the byte-identical 0.12.1 binary from an existing checkout and esbuild's install script was run by hand — own cargo target), HARDEN-03 guard run first on each, identical, `diff -r` empty; not an independent second-host reproduction. DELTA vs final-v11: no file added or removed; changed app chunk (`assets/index-D4xY9pZP.js` 662,670 B -> `assets/index-CN93Wpy_.js` 674,902 B, cad657a9…), scanner worker chunk (`assets/scanner.worker-CdFe3ITH.js` 290,418 B -> `assets/scanner.worker-Dy9uJcq_.js` 291,155 B, 7aaa9cf7…) and `index.html` (same 495 B, f443bbc0… -> 06446950…); the prover worker, css, the poseidon wasm, both fonts and both OFL texts, `wallet-config.json`, the zk artifacts, `.well-known/ii-alternative-origins` and `.ic-assets.json5` (7c2ce4c2…, unchanged — this lane does not touch it) are byte-identical. `[wallet_bundle.asset_config].sha256` stays disclosed stale exactly as WALLET-CSP-BLOB left it (check (7)); reconciliation still OWED to the CTO. REPRODUCTION FIELDS UNCHANGED. THE CHECKER CROSS-CHECK (`--wallet-bundle-bytes` under `releasing`/`final`) WAS NOT PERFORMED and stays OWED by Owner/CTO before install. No `canisters/`, `Cargo.toml`, `Cargo.lock` or `rust-toolchain.toml` path is touched by this lane (BUILD_INPUT_PATHS), so `asserts_identity_at` is NOT rebound. STAGING: `~/stsh-walletdeploy/final-v12/` (dfx.json f1a79c7b…, canister_ids.json e0fa2bc5…, byte-copied from final-v11). STAGED, NOT INSTALLED. The gate on this head is a `held` gate and is NOT verification of this digest; `state` stays `held`. WALLET-V13 (2026-09-24): REBOUND to final-v13 (brief WALLET_V13_V1 + Addendum 1 Owner rulings, SSA GREEN-WITH-RULINGS). WHY: final-v12 compiled the OLD `stsh_token` pin ac9336f2…, so its operator page refused the ledger Vault Upgrade to 994a77ff… (record §3y); final-v13 compiles every current `[wasm.*]` pin (stsh_token 994a77ff…, shielded_pool dca03f68…, vesting 8b9c5860…). WALLET CHANGES: logged-out Settings and Home show only the Account card and About STSH (O-1; the DS-51/DS-52 copy moved verbatim into About STSH; the wipe result is keyed on the report, not the session); two third-party-name comment scrubs (O-2). New: `check_wallet_bundles` check (9) (ARCHITECTURE.md law 7(g)) — this rebind leaves `stale_pins` absent because the pins at `source_sha` equal HEAD's. sha256 18ea9743…, 15 files, 14337769 bytes, `source_sha` = 5b71b62 (the lane's last pre-record commit, an ancestor of this record commit). Measured by the documented shell pipeline (build-logs/measure.sh, HARDEN-03 guard first) on TWO builds on ONE host — the lane worktree and a fresh `git clone --no-local` at 5b71b62 with its own cargo target, both node 22.23.1 / npm 10.9.8 / wasm-pack 0.12.1 from node_modules, both plain `npm ci` (no offline deviation: the host reached github.com this time) — identical, `diff -r` empty; not an independent second-host reproduction. DELTA vs final-v12: no file added or removed; changed app chunk (`assets/index-CN93Wpy_.js` 674,902 B -> `assets/index-BQPR2uLE.js` 675,180 B, dbca8be6…) and `index.html` (same 495 B, 06446950… -> 0fbacee7…); every other file, including `.ic-assets.json5` (7c2ce4c2…), is byte-identical. `[wallet_bundle.asset_config].sha256` stays disclosed stale as before (check (7)). REPRODUCTION FIELDS UNCHANGED. THE CHECKER CROSS-CHECK (`--wallet-bundle-bytes` under `releasing`/`final`) WAS NOT PERFORMED and stays OWED by Owner/CTO before install. No `canisters/`, `Cargo.toml`, `Cargo.lock` or `rust-toolchain.toml` path is touched by this lane (BUILD_INPUT_PATHS), so `asserts_identity_at` is NOT rebound. STAGING: `~/stsh-walletdeploy/final-v13/` (dfx.json f1a79c7b…, canister_ids.json e0fa2bc5…, byte-copied from final-v12). STAGED, NOT INSTALLED. `state` stays `held`. TOKEN-APPROVE-TTL (2026-09-25): REBOUND to final-v14, IN-LANE (ARCHITECTURE.md law 7(g)) — the lane re-pins `[wasm.stsh_token]` 994a77ff… -> 70786d0d… (token commit 43e42d99: `icrc2_approve` defaults an absent `expires_at` to now + 24 h and clamps an over-cap one, instead of refusing — the ICPSwap approve failure), so the wallet is rebuilt here rather than acknowledged in `stale_pins`; this rebind leaves `stale_pins` absent because the pins at `source_sha` equal HEAD's. WALLET CHANGES: none to `wallet/src/**` beyond the generated pin map (`releasePins.json`, re-emitted from this record by the vite plugin) — the only bundle delta is the compiled `stsh_token` pin; the V13 pin-test literal (`wallet/tests/operator_release_pins.test.ts`, not bundled) follows the pin. sha256 9d4b4af9…, 15 files, 14337769 bytes, `source_sha` = 7a8e0945 (the lane's last pre-record commit, an ancestor of this record commit). Measured by the documented shell pipeline (build-logs/measure.sh, unchanged, HARDEN-03 guard first) on TWO builds on ONE host — the lane worktree (node_modules, wallet/dist and wallet/src/wasm removed first) and a fresh `git clone --no-local` at 7a8e0945 with its own cargo target, both node 22.23.1 / npm 10.9.8 / wasm-pack 0.12.1 from node_modules, both plain `npm ci` — identical, `diff -r` empty; not an independent second-host reproduction. DELTA vs final-v13: no file added or removed, same total bytes; changed app chunk (`assets/index-BQPR2uLE.js` -> `assets/index-CltTDpoe.js`, both 675,180 B, 0c951adb…) and `index.html` (same 495 B, 0fbacee7… -> 577fe2d1…); every other file, including `.ic-assets.json5` (7c2ce4c2…), is byte-identical. `[wallet_bundle.asset_config].sha256` stays disclosed stale as before (check (7)). REPRODUCTION FIELDS UNCHANGED. THE CHECKER CROSS-CHECK (`--wallet-bundle-bytes` under `releasing`/`final`) WAS NOT PERFORMED and stays OWED by Owner/CTO before install. `asserts_identity_at` is rebound by this lane's record commit to 43e42d99 (its only commit touching a build-input path), not by this commit. STAGING: `~/stsh-walletdeploy/final-v14/` (dfx.json f1a79c7b…, canister_ids.json e0fa2bc5…, byte-copied from final-v13). STAGED, NOT INSTALLED. `state` stays `held`."

@@ -1,0 +1,64 @@
+# Rust / IC build outputs
+target/
+.dfx/
+
+# Node / circuit dependency installs
+**/node_modules/
+
+# Solvency status page build output
+website/solvency-status/dist/
+
+# Wallet frontend build output (vite — asset-canister source, rebuilt with `npm run build`)
+wallet/dist/
+# L3c: regenerated proving-artifact staging (scripts/verify_spend_artifacts.mjs)
+wallet/public/zk/
+
+# Circuit build outputs (contents, not the directory itself — so the two
+# exceptions below can be re-included).
+circuits/build/*
+# L3c (Option A ruling): the two PRODUCTION proving artifacts are tracked
+# directly for clean-clone reproducibility — these exact exceptions ONLY.
+# Everything else under circuits/build/ stays ignored.
+!circuits/build/spend_1.zkey
+!circuits/build/spend.r1cs
+!circuits/build/spend_js/
+circuits/build/spend_js/*
+!circuits/build/spend_js/spend.wasm
+
+# Wallet Poseidon WASM (wasm-pack output — rebuild with `npm run build:wasm`)
+wallet/src/wasm/
+
+# ZK ceremony/proving artifacts
+circuits/*.ptau
+# A-4 PREP (SSA F6): `circuits/*.ptau` does NOT cross a `/`, so the repo's own
+# `justfile` download-ptau target (circuits/ptau/<file>.ptau) was NOT ignored.
+# A `git add -A` during the ceremony would stage a multi-hundred-MB blob
+# irreversibly into history. Ignore ptau at ANY depth under circuits/.
+circuits/**/*.ptau
+circuits/*.zkey
+circuits/*.wtns
+# Dev prover artifacts (single-participant, INSECURE by design — never mainnet).
+# Redundant under circuits/build/* above, listed explicitly per the wallet-build DoD.
+circuits/build/spend_dev*.zkey
+circuits/build/spend_dev_vk.json
+
+# Logs
+*.log
+
+# Local backups
+*.bak
+
+# Diagnostic scratch crate (not production code)
+circuits/rust-spike/
+circuits/public_tamper*.json
+
+# Review/audit report documents live in the internal workspace, NOT the repo.
+# Report folders are ignored so lane outputs can't get auto-committed again
+# (the ICRC audit reports slipped into master this way). Convention: any
+# future report/review folder goes under one of these paths.
+/ICRC_AUDIT_REPORTS/
+/reports/
+
+# Local agent/tooling files (public export)
+*.local.md
+/environments/

@@ -1,0 +1,89 @@
+# =============================================================================
+# STSH — suites `run_gate.sh` actually invokes, for the bindings lint (G-c).
+# =============================================================================
+#
+# A bound test living in a suite the gate does not run is not evidence.  Each
+# row names a crate and the INVOCATION's own word sequence, which must appear at
+# COMMAND POSITION in a simple command of the committed `run_gate.sh`.  The
+# bindings lint TOKENIZES the script (`shell_lex::census_invoked`) rather than
+# substring-matching it, so a commented-out line, a quoted `echo`, or a
+# here-document copy of the invocation no longer counts as running it — and
+# commenting the vetkeys leg out (AC-7f M7f-3) turns the stage RED rather than
+# silently orphaning the binding.
+#
+# A row is deliberately a PREFIX of the real command line: `run_gate.sh`'s
+# workspace leg carries `-- --test-threads=1` and a redirection after the words
+# below.  Nothing after the matched run is examined.
+#
+# `canisters/vetkeys` is workspace-EXCLUDED (ic-cdk 0.16 vs 0.20 `links`
+# conflict), so `cargo test --workspace` NEVER runs it.  Its separate
+# invocation is the only thing that does, which is exactly why it needs its own
+# row here rather than being covered by the workspace line.
+
+[[suite]]
+crate_name      = "integration-tests"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+[[suite]]
+crate_name      = "vault"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+[[suite]]
+crate_name      = "verify-custody-manifest"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+[[suite]]
+crate_name      = "shielded_pool"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+[[suite]]
+crate_name      = "vetkeys"
+gate_invocation = "cargo test --manifest-path canisters/vetkeys/Cargo.toml --locked --no-fail-fast"
+
+# R-6 (G4): the verifier's pairing binding and the ceremony-record anchor. Both
+# crates are ordinary workspace members, so the workspace line is what runs them.
+[[suite]]
+crate_name      = "stsh-verifier"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+[[suite]]
+crate_name      = "verify-genesis-manifest"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+# R-L2 (G-c follow-up): the gate-lint crate's OWN fixture suites. `bindings`,
+# `claims` and the target-key fixtures now carry binding rows of their own, and
+# a bound test in a suite the gate does not run is not evidence — including when
+# the bound test belongs to the lint doing the checking. `scripts/verify_gate_lints`
+# is an ordinary workspace member, so the workspace line is what runs it.
+[[suite]]
+crate_name      = "verify-gate-lints"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+# ── A6.6 (lane A6.6 config freeze) ──────────────────────────────────────────
+#
+# Four rows, all NEW. Two are ordinary workspace crates that had no row because
+# nothing had bound a test in them before; two are the non-Rust legs, which the
+# binding registry itself cannot parse (it parses `test_file` as Rust) and which
+# therefore rely on this file alone to say the gate runs them.
+[[suite]]
+crate_name      = "stsh-fee-policy"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+[[suite]]
+crate_name      = "stsh-poseidon-wasm"
+gate_invocation = "cargo test --workspace --locked --no-fail-fast"
+
+# C-14's wallet leg. Bound to the literal invocation in run_gate.sh's Phase 4.
+# This row is what makes `A66-DECOMPOSE`'s coverage real: the ladder-floor
+# rejection lives in TypeScript and can never be a binding-registry row.
+[[suite]]
+crate_name      = "wallet"
+gate_invocation = "npx --prefix wallet vitest run --root wallet --no-file-parallelism"
+
+# A6.6's new fifth leg. `adversarial.test.js` is the only harness that executes
+# the in-circuit value bound's own rejection vector, so `A66-CIRCUIT-BOUND` has
+# no other coverage. NOT a GATE_TOOL_CENSUS.toml entry: that census's domain is
+# tracked direct entries under scripts/, and circuits/tests is not one.
+[[suite]]
+crate_name      = "circuits-adversarial"
+gate_invocation = "npm run test:adversarial --prefix circuits"

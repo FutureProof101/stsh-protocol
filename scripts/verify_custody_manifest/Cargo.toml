@@ -1,0 +1,58 @@
+[package]
+name    = "verify-custody-manifest"
+version = "0.1.0"
+edition = "2021"
+# The gate invokes `cargo run -p verify-custody-manifest` with no --bin. Adding
+# the §P.2 exporter made that ambiguous and ABORTED the gate, so the gate's
+# binary is pinned here rather than by editing run_gate.sh: the gate keeps its
+# exact invocation, and a future third binary cannot silently re-break it.
+default-run = "verify_custody_manifest"
+# L0 custody gates (CUSTODY_VAULT_INTERFACE_FREEZE_V6 §13.2a coverage contract
+# + §8 encoded-message size invariant). Host tool only — never compiled into a
+# canister.
+
+[lib]
+name = "verify_custody_manifest"
+path = "src/lib.rs"
+
+[[bin]]
+name = "verify_custody_manifest"
+path = "src/main.rs"
+
+# §P.2 authenticated D5 exporter. A SECOND BINARY of this existing workspace
+# member, deliberately: a new member crate would move the workspace Cargo.toml
+# and Cargo.lock — both production build inputs — and disarm the release
+# tripwire that binds the caa2b29 Wasm identity. Same reason it shells out to
+# `dfx` instead of taking an agent dependency: no new dependency, no lock move.
+[[bin]]
+name = "export_creation_receipts"
+path = "src/bin/export_creation_receipts.rs"
+
+# A-7 install kit gate. A THIRD binary of this crate, for the same reason the
+# D5 exporter is the second: a new member crate would move the workspace
+# Cargo.toml and Cargo.lock — both production build inputs — and disarm the
+# release tripwire. `default-run` above keeps the gate's bare
+# `cargo run -p verify-custody-manifest` unambiguous.
+[[bin]]
+name = "verify_a7_kit"
+path = "src/bin/verify_a7_kit.rs"
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { version = "1" }
+toml       = "0.8"
+candid     = { workspace = true }
+# ENCODER PIN (A-7 SSA F-2). `verify_a7_kit` re-encodes every committed
+# `<canister>_init.did` with THIS crate and requires byte-identity with the
+# committed `.bin`, whose sha256 the Owner types into the operator page as
+# `expected_arg_hash`. An encoder minor bump that changed one byte of Candid
+# output would therefore move an argument hash under a caret req. Exact-pinned.
+#
+# CAVEAT, disclosed rather than papered over: only THIS req is exact. The other
+# `"0.1"` requirements in this manifest stay caret, so a future `cargo update`
+# that moves them breaks the build LOUDLY (a version conflict against this pin)
+# rather than drifting the encoder silently. That is the intended fail-closed
+# behaviour, not an oversight.
+candid_parser = "=0.1.4"
+sha2       = { workspace = true }
+stsh-custody-types = { path = "../../canisters/custody-types" }

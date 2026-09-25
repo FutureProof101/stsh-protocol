@@ -1,0 +1,48 @@
+[package]
+name    = "shielded_pool"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testing = []
+
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+# F2-REDACT: the enforced-retention timer. Version matched EXACTLY to the
+# in-tree precedent (`canisters/smoke-alarm-monitor`) — two majors of the same
+# timer crate in one workspace is a HALT, not a preference.
+ic-cdk-timers      = "0.10"
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+serde_bytes        = { workspace = true }
+# D-2/D-4 (smoke-alarm completion): the certified solvency attestation.
+# Versions matched EXACTLY to the in-tree precedent (`canisters/smoke-alarm-monitor`)
+# — the same rule already applied to ic-cdk-timers above.
+serde_cbor         = { workspace = true }
+ic-certified-map   = "0.4"
+sha2               = { workspace = true }
+hmac               = "=0.12.1"
+num-traits         = { workspace = true }
+
+# A2-2: pure fee/reserve/staking policy types + calculations (no ic-cdk dep).
+stsh-fee-policy    = { path = "../fee-policy" }
+# #116: canonical field encoding helpers (no ic-cdk dep).
+stsh-field-utils   = { path = "../field-utils" }
+# A-1 (RB-SWARM-A1): eager stable-cell primitives for the fee-governance state.
+stsh-eager-cell    = { path = "../eager-cell" }
+
+# A2-2 NOTE: stsh-verifier is intentionally NOT a library dep here.
+# shielded_pool calls the verifier canister via async inter-canister call (A2-2).
+# Embedding ark-groth16 directly causes CanisterInvalidWasm (function complexity
+# 2,051,003 > IC limit 1,000,000).  See architectural decision doc.
+
+[dev-dependencies]
+# W3 3-3 (field drift): the published-field lock parses the canister's own
+# committed shielded_pool.did with the REAL candid parser. Test-only — a
+# dev-dependency never enters the Wasm, so the release artifact is unmoved.
+candid_parser = "0.1"

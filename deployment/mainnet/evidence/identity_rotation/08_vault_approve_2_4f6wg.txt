@@ -1,0 +1,10 @@
+(
+  variant {
+    Ok = variant {
+      PriorResult = record {
+        result = opt "epoch 1";
+        outcome = variant { Executed };
+      }
+    }
+  },
+)

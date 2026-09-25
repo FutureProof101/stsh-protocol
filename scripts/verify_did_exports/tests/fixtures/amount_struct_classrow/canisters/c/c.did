@@ -1,0 +1,1 @@
+service : { report : () -> (record { total : nat; fees : nat }) query };

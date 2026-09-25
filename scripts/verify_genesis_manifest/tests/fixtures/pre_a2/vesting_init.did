@@ -1,0 +1,54 @@
+// =============================================================================
+// STSH — CANONICAL vesting INIT ARTIFACT (P-ARITH G-1/G-2; placeholders P0-3)
+// =============================================================================
+// THE exact Candid init argument the mainnet vesting deploy consumes — Gate-D
+// verifies its fields against deployment/mainnet/genesis_manifest.toml and
+// Gate-V phase 1 proves: the token `founders` allocation recipient is the
+// vesting-canister principal, and Σ(founder schedules) equals the `founders`
+// allocation amount (18,000,000,000,000,000 base units) exactly, checked.
+//
+// Founder beneficiary principals live HERE, never as the token allocation
+// recipient. Every founder schedule uses cliff_months = 6, linear_months = 30
+// (§0.4 Option A, LOCKED). ceremony_rewards is a post-ceremony grant, outside
+// genesis vesting.
+//
+// SINCE D-4 V2 this canister also custodies the legal-counsel grant (cliff 0 /
+// linear 12) — Gate-V therefore covers founders + counsel, and V6/VP1/VP2 expect
+// the sum 18,500,000,000,000,000. Shapes are pinned PER-SCHEDULE, not globally.
+// =============================================================================
+(
+  record {
+    token_canister = principal "dsxao-yfabv-ygyyl-dmvug-63dem-vza";
+    controller = principal "nmynl-efabz-ygyyl-dmvug-63dem-vza";
+    schedules = vec {
+      record {
+        beneficiary = principal "6ckzt-75ab5-ygyyl-dmvug-63dem-vza";
+        total_amount = 9_000_000_000_000_000 : nat;
+        cliff_months = 6 : nat32;
+        linear_months = 30 : nat32;
+      };
+      record {
+        beneficiary = principal "rym6w-4vacb-ygyyl-dmvug-63dem-vza";
+        total_amount = 6_000_000_000_000_000 : nat;
+        cliff_months = 6 : nat32;
+        linear_months = 30 : nat32;
+      };
+      record {
+        beneficiary = principal "cw6ko-hnacf-ygyyl-dmvug-63dem-vza";
+        total_amount = 3_000_000_000_000_000 : nat;
+        cliff_months = 6 : nat32;
+        linear_months = 30 : nat32;
+      };
+      // D-4 V2 — legal-counsel grant, 0.5 percent. NOT a founder: cliff 0 / linear 12,
+      // a straight 12-month continuous release. Its beneficiary is distinct from all
+      // three founders, so V4-unique-beneficiaries is unaffected. Gate-V binds this
+      // entry to the manifest [[counsel_schedule]] section, never to a founder row.
+      record {
+        beneficiary = principal "mirhl-3nacj-ygyyl-dmvug-63dem-vza";
+        total_amount = 500_000_000_000_000 : nat;
+        cliff_months = 0 : nat32;
+        linear_months = 12 : nat32;
+      };
+    };
+  },
+)

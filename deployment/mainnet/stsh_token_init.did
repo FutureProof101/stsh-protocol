@@ -1,0 +1,192 @@
+// =============================================================================
+// STSH — CANONICAL stsh_token INIT ARTIFACT (P-ARITH G-1; principals RESOLVED at RR-1a)
+// =============================================================================
+// THE exact Candid init argument the mainnet deploy consumes — Gate-D
+// (scripts/verify_genesis_manifest) verifies EVERY field of this artifact
+// against deployment/mainnet/genesis_manifest.toml and records its SHA-256.
+// The deploy must pass THIS FILE to dfx (--argument-file); reconstructing the
+// args by hand is a Gate-D violation (adversarial vector: reconstructed args
+// differing from the verified artifact).
+//
+// Canonical forms (no discretion): subaccount = null on every allocation;
+// created_at_genesis = false; genesis_timestamp_ns = 0 (canister overwrites
+// both during init); vesting_policy = null on every row.
+//
+// LANE A-2 (2026-09-09): the allocation vector is the V4 D-0 table as amended by
+// D-4/D-5, in the canonical D-7 row order. Gate-D zips this vector POSITIONALLY
+// against the manifest and against APPROVED_ALLOCATIONS — the order is a
+// contract, not a presentation choice.
+// =============================================================================
+(
+  record {
+    allocations = vec {
+      // V4 D-0 bucket 1, AMENDED 27% -> 30% by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+      // (a14beef1, Owner): +3% of the 6% released by the founders 18% -> 12% reduction.
+      // Was 29.5% — the counsel grant is bucket-4 funded (Addendum C Q3 -> Owner Addendum D).
+      record {
+        category_id = "treasury";
+        category_name = "Protocol Treasury";
+        amount = 30_000_000_000_000_000 : nat;
+        recipient = principal "7aacs-7ky4d-2f7wg-rq4yh-c6us4-gmzow-inzyz-mdglq-ov72c-hx4zc-gae";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // V4 D-0 bucket 2 (12%). Surviving category_id `insurance` (Addendum E Q5).
+      record {
+        category_id = "insurance";
+        category_name = "Security & Recovery Reserve";
+        amount = 12_000_000_000_000_000 : nat;
+        recipient = principal "txsc4-jhhef-eqw7h-tdqpd-7eior-6zbfc-r3o6e-7gi7q-jja7q-dpgij-vqe";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // V4 D-0 bucket 3, AMENDED 18% -> 12% by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+      // (a14beef1, Owner). ONE founder schedule in vesting_init.did (DRIFT-1).
+      record {
+        category_id = "founders";
+        category_name = "founder";
+        amount = 12_000_000_000_000_000 : nat;
+        recipient = principal "cfxs7-4qaaa-aaaar-qchga-cai";
+        subaccount = null;
+        lock_policy = variant { Vested };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // NEW. V4 D-0 bucket 4 (5%) less the D-4 counsel 0.5% = 4.5% unallocated,
+      // multisig-locked (D-4 §D-4.1 bucket-4 ledger).
+      record {
+        category_id = "strategic_contributors_locked";
+        category_name = "Strategic Contributors — unallocated";
+        amount = 4_500_000_000_000_000 : nat;
+        recipient = principal "pkoxa-o2yit-x7c2q-6ieoo-bnufi-klbv3-4ni7h-nb4x6-izc7q-253zk-mae";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // D-4 §D-4.1 legal-counsel grant, 0.5%, PARENT BUCKET 4 (not treasury).
+      // `recipient` is the genesis vesting canister, the SAME principal the
+      // founders allocation names: that canister custodies both schedules.
+      // Enumerated D16 exemption; the roles remain distinct in the manifest.
+      record {
+        category_id = "legal_counsel";
+        category_name = "Strategic Contributors — legal counsel";
+        amount = 500_000_000_000_000 : nat;
+        recipient = principal "cfxs7-4qaaa-aaaar-qchga-cai";
+        subaccount = null;
+        lock_policy = variant { Vested };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // V4 D-0 bucket 5 (2%).
+      record {
+        category_id = "ceremony_rewards";
+        category_name = "Ceremony Participants";
+        amount = 2_000_000_000_000_000 : nat;
+        recipient = principal "fawds-fyajw-qyebo-yh6t2-y2rcz-hpsnj-xg5k5-v4fyq-ifzak-mfd7s-rqe";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // V4 D-0 bucket 6 (10%). Was 8%.
+      record {
+        category_id = "audit_bounty";
+        category_name = "Security, Audit & Bounties";
+        amount = 10_000_000_000_000_000 : nat;
+        recipient = principal "bxvrd-77pon-b64bm-5vqbk-xt75z-vifyx-7luh6-sflc5-4s4iu-ugodi-xqe";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // V4 D-0 bucket 7 (5%). ONE incentives row (Addendum C Q2); the 8%
+      // `shielded_incentives` row is deleted. Surviving id `airdrop`.
+      record {
+        category_id = "airdrop";
+        category_name = "Shield Adoption Incentives";
+        amount = 5_000_000_000_000_000 : nat;
+        recipient = principal "bzjh2-c7pd6-hfu7b-ujbrf-lmk4e-gmrfm-4qkr4-3il2k-qyuli-shkhk-6ae";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // NEW. V4 D-0 bucket 8 (5%) — released only by treasury multisig -> DAO
+      // named proposal.
+      record {
+        category_id = "capital_reserve";
+        category_name = "Capital & Contributor Reserve";
+        amount = 5_000_000_000_000_000 : nat;
+        recipient = principal "3yg5n-bdw5c-ojcoo-fljhl-t35xe-kogrv-myblj-3eft2-wolaq-f762e-nqe";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // V4 D-0 bucket 9, AMENDED 13% -> 14% by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+      // (a14beef1, Owner): +1% of the 6% released by the founders reduction. D-5 changes
+      // only the day-one deploy (3% / 30M), not the bucket. The only ImmediatelyLiquid row.
+      record {
+        category_id = "liquidity";
+        category_name = "Protocol-Owned Liquidity";
+        amount = 14_000_000_000_000_000 : nat;
+        recipient = principal "2u4ds-eexxk-d4e2u-7bbtc-sbv5l-qt62h-mqtzf-yb4bm-gwcfj-yqsql-uqe";
+        subaccount = null;
+        lock_policy = variant { ImmediatelyLiquid };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // NEW. V4 D-0 bucket 10, AMENDED 3% -> 5% by RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md
+      // (a14beef1, Owner): +2% of the 6% released by the founders reduction.
+      record {
+        category_id = "external_lp_incentives";
+        category_name = "External LP Incentives";
+        amount = 5_000_000_000_000_000 : nat;
+        recipient = principal "gxdbk-hjr2c-q4wcn-d6l6p-r5ud5-zvmjh-6yxfm-7wdd3-2ge6q-q6vjj-uqe";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+    };
+    treasury = principal "7aacs-7ky4d-2f7wg-rq4yh-c6us4-gmzow-inzyz-mdglq-ov72c-hx4zc-gae";
+    staking_canister = principal "cpdab-saaaa-aaaar-qca2q-cai";
+    fee_collector = opt principal "jdc4c-utkoi-nekq7-h7fod-ewtgg-jqeak-tde3m-t7v7j-m5hq3-lnaoz-yae";
+    // HARDEN-03-SETTLEMENT (D-3) added `pool_canister : opt principal` to the
+    // token's InitArgs: the shielded pool whose qualifying deposit transfers
+    // receive a durable receipt. INIT-TIME ONLY — D-3 refused a setter
+    // deliberately, so this value is chosen once, here, and the only way to
+    // change it afterwards is a reinstall of the ledger.
+    //
+    // BOUND, NOT NULL — CTO ruling 2026-09-18 (SETTLEMENT-CLOSE). The builder
+    // first regenerated this artifact with `null` (the fail-safe value: no
+    // receipts written, settlement returns DepositSettlementUnavailable) on the
+    // ground that choosing a principal is a genesis-value decision above a
+    // builder seat, and referred it up. The ruling: `pool_canister` must NOT
+    // ship null, because the token has no setter, the pool principal has been
+    // immutable since J-18, and shipping settlement inert would silently
+    // disable the lane being merged.
+    //
+    // The value is the Vault-born pool — `canister_ids.json` `shielded_pool.ic`,
+    // and the SAME principal the A-3 FINALIZE ceremony re-encoded the commitment
+    // domain to (045fed0). It is a J-18 birth, so verify_a7_kit's principal
+    // check resolves it.
+    pool_canister = opt principal "cxrfg-qaaaa-aaaar-qchfa-cai";
+  },
+)

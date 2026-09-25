@@ -1,0 +1,67 @@
+# =============================================================================
+# STSH — no-skips (G-d) patterns.  DATA, reviewed as data (brief §4 invariant 3).
+# =============================================================================
+#
+# The rule these feed is STRUCTURAL: `scripts/verify_gate_lints/src/no_skips.rs`
+# walks the parse tree of every `#[test]` fn and every fixture-loader fn under
+# the scanned roots, and asks whether a precondition branch returns without an
+# outcome distinguishable from a genuine pass.  These lists say WHICH
+# expressions count as a precondition test and WHICH announcements count as a
+# skip; they never decide the shape.
+#
+# KNOWN GAP, disclosed and not closed (AC-9 M9j): a skip dispatched through a
+# `dyn Trait` custom check is outside the seven shapes.  This is a net, not a
+# completeness proof, and the lint says so on every run.
+#
+# TCB residual #2: editing this file to remove a real finding is a bypass whose
+# control is the reviewed diff.
+
+# Shapes 1/2/3/7 — the `if` condition must express "is the fixture present?".
+presence_predicates = [
+  "exists",
+  "is_err",
+  "is_none",
+  "is_ok",
+  "is_some",
+  "metadata",
+  "read_to_string",
+  "fs :: read",
+  "fs::read",
+  "_present",
+  "have_fixture",
+  "has_fixture",
+  "fixture_available",
+]
+
+# Shape 5 — a SKIP announcement inside a test/loader body.
+skip_macros  = ["println", "eprintln", "print", "eprint"]
+skip_markers = ["SKIP", "skip:", "skipping", "SKIPPED"]
+
+# The fixture-loader corpus, alongside every `#[test]` fn.
+loader_prefixes = ["load_", "fixture_", "read_fixture", "open_fixture"]
+
+# Shape 3, route 2 — the STRUCTURAL half.  A condition that merely CALLS a
+# helper is resolved through the intra-crate call graph (depth <= 3,
+# `no_skips::FnIndex`); if any resolved body contains one of these calls, the
+# condition is a presence test no matter what the helper is called.
+#
+# This exists because the shape-3 rule was previously a substring test over
+# helper NAMES (`_present`, `have_fixture`, …), so a presence helper with any
+# other name bypassed the net entirely — SSA landed-diff round 1, RED-3.  A
+# name is not a shape.
+presence_body_calls = [
+  ". exists ()",
+  ". try_exists ()",
+  ". is_file ()",
+  ". is_dir ()",
+  ". metadata ()",
+  "fs :: metadata",
+  "fs :: read",
+  "fs :: read_to_string",
+  "fs :: File :: open",
+  "read_to_string",
+  "Path :: new",
+  "PathBuf :: from",
+  "var_os",
+  "env :: var",
+]

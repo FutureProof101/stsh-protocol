@@ -1,0 +1,28 @@
+[package]
+name    = "verify-memory-ids"
+version = "0.1.0"
+edition = "2021"
+# Upgrade-persistence hardening V2, acceptance #4 — machine enforcement of the
+# MemoryId append-only rule. Host tool only; never compiled into a canister.
+
+[lib]
+name = "verify_memory_ids"
+path = "src/lib.rs"
+
+[[bin]]
+name = "verify_memory_ids"
+path = "src/main.rs"
+
+[dependencies]
+# SSA HOLD #2: the lint parses Rust, it does not text-match. Two lexical holes
+# in a row (literal-only argument matching, then whitespace-token variants like
+# `MemoryId :: new(7)`) proved the class is unclosable by pattern-widening.
+# `syn` sees the AST, so formatting is irrelevant by construction. This is a
+# host-side dev tool — no wasm or runtime constraint applies.
+syn          = { version = "2", features = ["full", "visit", "printing", "extra-traits"] }
+proc-macro2  = { version = "1", features = ["span-locations"] }
+quote        = "1"
+# Manifest parsing only — the scan set is DERIVED from the workspace so a new
+# first-party crate is picked up automatically rather than silently omitted.
+toml         = "0.8"
+serde        = { workspace = true }

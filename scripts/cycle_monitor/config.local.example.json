@@ -1,0 +1,44 @@
+[
+  {
+    "name": "shielded_pool",
+    "principal": "ufxgi-4p777-77774-qaadq-cai",
+    "freeze_reserve_cycles": 100000000000,
+    "reserve_provenance": "local replica deploy, dfx 0.28.0 \u2014 A-6c live evidence leg (NOT a mainnet figure)",
+    "reserve_observed_at_ns": 1787405384629032670
+  },
+  {
+    "name": "verifier",
+    "principal": "umunu-kh777-77774-qaaca-cai",
+    "freeze_reserve_cycles": 100000000000,
+    "reserve_provenance": "local replica deploy, dfx 0.28.0 \u2014 A-6c live evidence leg (NOT a mainnet figure)",
+    "reserve_observed_at_ns": 1787405384629032670
+  },
+  {
+    "name": "nullifier_registry",
+    "principal": "uxrrr-q7777-77774-qaaaq-cai",
+    "freeze_reserve_cycles": 100000000000,
+    "reserve_provenance": "local replica deploy, dfx 0.28.0 \u2014 A-6c live evidence leg (NOT a mainnet figure)",
+    "reserve_observed_at_ns": 1787405384629032670
+  },
+  {
+    "name": "merkle_tree",
+    "principal": "uzt4z-lp777-77774-qaabq-cai",
+    "freeze_reserve_cycles": 100000000000,
+    "reserve_provenance": "local replica deploy, dfx 0.28.0 \u2014 A-6c live evidence leg (NOT a mainnet figure)",
+    "reserve_observed_at_ns": 1787405384629032670
+  },
+  {
+    "name": "token",
+    "principal": "ucwa4-rx777-77774-qaada-cai",
+    "freeze_reserve_cycles": 100000000000,
+    "reserve_provenance": "local replica deploy, dfx 0.28.0 \u2014 A-6c live evidence leg (NOT a mainnet figure)",
+    "reserve_observed_at_ns": 1787405384629032670
+  },
+  {
+    "name": "vetkeys",
+    "principal": "ulvla-h7777-77774-qaacq-cai",
+    "freeze_reserve_cycles": 100000000000,
+    "reserve_provenance": "local replica deploy, dfx 0.28.0 \u2014 A-6c live evidence leg (NOT a mainnet figure)",
+    "reserve_observed_at_ns": 1787405384629032670
+  }
+]

@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# STSH — VK_PIN.toml (remediation lane R-6, G4)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# LAUNCH pin — the mainnet-v2 ceremony output. This is no longer a dev pin.
+# A-4 LANDING (2026-09-12) performed exactly the one-step flip this header
+# described: `sha256`, `label` ("DEV" -> "PRODUCTION") and `record_transcript`
+# moved together with deployment/mainnet/genesis_manifest.toml's
+# [pool_init].vk_hash, in ONE commit.
+#
+# This file is read by exactly TWO consumers:
+#   (1) verify_genesis_manifest's own DPOOL-9 / DPOOL-9b / DPOOL-8b checks,
+#       natively, at gate run-time, resolved at
+#       <repo_root>/scripts/verify_genesis_manifest/VK_PIN.toml — the SAME
+#       repo_root run_gates_on_dir already threads through every DPOOL check.
+#       A test that builds a temp repo_root MUST ship its own fixture copy of
+#       this file under that temp tree, or the checks fail closed on
+#       "record_transcript_unreadable" instead of on a byte mismatch.
+#   (2) stsh-verifier's `cargo test` suite (compiled_vk_hash_matches_committed_pin),
+#       via a compile-time include_str!, never at runtime and never from
+#       canister code.
+#
+# `record_transcript` is the sha256 of docs/ceremony/CEREMONY_RECORD_v3.md's
+# CURRENT, UNEDITED byte content.
+#
+# A-4 LANDING (2026-09-12): the record was filled in full in this lane, so
+# `record_transcript` is re-hashed here in the SAME commit -- DPOOL-8b is
+# always-on and would otherwise be red on the intermediate head. Sequencing is
+# BINDING (brief V2 4.4): the record's LAST byte is written first, THEN it is
+# hashed, THEN that hash lands here. Hashing a record you are still editing is
+# the circular dependency this order exists to break. The record is never edited
+# after its hash is pinned -- any later touch, including whitespace, re-opens
+# the whole sequence.
+#
+# `label` is now "PRODUCTION": DPOOL-9b is posture-gated on DPOOL-1b, and
+# genesis_manifest [pool_init].vk_hash was ARMED with the launch VK in this same
+# commit, so the placeholder posture no longer applies. Because that gating is
+# one-directional, a stale "DEV" here would fail LATE rather than early -- it is
+# called out for that reason.
+#
+# THIRD MIRROR, easy to miss: the record's sha256 is ALSO hand-transcribed into
+# scripts/verify_genesis_manifest/tests/ceremony_transcript_tests.rs:24
+# (RECORD_TRANSCRIPT_LITERAL). That fixture pins the literal and feeds it the
+# LIVE record's bytes, so editing the record without updating BOTH files fails
+# the workspace leg. `grep -rIn <old record sha>` returns exactly these two
+# files -- derive the set, do not transcribe it.
+
+label             = "PRODUCTION"
+source            = "mainnet-v2 launch trusted setup, 2026-09-12 (lane A-4). PHASE 1: the PUBLIC Hermez powers-of-tau circuits/ptau/powersOfTau28_hez_final_15.ptau, power 15, 54 named contributors + beacon, pinned on the publisher-attested blake2b-512 982372c8... AND sha256 3ef2ecc5... PHASE 2: snarkjs groth16 setup over that ptau, then ONE operator contribution 'FutureProof operator 2026-09-12', then 'drand mainnet round 6460200' via snarkjs zkey beacon (randomness e45908ee8d0b15714eb1eb75f2f65a95864d1d3236b258b112f2bbd483c65194, iterationsExp 10) as the LAST contribution. VK exported from circuits/build/spend_1.zkey (sha256 4898655e...). Circuit unchanged from A-3 FINALIZE: DOMAIN_POOL_CANISTER_ID cxrfg-qaaaa-aaaar-qchfa-cai, DOMAIN_CIRCUIT_VERSION 3. Evidence: docs/ceremony/CEREMONY_RECORD_v3.md"
+sha256            = "84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914"
+record_transcript = "d619ccd6d75a7054b14247d56fcb9d32b88c90f044b5ded35fbaf27107db4e54"

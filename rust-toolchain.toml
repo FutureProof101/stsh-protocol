@@ -1,0 +1,34 @@
+# S11-4 — TOOLCHAIN PIN.
+#
+# Closes REPRODUCIBLE_BUILD_REVIEW.md open finding #1 and the NAMED GAP recorded
+# in deployment/mainnet/release_hashes.toml [toolchain]: until this file existed,
+# the recorded rustc/cargo versions were OBSERVED, not ENFORCED, and nothing
+# prevented a second builder on a different rustc from producing different bytes
+# while every in-repo check passed.
+#
+# THE VERSION IS NOT CHOSEN HERE. It is the toolchain recorded in the rehearsal
+# release record (deployment/mainnet/release_hashes.toml [toolchain]) and named
+# in run_gate.sh's reproducing-toolchain line:
+#
+#   rustc 1.95.0 (59807616e 2026-04-14)
+#   cargo 1.95.0 (f2d3ce0bd 2026-03-21)
+#
+# `channel = "1.95.0"` is the exact-version form, not a moving channel: `stable`
+# would re-introduce the drift this pin exists to remove.
+#
+# OUTPUT-NEUTRALITY WAS VERIFIED, NOT ASSUMED. The full production package set
+# was built clean from an empty target/wasm32-unknown-unknown/release both
+# without and with this file; all thirteen Wasm sha256 values were identical.
+# Pinning to the already-active version locks other machines to it; it does not
+# move the bytes.
+#
+# WHEN THE CHANNEL IS BUMPED, re-record the reference hashes in the SAME change
+# — never refresh them afterwards to make a gate go green. A toolchain bump is a
+# release-identity change and re-opens the R2.6 reproduction requirement.
+#
+# `targets` carries wasm32-unknown-unknown so a fresh clone can build the
+# canisters without a separate `rustup target add` step.
+
+[toolchain]
+channel = "1.95.0"
+targets = ["wasm32-unknown-unknown"]

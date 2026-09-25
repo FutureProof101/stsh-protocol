@@ -1,0 +1,405 @@
+{
+  "$comment": [
+    "A-3 FINALIZE \u2014 machine-readable domain-constant freeze matrix.",
+    "STATUS: FINALIZED (2026-09-12, lane A-3 FINALIZE). The generation `next` /",
+    "mainnet-v2 values are the LIVE pins: DOMAIN_POOL_CANISTER_ID was re-encoded to",
+    "the Vault-born pool cxrfg-qaaaa-aaaar-qchfa-cai (J-18). The m5_* fields are a",
+    "FROZEN historical generation record \u2014 retained verbatim, never overwritten.",
+    "Do not treat this file as the ceremony record; the record is",
+    "docs/ceremony/CEREMONY_RECORD_v2_TEMPLATE.md.",
+    "Consumed by: wallet/tests/domain_freeze_a3.test.ts (freeze guard),",
+    "wallet/scripts/derive_domain_constants.mjs (derivation), and A6.7."
+  ],
+  "schema_version": 1,
+  "phase": "A-3-FINALIZE",
+  "status": "FINALIZED",
+  "generation": {
+    "current": "M5",
+    "current_frozen": true,
+    "next": "mainnet-v2",
+    "next_finalized": true
+  },
+  "domain_constants": {
+    "$comment": "domainHash = Poseidon(4)[POOL_CANISTER_ID, ASSET_ID, CIRCUIT_VERSION, NETWORK_ID]. Order is normative and matches circuits/spend.circom + POSEIDON_PARAMS.md.",
+    "DOMAIN_POOL_CANISTER_ID": {
+      "index": 0,
+      "m5_value": "4523128485832663883733241601901871400518358776001584537534818377974931259392",
+      "m5_source_principal": "ohspu-zqaaa-aaaad-qmasq-cai",
+      "next_value": "4523128485832663883733241601901871400518358776001584537546685574107874983936",
+      "next_source_principal": "cxrfg-qaaaa-aaaar-qchfa-cai",
+      "action": "RE_ENCODED",
+      "derivation": "DEF-108 encode_recipient_signals (canisters/shielded-pool/src/lib.rs) \u2014 bytes[0..len] = principal bytes, byte[31] = len, interpreted little-endian as a BN254 Fr. Single normative rule; no second encoding.",
+      "justification": "M5 pin is ohspu-zqaaa-aaaad-qmasq-cai, confirmed orphaned/abandoned (Module hash: None) and recorded out_of_scope / HOSTILE-UNCONTROLLED in deployment/mainnet/custody_manifest.toml. RE-ENCODED 2026-09-12 (lane A-3 FINALIZE) to cxrfg-qaaaa-aaaar-qchfa-cai, the pool born under the Vault at J-18 (D5 receipt proposal 1, Bound, controller cpdab-saaaa-aaaar-qca2q-cai). Derived with wallet/scripts/derive_domain_constants.mjs, never transcribed.",
+      "blocked_on": null
+    },
+    "DOMAIN_ASSET_ID": {
+      "index": 1,
+      "m5_value": "0",
+      "next_value": "0",
+      "action": "CONFIRM_UNCHANGED",
+      "derivation": "Literal. 0 = STSH native token.",
+      "justification": "STSH remains the single shielded asset. CONFIRMED by the Owner 2026-09-12 (RULING_RECORD_GENESIS_HOLDERS_2026-09-12.md): DOMAIN_ASSET_ID = 0.",
+      "blocked_on": null
+    },
+    "DOMAIN_CIRCUIT_VERSION": {
+      "index": 2,
+      "m5_value": "3",
+      "next_value": "3",
+      "action": "BUMPED_TO_3",
+      "derivation": "Literal. Monotonic circuit-finalization revision.",
+      "justification": "A6.6 widened the in-circuit value bound to 10^15 e8s (Num2Bits/LessThan 37 -> 50) for the five-tier launch ladder 1k/10k/100k/1M/10M STSH. A constraint-shape change; the bump landed in the same atomic freeze as the circuit edit and the dev-chain regeneration (constraints: previous 10,463 -> current 10,593).",
+      "blocked_on": null
+    },
+    "DOMAIN_NETWORK_ID": {
+      "index": 3,
+      "m5_value": "1",
+      "next_value": "1",
+      "action": "CONFIRM_UNCHANGED",
+      "derivation": "Literal. 1 = ICP mainnet.",
+      "justification": "Target network is unchanged (ICP mainnet). CONFIRMED by the Owner 2026-09-12 (RULING_RECORD_GENESIS_HOLDERS_2026-09-12.md): DOMAIN_NETWORK_ID = 1.",
+      "blocked_on": null
+    }
+  },
+  "domain_hash": {
+    "m5_decimal": "17076800395491555068286473339039486071114029588881949545487634475758427007736",
+    "m5_le32_hex": "f86a7fd6a66d358ddbe7d8fa7b303f5da7e63d41b7ee207c6a31359c6220c125",
+    "next_decimal": "9578431337377839681221818034592677386495104691038362380902047525493741438900",
+    "next_le32_hex": "b4c713664074d78bed0527155ed4c508f8e9308fb325eec76a0e2e4e34332d15"
+  },
+  "artifact_matrix": {
+    "$comment": "Every artifact that encodes a DOMAIN_* value or a value derived from one. Step 2 requires ALL of these change in ONE commit \u2014 a circuit/wallet mismatch yields silently unspendable notes, not an error.",
+    "atomic_set": [
+      {
+        "path": "circuits/spend.circom",
+        "encodes": "all four DOMAIN_* literals",
+        "tracked": true,
+        "on_change": "recompile R1CS + witness wasm + sym"
+      },
+      {
+        "path": "circuits/build/spend.r1cs",
+        "encodes": "domain constants baked at compile time",
+        "tracked": true,
+        "note": "Committed as the verifiable Git anchor under R-A3-2; the pinned sha256 remains an independent cross-check.",
+        "m5_sha256": "65bad577266fa4335e9cafa2b1de0e5c5771145844bd77564de5cfe49ec10da8",
+        "m5_constraints": 10593,
+        "m5_public_inputs": 9,
+        "next_sha256": "6ee4350674d0c21dca0a4f2344208ba3547977d48ee10edb5bf408d813aeaa34",
+        "next_constraints": 10593,
+        "next_public_inputs": 9,
+        "next_note": "Recompiled 2026-09-12 (lane A-3 FINALIZE, circom 2.1.9 --r1cs --wasm --sym). Only the DOMAIN_POOL_CANISTER_ID literal changed, so the SHAPE is identical (10593 constraints / 9 public inputs / 10632 wires) and only the bytes moved."
+      },
+      {
+        "path": "circuits/build/spend_js/spend.wasm",
+        "encodes": "witness generator for the above R1CS",
+        "tracked": true,
+        "m5_sha256": "def35a50f22c971fc9b18a91568d7c444cfc435cac28b0e1d47c518ab6cc0091",
+        "next_sha256": "3e910987203d8e3b42e1b656d21aa4dffce23cad0f1dd84f6f093fce6fbf4585",
+        "next_bytes": 3818474
+      },
+      {
+        "path": "wallet/src/crypto/notes.ts",
+        "encodes": "DOMAIN_* exports + cached domainHash comment vector + PINNED_VK_HASH_D2",
+        "tracked": true,
+        "lines_m5": "37-52"
+      },
+      {
+        "path": "wallet/tests/poseidon.test.ts",
+        "encodes": "domainHash D2 assertion vector",
+        "tracked": true
+      },
+      {
+        "path": "POSEIDON_PARAMS.md",
+        "encodes": "reference constants table + canonical domainHash vectors + constraint counts",
+        "tracked": true
+      },
+      {
+        "path": "circuits/ceremony/domain_manifest.json",
+        "encodes": "this matrix",
+        "tracked": true
+      },
+      {
+        "path": "wallet/src/zk/spendManifest.json",
+        "encodes": "frozenPoolPrincipal (the DOMAIN_POOL_CANISTER_ID source principal), vkHash, circuitVersion (DOMAIN_CIRCUIT_VERSION), poolVersion, networkId (DOMAIN_NETWORK_ID), assetId (DOMAIN_ASSET_ID), and the spend.wasm / spend_1.zkey sha256 pins",
+        "tracked": true,
+        "on_change": "re-pin every duplicated value in the SAME commit",
+        "note": "Bound by W-CEREMONY-BIND (AR2-S1-04). Build-bundled with no env override: frozenPoolPrincipal gates assertDeploymentTuple in wallet/src/zk/artifacts.ts, so a wrong value disables spend outright with no error at any earlier point. networkId and assetId are duplicated here but read by no consumer \u2014 recorded, deliberately not wired.",
+        "asserted_by": "wallet/tests/ceremony_bind_spend_manifest.test.ts"
+      }
+    ],
+    "cite_check_only": [
+      {
+        "path": "PUBLIC_SIGNALS_SCHEMA.md",
+        "reason": "domain constants are circuit constants, NOT public signals; signal count stays 9. Verify no direct citation before FINALIZE."
+      },
+      {
+        "path": "PUBLIC_SIGNALS_BINDING.md",
+        "reason": "same \u2014 verify no direct citation."
+      },
+      {
+        "path": "SNARKJS_TO_CANDID_ENCODING.md",
+        "reason": "same \u2014 verify no direct citation."
+      }
+    ]
+  },
+  "reencode_targets": {
+    "$comment": "A6.7 pre-ceremony-freeze re-encode targets (CTO_RULING_A65_M5_REENCODE_OWNER_2026-08-24). These surfaces record the pool PRINCIPAL ITSELF, not the derived Fr that artifact_matrix covers \u2014 they are a different list for a different sweep. The ruling names domain_manifest.json only; W-CEREMONY-BIND (AR2-S3-03) adds the four surfaces marked source=W-CEREMONY-BIND. Human rendering: docs/ceremony/CEREMONY_FREEZE_RULES.md \u00a72a. Asserted by wallet/tests/ceremony_bind_spend_manifest.test.ts against an independent hardcoded table \u2014 a package recital does not discharge this list.",
+    "ruling": "CTO_RULING_A65_M5_REENCODE_OWNER_2026-08-24",
+    "current_value": "ohspu-zqaaa-aaaad-qmasq-cai",
+    "current_value_disposition": "out_of_scope / HOSTILE-UNCONTROLLED per deployment/mainnet/custody_manifest.toml \u2014 empty (module_hash None), controller UNIDENTIFIED, NOT retired under our control. The launch pool is a FRESH deployment born under the Vault, distinct from this principal, which merely shares the canister_ids.json name.",
+    "next_value": "cxrfg-qaaaa-aaaar-qchfa-cai",
+    "next_value_status": "RE_ENCODED_2026-09-12 \u2014 every surface below now records the Vault-born pool principal; the lane that moved them is A-3 FINALIZE.",
+    "lifecycle": "The target is unknown until the mainnet pool canister ID is reserved or created \u2014 `dfx canister create`, an ID RESERVATION and NOT an install \u2014 on Owner's first-hand word, sequenced immediately before the A6.7 freeze event. Install and cutover remain HELD regardless. The freeze binds AFTER the re-encode: a ceremony run against a manifest still naming the orphan is a defective ceremony. Until then every surface below is marked a re-encode TARGET and is never corrected to a guessed value.",
+    "bound_is_not_correct": "Listing a surface here makes a change to it detectable. It does not make its current value correct \u2014 every value below is the orphaned principal today and stays wrong until A6.7.",
+    "surfaces": [
+      {
+        "path": "circuits/ceremony/domain_manifest.json",
+        "field": "domain_constants.DOMAIN_POOL_CANISTER_ID.m5_source_principal (and the derived m5_value)",
+        "source": "ruling"
+      },
+      {
+        "path": "wallet/src/zk/spendManifest.json",
+        "field": "frozenPoolPrincipal",
+        "source": "W-CEREMONY-BIND"
+      },
+      {
+        "path": "wallet/src/session/config.ts",
+        "field": "DEFAULT_POOL_CANISTER_ID",
+        "source": "W-CEREMONY-BIND"
+      },
+      {
+        "path": "canister_ids.json",
+        "field": "shielded_pool.ic",
+        "source": "W-CEREMONY-BIND"
+      },
+      {
+        "path": "MAINNET_DEPLOYMENT.md",
+        "field": "the DOMAIN_POOL_CANISTER_ID assertion calling this principal \"the real mainnet pool principal\"",
+        "source": "W-CEREMONY-BIND"
+      },
+      {
+        "path": "docs/ceremony/DOMAIN_CONSTANTS_MATRIX.md",
+        "field": "the M5 column of row 0 (the Fr integer AND the \u2190 ohspu-... principal text), plus the \u00a70 prose naming the orphaned pool",
+        "source": "W-CEREMONY-BIND",
+        "artifact_matrix_disposition": "DELIBERATELY EXCLUDED from artifact_matrix, RECORDED not omitted (AR-2 consistency leg). The file is a WORKSHEET, not a pinned artifact: its mainnet-v2 column holds derive/CONFIRM/LIKELY-BUMP actions rather than values, so it does not participate in the atomic one-commit freeze that atomic_set governs. It IS principal-bearing, which is why it belongs on THIS list: leaving it off would let the re-encode complete while a ceremony doc still asserts the orphan is the pool.",
+        "discovery_hazard": "The Fr integer in row 0 contains a SOFT HYPHEN (U+00AD) mid-number, so a grep for the value does NOT match this file. Any completeness check for these surfaces built on grepping the value has a blind spot with no symptom \u2014 it reports itself complete while missing this file. Enumerate from this list, never from a value sweep."
+      }
+    ]
+  },
+  "reencode_non_targets": {
+    "$comment": "The DO-NOT-MOVE list (AR-2 consistency leg, ruled in-fence by Supervisor 2026-08-24T20:25Z). reencode_targets says what MUST change; without this, nothing says what must NOT. `ohspu-zqaaa-aaaad-qmasq-cai` appears in 27 files at 76639ec. At the sites below it does not mean \"the pool\" at all, and sweeping them \u2014 the obvious way for a re-encoder to check their own completeness is `grep -rl ohspu` \u2014 turns distinctness assertions into vacuous ones WHILE EVERY TEST STILL PASSES. That is a silent failure, which is why the list is recorded rather than left to judgement.",
+    "rule": "Enumerate the re-encode from reencode_targets. NEVER from a value or principal grep. A site not on reencode_targets is not a target, and the sites below are the ones a grep would wrongly catch.",
+    "sites": [
+      {
+        "path": "wallet/tests/oisy_approve.test.ts",
+        "symbol": "OWNER",
+        "means": "an arbitrary account owner in an ICRC approve fixture",
+        "if_swept": "the fixture still passes while silently testing the launch pool as a wallet owner"
+      },
+      {
+        "path": "wallet/tests/transfer_a2.test.ts",
+        "symbol": "RECIPIENT",
+        "means": "an arbitrary transfer recipient",
+        "if_swept": "passes, but the recipient becomes the pool \u2014 a different scenario wearing the same test name"
+      },
+      {
+        "path": "wallet/tests/journal_cas_ac1.test.ts",
+        "symbol": "RECIPIENT",
+        "means": "an arbitrary journal-entry recipient",
+        "if_swept": "passes, same substitution"
+      },
+      {
+        "path": "wallet/tests/recipient.test.ts",
+        "symbol": "the DEF-108 known-answer encoding vector (lines 7, 23, 37)",
+        "means": "a principal whose expected encoded BYTES are hardcoded beside it",
+        "if_swept": "THE SHARPEST CASE. Moving the input alone fails loudly \u2014 which is safe. Moving input AND expected bytes together makes it a test of nothing: it would then only prove the encoder agrees with itself, the self-inherited class this campaign is named for."
+      },
+      {
+        "path": "canisters/vault/src/lib.rs",
+        "symbol": "let ohspu (~:7549)",
+        "means": "NOT merely a non-pool principal \u2014 this asserts that the custody manifest's OutOfScope HOSTILE principal fails closed on every management path",
+        "if_swept": "converts a hostile-principal fail-closed test into a launch-pool test, deleting coverage of the exact risk custody_manifest.toml records. It must not move BECAUSE it is ohspu, not merely despite it."
+      },
+      {
+        "path": "canisters/custody-types/src/lib.rs",
+        "symbol": "let other (~:4004)",
+        "means": "an arbitrary principal outside the bootstrap ring, used to show a non-ring target IS stoppable",
+        "if_swept": "the launch pool becomes the example of a stoppable non-ring canister \u2014 wrong on its face, silent in the suite"
+      },
+      {
+        "path": "wallet/scripts/derive_domain_constants.mjs",
+        "symbol": "M5_PRINCIPAL / M5_FR",
+        "means": "a KNOWN-ANSWER self-check pair: the tool re-derives this vector on every run and aborts if it does not reproduce, so a broken or upgraded principal library cannot silently emit a wrong constant",
+        "if_swept": "AR-2 asked for this to be answered rather than assumed. ANSWER: it does NOT move at the re-encode. The pair is load-bearing precisely because the answer is already known; re-pinning it to the new principal would require the new Fr, which is the very value the tool exists to compute \u2014 the check would then validate nothing. It stays M5 after the re-encode, and that is not drift."
+      }
+    ]
+  },
+  "ceremony_material": {
+    "$comment": "NOT covered by the DOMAIN_* freeze. ptau/zkey/VK may change under a later circuit upgrade that preserves commitment/nullifier computation and public-signal binding. See docs/ceremony/CEREMONY_FREEZE_RULES.md.",
+    "m5": {
+      "superseded": {
+        "by": "next",
+        "at": "A-4 2026-09-12",
+        "reason": "SUPERSEDED WHOLESALE by the mainnet-v2 ceremony. A-4 LANDING overwrote the very files m5's zkey/vk paths name (circuits/build/spend_1.zkey, circuits/verification_key.json) with the production artifacts, so every file-reading check (C1, C3, C4, C5, C6) would now measure the production key against m5's dev pins and FAIL for the wrong reason. Relabelling to a distinct path is impossible \u2014 .gitignore admits no new tracked path for a dev key. The m5 pins below are therefore RETAINED VERBATIM as superseded history and are deliberately no longer measurable: verify_ceremony.mjs reports every check as SKIP for a generation carrying this key, and exits 0. The dev chain that actually shipped before A-4 is recorded at ceremony_material.next.dev_chain.",
+        "checker_contract": "A generation carrying `superseded` yields zero PASS and zero FAIL lines and reads no artifact file."
+      },
+      "ptau": {
+        "path": "circuits/pot14_final.ptau",
+        "tracked": false,
+        "sha256": "bf7f3226f8cd085cb11aaf493056471b4ddac4eb9dc9fe56831d926e9afd12c7",
+        "power": 14,
+        "contributions": 1,
+        "contribution_names": [
+          "dev-contribution"
+        ],
+        "beacon": false,
+        "verdict": "F6-1 OPEN \u2014 single-entropy, not production-grade",
+        "self_run_evidence": null
+      },
+      "zkey": {
+        "path": "circuits/build/spend_1.zkey",
+        "tracked": true,
+        "sha256": "a977a5a62818161e8cb128fcdeb6c1a07bc9f80b6e201169c272ddc461b7c8a7",
+        "phase2_contributions": 1,
+        "contribution_names": [
+          "dev contribution"
+        ],
+        "beacon": false,
+        "verdict": "single-participant phase 2 \u2014 disclose, layered on the ptau gap"
+      },
+      "vk": {
+        "path": "circuits/verification_key.json",
+        "tracked": true,
+        "sha256": "fc73ca4dcdcfd5a2eb0dd6165c5cf2b1e039c3acdad2d360258c5d42ba530dc8"
+      }
+    },
+    "next": {
+      "ptau": {
+        "$comment": "A-4 PREP wave 2 (CTO ruling: RULING_RECORD_LAUNCH_WEEK_2026-09-09.md Addendum F). PATH (a) \u2014 the pinned public Hermez ceremony ptau, power 15. 2^15 = 32768 covers the circuit's 10593 constraints with 22175 headroom; power 15 has IDENTICAL ceremony provenance to power 16 (same 54-contribution transcript plus beacon, truncated), so this is not a weaker artifact, only a smaller one. ATTESTATION is the publisher's blake2b-512 (snarkjs/iden3 README powers-of-tau table, row power=15, retrieved 2026-09-09); `source` below is the mirror the BYTES came from and is NOT an attestation \u2014 both canonical hosts (hermez.s3-eu-west-1.amazonaws.com, storage.googleapis.com/zkevm/ptau/) return 403 to anonymous callers as of 2026-09-09. verify_ceremony.mjs C1 requires BOTH digests to match its pinned entry, and C2 reads the power from the ptau BINARY HEADER \u2014 so this declared `power` is checked against the file, not trusted. The file is gitignored (circuits/**/*.ptau); `tracked` is false by design. self_run_evidence stays null: it is required ONLY for path (b).",
+        "path": "circuits/ptau/powersOfTau28_hez_final_15.ptau",
+        "tracked": false,
+        "sha256": "3ef2ecc5b75d687048cf2d59195119b42fb07c5af639c5f283d84bfa69829e7f",
+        "blake2b": "982372c867d229c236091f767e703253249a9b432c1710b4f326306bfa2428a17b06240359606cfe4d580b10a5a1f63fbed499527069c18ae17060472969ae6e",
+        "power": 15,
+        "$comment_contributions": "MEASURED first-hand from `snarkjs powersoftau verify`, not transcribed from the README. The file contains 55 contribution BLOCKS: #1..#54 are the named participants (weijie, kobi, poma, \u2026, zaki, juan, jarrad) and #55 is the BEACON \u2014 unnamed, carrying `Beacon generator: e586fccaf245c9a1d7e78294d4802018f3001149a71b8f10cd997ef8235aa372` and `Beacon iterations Exp: 10`. That is exactly the README's \"54 contributions and a beacon\", counted two different ways; do NOT read a 55/54 disagreement as drift. snarkjs lists contributions NEWEST-FIRST, so #55 appears FIRST in the output \u2014 read the LAST contribution off the NUMBER, never off the output order.",
+        "contributions": 55,
+        "named_contributions": 54,
+        "beacon_contribution_index": 55,
+        "beacon_generator": "e586fccaf245c9a1d7e78294d4802018f3001149a71b8f10cd997ef8235aa372",
+        "beacon_iterations_exp": 10,
+        "attestation": "https://raw.githubusercontent.com/iden3/snarkjs/master/README.md",
+        "attestation_kind": "blake2b-512 published by the snarkjs (iden3) README powers-of-tau table \u2014 the publisher; header reads \"Prepared (phase2) Ptau files for bn128 with 54 contributions and a beacon\"",
+        "attestation_retrieved": "2026-09-09",
+        "source": "https://media.githubusercontent.com/media/hswopeams/composite-number-game/main/circuit/powersOfTau28_hez_final_15.ptau",
+        "source_note": "download source (mirror), not attestation",
+        "self_run_evidence": {
+          "$comment": "Required ONLY for the self-run path (b); leave null when using the pinned public-ptau path (a). Contributions are listed by snarkjs newest-first. Each entry: {\"contributor\": <exact contribution name as it appears in the ptau \u2014 this is the ONE canonical identity field, \"name\" is NOT accepted>, \"contribution_hash\": <that contribution s response hash, 128 hex chars>}. Verifier enforces bidirectional set-equality between declared contributors and those observed in the ptau, and binds each contribution_hash by EQUALITY to the parsed response hash. GOTCHA: snarkjs prints \"Response Hash:\" TWICE per contribution block \u2014 record the FIRST; the second is prevContr.nextChallenge under a copy-pasted label. beacon.generator_hash must equal the observed \"Beacon generator:\" value, AND beacon.contribution_hash must equal the response hash of the beacon contribution block itself (same FIRST-\"Response Hash:\" rule) \u2014 both bind by equality, neither is decorative.",
+          "contributions": null,
+          "beacon": {
+            "source": null,
+            "value": null,
+            "contribution_hash": null,
+            "generator_hash": null
+          },
+          "manual_independence_approval": {
+            "approved": false,
+            "approved_by": null,
+            "approved_at": null,
+            "record": null
+          }
+        }
+      },
+      "zkey": {
+        "$comment": "A-4 PREP: phase2_contributions is DECLARED as 2 ahead of the ceremony, because the finished phase-2 chain has TWO contributions, not one \u2014 the operator's `zkey contribute` PLUS the `zkey beacon`, which is itself a contribution and must be the LAST one (brief V2 \u00a73/\u00a74.2 row 4; SSA F5). C4 fails closed on a count mismatch and reverse-checks that every observed contributor is named, so contribution_names must list BOTH and is filled at ceremony time (Part 2) when the operator name and the beacon label are known. Consequence to expect and NOT misread: C4's single-contributor disclosure note fires only on the z2.length === 1 branch, so with two contributions it will NOT fire \u2014 its absence is evidence of nothing. The single-operator residual is disclosed BY HAND in CEREMONY_RECORD_v3.md \u00a74.2 regardless (E10).",
+        "path": "circuits/build/spend_1.zkey",
+        "tracked": true,
+        "sha256": "4898655e8b3c3de9517f649f7caf8366ff4f9c95190ac274d5859de58f21e80c",
+        "bytes": 7527594,
+        "phase2_contributions": 2,
+        "contribution_names": [
+          "FutureProof operator 2026-09-12",
+          "drand mainnet round 6460200"
+        ],
+        "beacon": true,
+        "beacon_contribution_index": 2,
+        "beacon_generator": "e45908ee8d0b15714eb1eb75f2f65a95864d1d3236b258b112f2bbd483c65194",
+        "beacon_iterations_exp": 10,
+        "verdict": "single-operator phase 2 finalized by a pre-announced public beacon \u2014 disclosed (E10/CR-12); the beacon is the LAST contribution"
+      },
+      "vk": {
+        "$comment": "A-4 LANDING (2026-09-12): the ceremony output. Exported from spend_0002.zkey by `snarkjs zkey export verificationkey`; this file is include_str!'d into the verifier canister, so it is what moves [wasm.\"stsh-verifier\"].",
+        "path": "circuits/verification_key.json",
+        "tracked": true,
+        "sha256": "84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914",
+        "bytes": 4391
+      },
+      "dev_chain": {
+        "$comment": "LANE A-3 FINALIZE (2026-09-12). The re-encode changed the circuit, so the DEV chain was regenerated over circuits/pot14_final.ptau (the m5 ptau, NOT the power-15 next.ptau above \u2014 A-4 inputs are untouched). These are DEV artifacts, single phase-2 contribution, SUPERSEDED at A-4 by the ceremony outputs in the zkey/vk slots above. They are recorded here because the shipped wallet and the verifier canister are pinned to them TODAY.",
+        "zkey": {
+          "path": "circuits/build/spend_1.zkey",
+          "tracked": true,
+          "sha256": "29a57f1b815744f6da9db6977fafd91cc4cd72e354a08d28f2d078a92d7dbb5b",
+          "bytes": 7527122,
+          "phase2_contributions": 1,
+          "contribution_names": [
+            "dev contribution"
+          ],
+          "beacon": false,
+          "verdict": "single-participant phase 2 dev chain \u2014 disclose; superseded at A-4"
+        },
+        "vk": {
+          "path": "circuits/verification_key.json",
+          "tracked": true,
+          "sha256": "081e9e9ba5554711431d8c52bd41d8f242dd8ae297c4de9d81561de733d690f2"
+        }
+      }
+    }
+  },
+  "stale_artifacts": {
+    "$comment": "Step 4 artifact labelling \u2014 these are NOT production keys and must never be mistaken for one. Untracked local dev residue; deleting them is local cleanup, NOT auditable closure evidence.",
+    "entries": [
+      {
+        "path": "circuits/spend_final.zkey",
+        "sha256": "e6e023e91d9e01c7a6031e6d43b722d5852ecd92f4d29eedbeb0e5d66ddca202",
+        "label": "STALE_PRE_CEREMONY_DEV",
+        "missing_policy": "ALLOW_ABSENT",
+      "missing_policy_reason": "untracked dev residue; no clone carries it, so FAIL_CLOSED made the circuits leg unrunnable on a fresh checkout. C6 stale-key confusion is still checked whenever the file IS present \u2014 a present file must still not share the production key's hash. Recorded as a disclosed C6 narrowing in CEREMONY_RECORD_v2 \u00a76 (A-4 ruling, addendum V4 \u00a74)."
+      },
+      {
+        "path": "circuits/spend_0000.zkey",
+        "sha256": "502556a064c387ae77ab942a43861dfa36c752dc9b620aca04e4e9d86a3a5a65",
+        "label": "STALE_PHASE2_INITIAL",
+        "missing_policy": "ALLOW_ABSENT",
+      "missing_policy_reason": "untracked dev residue; no clone carries it, so FAIL_CLOSED made the circuits leg unrunnable on a fresh checkout. C6 stale-key confusion is still checked whenever the file IS present \u2014 a present file must still not share the production key's hash. Recorded as a disclosed C6 narrowing in CEREMONY_RECORD_v2 \u00a76 (A-4 ruling, addendum V4 \u00a74)."
+      },
+      {
+        "path": "circuits/build/spend_0.zkey",
+        "sha256": "613e799ff4c0b6b4f69bb51f676b454b0b9a88e57b4d14e881f0b25ebad3e639",
+        "label": "STALE_PHASE2_INITIAL",
+        "missing_policy": "ALLOW_ABSENT",
+      "missing_policy_reason": "untracked dev residue; no clone carries it, so FAIL_CLOSED made the circuits leg unrunnable on a fresh checkout. C6 stale-key confusion is still checked whenever the file IS present \u2014 a present file must still not share the production key's hash. Recorded as a disclosed C6 narrowing in CEREMONY_RECORD_v2 \u00a76 (A-4 ruling, addendum V4 \u00a74)."
+      },
+      {
+        "path": "circuits/build/spend_dev.zkey",
+        "sha256": "613e799ff4c0b6b4f69bb51f676b454b0b9a88e57b4d14e881f0b25ebad3e639",
+        "label": "STALE_DEV",
+        "missing_policy": "ALLOW_ABSENT",
+      "missing_policy_reason": "untracked dev residue; no clone carries it, so FAIL_CLOSED made the circuits leg unrunnable on a fresh checkout. C6 stale-key confusion is still checked whenever the file IS present \u2014 a present file must still not share the production key's hash. Recorded as a disclosed C6 narrowing in CEREMONY_RECORD_v2 \u00a76 (A-4 ruling, addendum V4 \u00a74)."
+      },
+      {
+        "path": "circuits/build/spend_dev_1.zkey",
+        "sha256": "a842852ea01ee92172303b8d530ebe4619ba839d833a00cb0e99bc2f5384c4fd",
+        "label": "STALE_DEV",
+        "missing_policy": "ALLOW_ABSENT",
+      "missing_policy_reason": "untracked dev residue; no clone carries it, so FAIL_CLOSED made the circuits leg unrunnable on a fresh checkout. C6 stale-key confusion is still checked whenever the file IS present \u2014 a present file must still not share the production key's hash. Recorded as a disclosed C6 narrowing in CEREMONY_RECORD_v2 \u00a76 (A-4 ruling, addendum V4 \u00a74)."
+      },
+      {
+        "path": "circuits/build/spend_dev_vk.json",
+        "label": "STALE_DEV_VK",
+        "missing_policy": "ALLOW_ABSENT",
+      "missing_policy_reason": "untracked dev residue; no clone carries it, so FAIL_CLOSED made the circuits leg unrunnable on a fresh checkout. C6 stale-key confusion is still checked whenever the file IS present \u2014 a present file must still not share the production key's hash. Recorded as a disclosed C6 narrowing in CEREMONY_RECORD_v2 \u00a76 (A-4 ruling, addendum V4 \u00a74).",
+        "sha256": "755f308b493eb03c859b6b2067e6d211d8bfe369bcf0a197edfa63e9b9cd3172"
+      }
+    ],
+    "production_zkey": "circuits/build/spend_1.zkey"
+  }
+}

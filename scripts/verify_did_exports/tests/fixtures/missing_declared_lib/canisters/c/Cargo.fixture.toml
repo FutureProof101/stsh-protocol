@@ -1,0 +1,9 @@
+[package]
+name = "c"
+version = "0.0.0"
+edition = "2021"
+
+# The same rule for the library target, which is the one that actually carries
+# a canister's endpoints.
+[lib]
+path = "src/nope.rs"

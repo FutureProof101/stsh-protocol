@@ -1,0 +1,5 @@
+[[canister]]
+krate    = "canisters/c"
+did      = "canisters/c/c.did"
+in_scope = true
+reason   = "fixture"

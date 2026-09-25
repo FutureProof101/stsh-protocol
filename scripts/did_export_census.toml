@@ -1,0 +1,136 @@
+# =============================================================================
+# Canister census — the universe for the did-vs-exports gate (W3 3-1 D1.1)
+# =============================================================================
+# This file, not a glob, is the universe. Every directory under `canisters/`
+# with a Cargo.toml appears here exactly once, enrolled or excluded BY NAME with
+# a reason; `verify_did_exports` hard-fails on any crate it finds that is absent
+# from this list, so "we forgot one" is not a reachable state.
+#
+# THE 13-vs-12 COUNT DIES HERE (packet §1.1). The count was ambiguous because it
+# depended on whether `canisters/vetkeys` — a standalone, non-member crate — was
+# being counted, and on whether `stub-bad-fee-token`, which exposes endpoints but
+# ships no tracked .did, was expected to have one. The answer is a named list:
+#   13 tracked `.did` files live under `canisters/*/` and all 13 are in scope
+#   below. 5 crates have no `.did`: 4 library crates (custody-types, eager-cell,
+#   fee-policy, field-utils) and 1 test-only stub (stub-bad-fee-token).
+#   13 in scope + 5 excluded = 18 crates under canisters/.
+#
+# `src/declarations/*` and `canisters/custody-types/tests/fixtures/did/*` are
+# generated/fixture copies, not tracked interface sources, and are not canisters.
+
+# ── In scope: 13 canisters with a tracked .did ───────────────────────────────
+
+[[canister]]
+krate    = "canisters/merkle-tree"
+did      = "canisters/merkle-tree/merkle_tree.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/nullifier-registry"
+did      = "canisters/nullifier-registry/nullifier_registry.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/shielded-pool"
+did      = "canisters/shielded-pool/shielded_pool.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/smoke-alarm-monitor"
+did      = "canisters/smoke-alarm-monitor/smoke_alarm_monitor.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/staking"
+did      = "canisters/staking/staking.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/stub-verifier"
+did      = "canisters/stub-verifier/stub_verifier.did"
+in_scope = true
+reason   = "test-support canister, but it ships a tracked .did and is deployed in test networks — interface drift is as visible here as anywhere"
+
+[[canister]]
+krate    = "canisters/token"
+did      = "canisters/token/stsh_token.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/treasury"
+did      = "canisters/treasury/treasury.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/upgrader"
+did      = "canisters/upgrader/upgrader.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/vault"
+did      = "canisters/vault/vault.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/verifier"
+did      = "canisters/verifier/verifier.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/vesting"
+did      = "canisters/vesting/vesting.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface"
+
+[[canister]]
+krate    = "canisters/vetkeys"
+did      = "canisters/vetkeys/vetkeys.did"
+in_scope = true
+reason   = "deployed canister with a tracked interface; standalone crate (root workspace `exclude`s it) but its source parses the same and its .did is tracked the same"
+
+# ── Excluded: no tracked .did, by name and with a reason ─────────────────────
+
+[[canister]]
+krate    = "canisters/custody-types"
+in_scope = false
+reason   = "library crate — frozen custody contract types, no endpoints, no .did"
+
+[[canister]]
+krate    = "canisters/eager-cell"
+in_scope = false
+reason   = "library crate — stable-cell wrapper, no endpoints, no .did"
+
+[[canister]]
+krate    = "canisters/fee-policy"
+in_scope = false
+reason   = "library crate — shared fee policy, no endpoints, no .did"
+
+[[canister]]
+krate    = "canisters/field-utils"
+in_scope = false
+reason   = "library crate — canonical BN254 field-element decoding, no endpoints, no .did"
+
+[[canister]]
+krate    = "canisters/stub-bad-fee-token"
+in_scope = false
+reason   = "test-only fee-misbehaviour stub, built solely for integration tests; never deployed and ships no tracked .did, so there is no interface to compare against"
+
+# ── Named, dated did-vs-exports drift exceptions (packet §3) ─────────────────
+# Amount-boundary findings are NEVER excepted here — they STOP and refer up.
+
+[[exception]]
+krate  = "canisters/verifier"
+kind   = "export_missing_from_did"
+method = "verify_spend_canister_benchmark"
+date   = "2026-08-15"
+reason = "DESIGNED omission, not drift: canisters/verifier/src/lib.rs:718-723 and verifier.did's own header both state the benchmark endpoint is deliberately outside the production interface, and DEF-083 gates it to the authorized pool caller, so it is not a public verification oracle (the caller gate is exercised negatively by `umc31_proof_endpoints_refuse_every_non_pool_caller`). Recorded here rather than fixed — this lane must not touch canisters/ or .did files (packet §3). Enrolled by the W3 3-1 builder at pin 86c56f7; the gate's name-set bar cannot distinguish a deliberate omission from drift, so the distinction lives in this dated row."

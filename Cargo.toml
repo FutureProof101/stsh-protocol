@@ -1,0 +1,104 @@
+[workspace]
+members = [
+    "canisters/token",
+    "canisters/shielded-pool",
+    "canisters/nullifier-registry",
+    "canisters/merkle-tree",
+    "canisters/vesting",
+    "canisters/treasury",
+    "canisters/staking",
+    "canisters/verifier",
+    "canisters/fee-policy",
+    "canisters/eager-cell",
+    "canisters/field-utils",
+    "canisters/stub-verifier",
+    "canisters/stub-bad-fee-token",
+    "canisters/smoke-alarm-monitor",
+    # Custody Vault campaign (CUSTODY_VAULT_INTERFACE_FREEZE_V6). L0 lands the
+    # contracts crate + compileable skeletons; L1/L2 fill the bodies.
+    "canisters/custody-types",
+    "canisters/vault",
+    "canisters/upgrader",
+    # Browser-wallet Poseidon (wallet-build lane, architect-approved member):
+    # inherits the exact light-poseidon/ark pins so wallet hashes byte-match the
+    # canisters. Pure + wasm-bindgen only — no ic-cdk, no links conflict.
+    "circuits/poseidon-wasm",
+    "integration-tests",
+    # P-ARITH G-1/G-2: Gate-D/Gate-V genesis-manifest verifier (host tool +
+    # fixture tests; never compiled into a canister Wasm).
+    "scripts/verify_genesis_manifest",
+    # HARDENING V2 #4: blocking MemoryId append-only lint (host tool).
+    "scripts/verify_memory_ids",
+    # L0 custody manifest coverage gate + §8 size invariant (host tool +
+    # fixture tests; never compiled into a canister Wasm).
+    "scripts/verify_custody_manifest",
+    # A-6 (GAP-U9-1): off-chain fleet cycle monitor. Off-chain BY RULING
+    # (custody_manifest.toml:284 / freeze §11), host tool only.
+    "scripts/cycle_monitor",
+    # Remediation lane R-L (campaign §5 G-a..G-d): four permanent gate lints
+    # (claims / refused-ceilings / bindings / no-skips) plus the packet-only
+    # `scope` tool. Host tool + fixture tests; never compiled into a canister.
+    "scripts/verify_gate_lints",
+]
+resolver = "2"
+
+# vetKeys key-manager (feat/vetkeys-crossdevice) is a STANDALONE crate, not a
+# workspace member: ic-vetkeys 0.7 requires ic-cdk 0.20, whose ic-cdk-executor
+# `links` key conflicts with the workspace's ic-cdk 0.16 executor — cargo forbids
+# both majors in one dependency graph, even across separate member binaries.
+# It has its own Cargo.lock and builds/tests via --manifest-path (see
+# canisters/vetkeys/Cargo.toml and the dfx.json "custom" entry).
+exclude = ["canisters/vetkeys"]
+
+# ── Release profile — optimised for ICP Wasm size ───────────────────────────
+[profile.release]
+lto        = true      # Link-time optimisation — required for small Wasm
+opt-level  = 'z'       # Optimise for size, not speed
+strip      = true      # Strip debug symbols
+panic      = "abort"   # Smaller panic handler
+# P-ARITH R-1 (K3-002/K3-003 class closure): a silent wrap in ANY release
+# binary is a trap, not a wrong number. Addition only — the pinned size
+# options above are untouched; per-canister size delta recorded in the lane
+# close-out. canisters/vetkeys/Cargo.toml mirrors this (standalone profile).
+overflow-checks = true
+
+# ── Shared workspace dependencies ────────────────────────────────────────────
+# Pin versions here; individual canisters reference them as workspace = true
+[workspace.dependencies]
+# ICP SDK
+ic-cdk             = "0.16"
+ic-cdk-macros      = "0.16"
+ic-stable-structures = "0.6"
+
+# Serialisation
+candid             = "0.10"
+serde              = { version = "1", features = ["derive"] }
+serde_bytes        = "0.11"
+serde_cbor         = "0.11"
+hex                = "0.4"
+
+# Cryptographic primitives
+# ── Poseidon hash (M4) ───────────────────────────────────────────────────────
+# circomlib-compatible Poseidon over BN254/Fr for the Merkle tree.
+# Parameters match circuits/spend.circom exactly — see POSEIDON_PARAMS.md.
+light-poseidon = "0.2"
+
+# ark deps — default-features = false disables rayon (parallel) for wasm32 compatibility.
+# Feature set matches circuits/rust-spike/Cargo.toml, verified wasm32-compatible in A0/A1.
+ark-bn254      = { version = "0.4", default-features = false, features = ["std", "curve"] }
+ark-ff         = { version = "0.4", default-features = false, features = ["std"] }
+
+# ── Groth16 verifier (M4-ZK-A2) ─────────────────────────────────────────────
+# canisters/verifier wraps these. shielded_pool depends on canisters/verifier.
+# circuits/verification_key.json must exist at build time (generated in A0 trusted setup).
+ark-groth16    = { version = "0.4", default-features = false, features = ["std"] }
+ark-ec         = { version = "0.4", default-features = false, features = ["std"] }
+ark-serialize  = { version = "0.4", default-features = false, features = ["std"] }
+num-bigint     = { version = "0.4", default-features = false }
+serde_json     = { version = "1",   default-features = false, features = ["alloc"] }
+
+sha2           = "0.10"
+num-traits     = "0.2"
+
+# Integration test harness — not compiled into any canister Wasm
+pocket-ic          = "9"

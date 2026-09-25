@@ -1,0 +1,10 @@
+service : {
+    bare_query             : () -> (nat64) query;
+    bare_update            : () -> ();
+    qualified_macros_query : () -> (nat64) query;
+    qualified_cdk_update   : () -> ();
+    composite              : () -> (nat64) query;
+    guarded                : () -> ();
+    exported_alias         : () -> (nat64) query;
+    nested_query           : () -> (nat64) query;
+};

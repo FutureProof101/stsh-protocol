@@ -1,0 +1,48 @@
+[package]
+name    = "cycle-monitor"
+version = "0.1.0"
+edition = "2021"
+# A-6 / GAP-U9-1: off-chain fleet cycle monitor.
+#
+# OFF-CHAIN BY RULING, not by preference. custody_manifest.toml:284 records
+# "RULED Owner 2026-08-03 … NOT the on-canister cycle monitor ruled OUT by
+# freeze §11 (V7 ruled the launch monitor external/off-chain)". That row sits
+# behind the blocking custody-manifest coverage lint, so an on-canister design
+# would have failed in the gate.
+#
+# Host tool only — never compiled into a canister Wasm. Layout mirrors
+# scripts/verify_genesis_manifest (workspace-member lib + [[bin]]) so its tests
+# run in the standing gate.
+
+[lib]
+name = "cycle_monitor"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cycle_monitor"
+path = "src/main.rs"
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true, features = ["std"] }
+
+# A-6c — the live balance source.
+#
+# ic-agent 0.40 is the SIBLING release of `ic-transport-types 0.40.1`, which the
+# tree already resolves (pocket-ic 9.0.2 is a dev-dependency of
+# integration-tests). Pinning 0.40 therefore re-uses the transport-types,
+# candid, reqwest and ic-certification versions already in the lock rather than
+# bumping any of them: the resolved delta ADDS packages and REPLACES none.
+#
+# tokio is pinned at the version already in the lock (1.52.3), NOT at whatever
+# is newest. `cargo add` defaults to latest-compatible and moved it to 1.53.1,
+# which would have bumped a crate shared with the canister test trees — the
+# brief's HALT condition. Only `rt` is needed: one current-thread runtime, no
+# macros.
+#
+# Still a HOST TOOL. None of this reaches a canister Wasm — proven by the
+# reverse dependency tree and by the production Wasm hashes being unmoved, not
+# by this comment.
+ic-agent   = "0.40"
+candid     = { workspace = true }
+tokio      = { version = "1.52.3", default-features = false, features = ["rt"] }

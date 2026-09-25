@@ -1,0 +1,1 @@
+service : { act : (vec variant { Spend : record { value : nat }; Noop }) -> () };

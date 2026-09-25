@@ -1,0 +1,53 @@
+// =============================================================================
+// STSH — CANONICAL vesting INIT ARTIFACT (P-ARITH G-1/G-2; principals RESOLVED at RR-1a,
+//   the counsel beneficiary at RR-1b — no placeholder principal remains)
+// =============================================================================
+// THE exact Candid init argument the mainnet vesting deploy consumes — Gate-D
+// verifies its fields against deployment/mainnet/genesis_manifest.toml and
+// Gate-V phase 1 proves: the token `founders` allocation recipient is the
+// vesting-canister principal, and Σ(founder schedules) equals the `founders`
+// allocation amount (12,000,000,000,000,000 base units) exactly, checked.
+// AMENDED from 18,000,000,000,000,000 by the Owner reallocation ruling
+// RULING_RECORD_GENESIS_REALLOCATION_2026-09-12.md (a14beef1): founders 18% -> 12%.
+//
+// Founder beneficiary principals live HERE, never as the token allocation
+// recipient. Every founder schedule uses cliff_months = 6, linear_months = 30
+// (§0.4 Option A, LOCKED). ceremony_rewards is a post-ceremony grant, outside
+// genesis vesting.
+//
+// LANE A-2 / DRIFT-1 (2026-09-09): ONE founder schedule, not three. V4 D-0
+// bucket 3 is "Founder (single, Owner)" and V4 §Sequencing names the
+// deliverable "vesting `.did` single-founder fix — one rebuild". Roles
+// FOUNDER_2_BENEFICIARY and FOUNDER_3_BENEFICIARY are retired. This vector is
+// therefore exactly TWO records: founder + counsel.
+//
+// SINCE D-4 V2 this canister also custodies the legal-counsel grant (cliff 0 /
+// linear 12) — Gate-V therefore covers founders + counsel, and V6/VP1/VP2 expect
+// the sum 12,500,000,000,000,000. Shapes are pinned PER-SCHEDULE, not globally.
+// =============================================================================
+(
+  record {
+    token_canister = principal "clv7x-haaaa-aaaar-qchha-cai";
+    controller = principal "fshhc-2gwwz-ppjrt-3kzea-xt3l6-oemkp-6vkjz-soogu-e5y55-qolw4-wae";
+    schedules = vec {
+      // Founder (single, Owner) — the whole 12% `founders` allocation (a14beef1).
+      // Gate-V phase 1 proves Σ(founder schedules) == that allocation amount.
+      record {
+        beneficiary = principal "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae";
+        total_amount = 12_000_000_000_000_000 : nat;
+        cliff_months = 6 : nat32;
+        linear_months = 30 : nat32;
+      };
+      // D-4 V2 — legal-counsel grant, 0.5 percent. NOT a founder: cliff 0 / linear 12,
+      // a straight 12-month continuous release. Its beneficiary is distinct from the
+      // founder, so V4-unique-beneficiaries is unaffected. Gate-V binds this entry to
+      // the manifest [[counsel_schedule]] section, never to a founder row.
+      record {
+        beneficiary = principal "7edga-wl3vz-46g37-jaog6-amxwd-bgfjh-36hnf-we7up-3sfju-ual6g-fqe";
+        total_amount = 500_000_000_000_000 : nat;
+        cliff_months = 0 : nat32;
+        linear_months = 12 : nat32;
+      };
+    };
+  },
+)

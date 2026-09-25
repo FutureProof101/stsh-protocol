@@ -1,0 +1,17 @@
+// IC asset-canister config (BRIEF_RESERVES_STSH_FI Step 3b).
+// Asset canisters SKIP hidden directories by default — without this rule,
+// /.well-known/ic-domains is not served and the reserves.stsh.fi custom-domain
+// registration validation fails. Vite copies public/ (including dotfiles) into
+// dist/, so this lands at the served asset root.
+[
+  {
+    "match": ".well-known",
+    "ignore": false
+  },
+  // dfx-recommended explicit security policy (adds standard hardening headers).
+  // Added after the first deploy — takes effect on the next confirmed deploy.
+  {
+    "match": "**/*",
+    "security_policy": "standard"
+  }
+]

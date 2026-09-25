@@ -1,0 +1,47 @@
+// =============================================================================
+// STSH — CANONICAL vetkeys INIT ARTIFACT (lane A-7)
+// =============================================================================
+// Interface: canisters/vetkeys/vetkeys.did:188 —
+// `service : (text, opt principal) -> {…}`. TWO positional arguments, not a
+// record:
+//   1. key_name      : text            — the PRODUCTION VetKD key name "key_1"
+//                      (a test key name on mainnet would derive keys from a
+//                      non-production master secret — an unrecoverable
+//                      note-key binding, not a configuration mistake).
+//   2. token_canister: opt principal   — stsh_token, read for the first-derive
+//                      balance check.
+//
+// Values (MAINNET_DEPLOYMENT.md vetkeys row, repo ROOT):
+//   "key_1"
+//   opt principal clv7x-haaaa-aaaar-qchha-cai   (J-18 prop 5, stsh_token)
+//
+// UNPINNED ROLE — BY RULING, NOT BY OMISSION. vetkeys is a workspace-EXCLUDED
+// crate and carries NO `[wasm.*]` row in deployment/mainnet/release_hashes.toml
+// (it is not one of the ten INLINE_PAYLOAD_ARTIFACTS). The operator page
+// therefore cannot check its Wasm bytes against a pin and refuses to build the
+// proposal unless the "unpinned role (vetkeys)" acknowledgement is ticked
+// (wallet/src/release/wasmPins.ts UNPINNED_ROLES; wallet/src/operator/proposals.ts).
+// Authority for installing it here:
+//   CTO_BOARD_RECONCILED_2026-09-11.md (5b7350d5) D1 row "vetkeys installed at A-7"
+//   MAINNET_DEPLOYMENT.md:375 / :418 (adjudication b216902b…, 2026-08-27)
+// The in-repo "D1, 2026-08-14" references are the STAKING exclusion — a
+// DIFFERENT ruling — and are NOT authority for this row.
+// The kit records the vetkeys Wasm sha256 measured from the gate's own
+// `env -i` build of canisters/vetkeys, which is the only reproducible source.
+//
+// The operator page uploads vetkeys_init.bin verbatim; `expected_arg_hash` is
+// the sha256 of that .bin (a7_install_kit.toml).
+// =============================================================================
+// LAUNCH-HARDEN-04 (CoS ruling C3, 2026-09-24): the interface init type grew a
+// third positional `device_check_caller : opt principal` (vetkeys MemoryId 20).
+// This artifact records the ORIGINAL A-7 install of a7l2d, which carried no such
+// value, so the third element is an explicit `null` — it encodes the same
+// install semantics (MemoryId 20 absent) against the new interface. Original
+// A-7 arg_sha256 (two-element encoding, as installed): a88ec81ce02baed9…3ad8.
+// The HARDEN-04 Vault Management.UPGRADE of a7l2d does NOT upload this file:
+// its arg is `(null, opt principal "cxrfg-qaaaa-aaaar-qchfa-cai")` (packet).
+(
+  "key_1",
+  opt principal "clv7x-haaaa-aaaar-qchha-cai",
+  null,
+)

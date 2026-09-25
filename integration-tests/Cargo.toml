@@ -1,0 +1,252 @@
+[package]
+name    = "integration-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Integration tests are NOT compiled to Wasm — they run on the host target
+# and drive canister Wasm files via the PocketIC server.
+#
+# PREREQUISITE: build canister Wasm first, then set POCKET_IC_BIN:
+#
+#   cargo build --target wasm32-unknown-unknown --release \
+#       -p stsh_token -p staking -p shielded_pool -p nullifier_registry
+#
+#   export POCKET_IC_BIN=$(dfx cache show)/pocket-ic
+#
+#   cargo test -p integration-tests
+
+[[test]]
+name = "security_tests"
+path = "tests/security_tests.rs"
+
+[[test]]
+name = "upgrade_tests"
+path = "tests/upgrade_tests.rs"
+
+[[test]]
+name = "transfer_tests"
+path = "tests/transfer_tests.rs"
+
+[[test]]
+name = "verifier_tests"
+path = "tests/verifier_tests.rs"
+
+[[test]]
+name = "full_path_private_spend_benchmark"
+path = "tests/full_path_private_spend_benchmark.rs"
+
+# Lane B (fix/laneB-token-safety) token/staking safety cross-canister tests
+[[test]]
+name = "lane_b_safety"
+path = "tests/lane_b_safety.rs"
+
+# Lane B v2 (fix/laneB-v2-custody-migration) Option 2 custody migration tests
+[[test]]
+name = "lane_b_v2_custody"
+path = "tests/lane_b_v2_custody.rs"
+
+# Lane B (fix/laneB-input-size-caps) QA-DEF-008/009 public input size caps
+[[test]]
+name = "lane_b_size_caps"
+path = "tests/lane_b_size_caps.rs"
+
+# Lane A (fix/laneA-p3-retry-idempotency) QA-DEF-015/016 retry safety
+[[test]]
+name = "vesting_staking_retry_tests"
+path = "tests/vesting_staking_retry_tests.rs"
+
+# Lane B (fix/laneB-p3-icrc-token) QA-DEF-018/019/021 ICRC-1/2 token accounting
+[[test]]
+name = "token_icrc_accounting_tests"
+path = "tests/token_icrc_accounting_tests.rs"
+
+# W2 2-1 (A1 C3 §3.3 / DEF-096) pool pause completeness — the two public retry
+# endpoints respect the pause flags, and the runbook cites only real endpoints.
+[[test]]
+name = "w2_2_1_pause_completeness_tests"
+path = "tests/w2_2_1_pause_completeness_tests.rs"
+
+# Pass 4 (fix/pass4-shielded-pool-state-machine) QA-DEF-017 deposit retry safety
+[[test]]
+name = "deposit_retry_tests"
+path = "tests/deposit_retry_tests.rs"
+
+# HARDEN-03-SETTLEMENT: the deposit-settlement + token-receipt suite. Explicitly
+# pre-authorised by the fix-design §8 SETTLEMENT allowlist.
+[[test]]
+name = "deposit_settlement_receipt_tests"
+path = "tests/deposit_settlement_receipt_tests.rs"
+
+# Pass 4 QA-DEF-025/027/028 pool recovery (payout / treasury / nullifier reconcile)
+[[test]]
+name = "pool_recovery_tests"
+path = "tests/pool_recovery_tests.rs"
+
+# Pass 4 QA-DEF-029 INFLIGHT_NULLIFIERS upgrade reconstruction
+[[test]]
+name = "upgrade_recovery_tests"
+path = "tests/upgrade_recovery_tests.rs"
+
+# A2 (fix/a2-active-root-finality) QA-DEF-034/036 active-only Merkle finality
+[[test]]
+name = "active_root_finality_tests"
+path = "tests/active_root_finality_tests.rs"
+
+# Merkle hardening (fix/merkle-hardening) DEF-041/043/044 merkle-canister hardening
+[[test]]
+name = "merkle_hardening_tests"
+path = "tests/merkle_hardening_tests.rs"
+
+# Phase A (fix/phase-a-query-privacy) DEF-069/070/071 query privacy hardening
+[[test]]
+name = "privacy_query_tests"
+path = "tests/privacy_query_tests.rs"
+
+# Phase B (fix/phase-b-record-retention) DEF-072/056 terminal-record retention + pruning
+[[test]]
+name = "record_retention_tests"
+path = "tests/record_retention_tests.rs"
+
+# Privacy regression suite (charter a4fd9e47 lineage), landed by lane TESTFOLD
+# §3.6 from Reviewer-R1's sweep designs. Request-leg only; no PocketIC needed.
+[[test]]
+name = "privacy_differential_tests"
+path = "tests/privacy_differential_tests.rs"
+
+# Phase C (fix/phase-c-query-surface) DEF-073/074/075/076 query surface hardening
+[[test]]
+name = "query_surface_tests"
+path = "tests/query_surface_tests.rs"
+
+# Lane 2 (fix/lane2-peripheral-remediation) DEF-051/052/054/055/059 + QA-DEF-004/005
+[[test]]
+name = "lane2_peripheral_tests"
+path = "tests/lane2_peripheral_tests.rs"
+
+# Consolidated DEF lane (fix/consolidated-def-remediation) DEF-087 accounting invariants
+[[test]]
+name = "accounting_invariant_tests"
+path = "tests/accounting_invariant_tests.rs"
+
+# Consolidated DEF lane (fix/consolidated-def-remediation) DEF-090/103 denomination + upgrade persistence
+[[test]]
+name = "consolidated_def_tests"
+path = "tests/consolidated_def_tests.rs"
+
+# ICRC compatibility audit (icrc-audit-cc) — BRIEF_ICRC_COMPATIBILITY_AUDIT.md
+# Lane 10 harness: ICRC-1/2 conformance + reference-ledger differential.
+# Differential tests read the pinned reference wasm from $ICRC_REF_LEDGER_WASM
+# (release tag + sha256 pinned in the test-file header; wasm NOT committed).
+[[test]]
+name = "token_icrc_conformance_tests"
+path = "tests/token_icrc_conformance_tests.rs"
+
+# Smoke-alarm solvency monitor (monitor/smoke-alarm) — BRIEF_SMOKE_ALARM_MONITOR.md
+[[test]]
+name = "smoke_alarm_monitor_tests"
+path = "tests/smoke_alarm_monitor_tests.rs"
+
+# H-1 Pool upgrade-safety (fix/h1-pool-upgrade-safety) — BRIEF_POOL_REMEDIATION.md
+# EXT-1 pre-await freeze remediation: real upgrades to the PRODUCTION Pool Wasm.
+[[test]]
+name = "h1_upgrade_safety_tests"
+path = "tests/h1_upgrade_safety_tests.rs"
+
+# H-3 follow-up (fix/h3-followup-skip-pre-upgrade) — BRIEF_TOKEN_DEDUP_FOLLOWUP.md
+# skip_pre_upgrade is UNSUPPORTED for stsh_token: proves the empty-checkpoint trap
+# fires under a raw install_code(skip_pre_upgrade=true) and BLOCK_HEIGHT is preserved.
+[[test]]
+name = "h3_followup_skip_pre_tests"
+path = "tests/h3_followup_skip_pre_tests.rs"
+
+# P-ARITH (feat/gtm-arith-hardening) — BRIEF_GTM_ARITHMETIC_HARDENING.md V1.5
+# K3-002a/b + K3-003 RED→GREEN on RELEASE Wasms (wrapping genesis manifest,
+# wrapped invariant fold, vesting init validation) + legacy-decoder compat.
+[[test]]
+name = "arith_hardening_tests"
+path = "tests/arith_hardening_tests.rs"
+
+# P-ARITH G-2: Gate-V two-phase fixture proof — pre-install on the canonical
+# artifacts, post-install against a LIVE PocketIC token+vesting install.
+[[test]]
+name = "gate_v_fixture_tests"
+path = "tests/gate_v_fixture_tests.rs"
+
+# R-2 (C-30, HOLD-LAUNCH H-2): per-spend fee-marker batching.
+[[test]]
+name = "r2_c30_fee_marker_tests"
+path = "tests/r2_c30_fee_marker_tests.rs"
+
+# R-2 (C-30) AC-6 / AC-15: REAL cross-Wasm upgrade durability and the
+# fail-closed region-24 gate.
+[[test]]
+name = "r2_c30_upgrade_tests"
+path = "tests/r2_c30_upgrade_tests.rs"
+
+# R-2 (C-30) AC-7a: spawn-then-count statement order, AST-bound.
+[[test]]
+name = "r2_c30_spawn_order_tests"
+path = "tests/r2_c30_spawn_order_tests.rs"
+
+# R-L (campaign §5 G-b): refused-call cycle ceilings. The ceilings are DATA in
+# scripts/gate_lints/refused_call_ceilings.toml and the tests read THAT FILE,
+# never a canister-crate constant (brief §4 invariant 2), so the suite needs a
+# TOML reader. Already in the workspace lock via the host tools.
+[[test]]
+name = "refused_call_ceiling_tests"
+path = "tests/refused_call_ceiling_tests.rs"
+
+[[test]]
+name = "r9_pool_intent_binding_tests"
+path = "tests/r9_pool_intent_binding_tests.rs"
+
+# R-13 pool accounting write-through: the AST writer-set lock + the cross-Wasm
+# durability test.
+[[test]]
+name = "r13_pool_accounting_writethrough_tests"
+path = "tests/r13_pool_accounting_writethrough_tests.rs"
+
+# PROT-20a (HARDEN-01 lane TEST-T1 §3.1): the merkle-tree DEF-044 L3
+# post_upgrade invariants, driven across a REAL PocketIC upgrade with the
+# existing P-MRK corruption hook. No new dependency edge.
+[[test]]
+name = "prot20a_merkle_upgrade_invariant_tests"
+path = "tests/prot20a_merkle_upgrade_invariant_tests.rs"
+
+[dev-dependencies]
+hmac = "=0.12.1"
+toml          = "0.8"
+pocket-ic     = { workspace = true }
+# R-2 (C-30) AC-7a: the spawn-then-count ordering is bound to the AST, not to a
+# substring — a substring oracle is satisfiable by a comment. Same dependency and
+# same reason as `scripts/verify_memory_ids` and `scripts/verify_did_exports`.
+syn           = { version = "2", features = ["full", "visit", "printing", "extra-traits"] }
+candid        = { workspace = true }
+# H-3 follow-up test only: build the raw management-canister install_code args with
+# skip_pre_upgrade = Some(true) (PocketIC's upgrade_canister hardcodes Some(false)).
+# Test/dev-dependency only — NEVER a production-crate dependency.
+ic-management-canister-types = "0.7"
+serde         = { workspace = true }
+# P-MRK SSA P1: build the spend-circuit input for in-test proof generation from
+# the tracked canonical fixture. Test-only; already in the workspace lock.
+serde_json    = { workspace = true }
+# Smoke-alarm tests: independent witness/certificate verification (CBOR hash
+# tree per the IC certification spec) — deliberately NOT ic-certified-map.
+serde_bytes   = { workspace = true }
+serde_cbor    = { workspace = true }
+sha2          = { workspace = true }
+
+# ZK verifier — used in verifier_tests.rs to get compiled_vk_sha256() for pool init
+# and proof_json_to_bytes() / public_json_to_signals() for loading real snarkjs artifacts.
+# This is a host-side (non-Wasm) test dependency — verifier compiles to native on host.
+stsh-verifier = { path = "../canisters/verifier" }
+
+# DEF-111: the exact value-bound Merkle leaf hash the pool uses, to assert the deposit
+# tree leaf binds the CREDITED (net) value, not the gross public_amount.
+stsh-field-utils = { path = "../canisters/field-utils" }
+
+# P-ARITH G-1/G-2: Gate-D/Gate-V verifier — gate_v_fixture_tests drives the
+# SAME parsing/check logic the release CLI uses against a live PocketIC
+# install (host tool; never a production-crate dependency).
+verify-genesis-manifest = { path = "../scripts/verify_genesis_manifest" }

@@ -1,0 +1,18 @@
+// =============================================================================
+// STSH — CANONICAL merkle_tree INIT ARTIFACT (lane A-7)
+// =============================================================================
+// Interface: canisters/merkle-tree/merkle_tree.did:17 — `service : (principal)`.
+// The single init argument is the AUTHORIZED POOL CALLER
+// (`canisters/merkle-tree/src/lib.rs:185`): only this principal may append
+// commitments, so a wrong value here is a silent supply-side authority defect,
+// not a wiring inconvenience.
+//
+// Value: shielded_pool, J-18 proposal 1 (RECORD_J18_VAULT_BIRTHS_2026-09-12.md)
+//   cxrfg-qaaaa-aaaar-qchfa-cai
+//
+// The operator page uploads merkle_tree_init.bin verbatim; `expected_arg_hash`
+// is the sha256 of that .bin (a7_install_kit.toml).
+// =============================================================================
+(
+  principal "cxrfg-qaaaa-aaaar-qchfa-cai",
+)

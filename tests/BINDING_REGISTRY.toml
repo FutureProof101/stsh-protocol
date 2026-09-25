@@ -1,0 +1,492 @@
+# =============================================================================
+# STSH — BINDING REGISTRY (remediation lane R-L, campaign §5 G-c)
+# =============================================================================
+#
+# THE BINDING TEST IS THE EVIDENCE. There is no evidence-file field, no office
+# path, no sha256 pinning of a review document, and none may be reintroduced —
+# `verify_gate_lints bindings` REFUSES the schema outright if one appears
+# (AC-7g), rather than merely ignoring it. A binding proved by a document in a
+# directory the gate cannot read is not proved in this repo.
+#
+# For every row, the lint checks, structurally, that the named test:
+#   (a) EXISTS in the named file;
+#   (b) carries a `BINDING: <id>` marker comment above it;
+#   (c) invokes `property` AT LEAST TWICE with DIFFERING arguments and asserts
+#       an inequality or a rejection — the shape of a binding demonstration;
+#   (d) is not `#[ignore]`d, with or without a reason;
+#   (e) lives in a crate whose suite `run_gate.sh` actually invokes, checked by
+#       a CENSUS of the committed script's content — the invocation must appear
+#       at command position in a simple command, not merely as bytes somewhere
+#       in the file (a commented, quoted or here-doc'd copy runs nothing).
+#
+# WHAT THIS DOES NOT PROVE, stated plainly (brief §3 OUT): the lint checks the
+# SHAPE of the demonstration, never the truth of the binding it claims. That a
+# test varies an input and observes a differing/refused outcome does not make
+# the property it names the one actually bound. Only review of the test does.
+#
+# `posture = "launch"` additionally requires every row to be `closed`.
+# R-3b's `[deploy_gate]` partition is the deployment-side counterpart of the
+# same posture key; whichever lane lands second reconciles the two.
+
+schema_version = 1
+posture        = "prelaunch"
+
+# Ids that MUST have a row. Same reasoning as the ceiling registry's
+# `required_rows`: without this, deleting row B-2 is a mutation the lint reports
+# zero findings for (AC-7/M7a).
+required_bindings = [
+  "B-1", "B-2", "B-3", "B-4",
+  "B-2-VERIFIER-PAIRING", "B-2-VERIFIER-PAIRING-678", "B-4-CEREMONY-ANCHOR",
+  "B-1-ACTION", "B-1-EPOCH", "B-1-EXPIRY",
+  "B-5-REBOOTSTRAP-SIGNATURE",
+  "B-3-INTENT-DESTINATION", "B-3-INTENT-SUBACCOUNT",
+  "B-6-STAGE-BEFORE-FINALIZE",
+  "B-R3A-RELEASE-HASH-10", "B-R3A-STRING-API-PRIVATE", "B-R3A-CLI-POSTURE",
+  "B-RL2-CENSUS-BY-CONTENT", "B-RL2-MEASURED-PROPERTY", "B-RL2-TARGET-KEY-FIXTURES",
+  "A66-POOL-MIRROR", "A66-FEE-FLOOR", "A66-DOMAIN-VERSION", "A66-VK-CHAIN",
+]
+
+# ── B-1 — the Vault commitment binds the approving caller ────────────────────
+[[binding]]
+id         = "B-1"
+property   = "approve_inner"
+status     = "closed"
+bound      = "r1_approve_rejects_mismatched_hash_no_writes"
+test_crate = "vault"
+test_file  = "canisters/vault/src/lib.rs"
+
+# ── B-2 — the pool/treasury settled-fee VALUE binding (crossover pricing) ────
+# NOT the verifier's Groth16 pairing binding of public_amount/fee — see
+# B-2-VERIFIER-PAIRING below (R-6, campaign B-2 mutation).
+[[binding]]
+id         = "B-2"
+property   = "spend"
+status     = "closed"
+bound      = "t1_exit_above_the_crossover_pays_the_value_fee_and_names_the_mismatch"
+test_crate = "integration-tests"
+test_file  = "integration-tests/tests/a7_exit_fee_symmetry_tests.rs"
+
+# ── B-2-VERIFIER-PAIRING — the verifier's public_amount/fee PAIRING binding ──
+# (R-6, campaign B-2 mutation). Distinct from B-2 above.
+[[binding]]
+id         = "B-2-VERIFIER-PAIRING"
+property   = "verify_spend"
+status     = "closed"
+bound      = "test_tamper_signal_4_public_amount_canonical_substitution_rejected"
+test_crate = "stsh-verifier"
+test_file  = "canisters/verifier/src/lib.rs"
+
+# ── B-2-VERIFIER-PAIRING-678 — the same pairing binding for the DEF-026
+# recipient signals 6/7/8 (CTO ruling cto-ruling-r6-f1-kept-test-binding,
+# 2026-09-06). The kept DEF-102 canonical-substitution test was previously
+# unbound, so deleting it was invisible to the gate; this row makes that
+# deletion a bindings-lint RED.
+[[binding]]
+id         = "B-2-VERIFIER-PAIRING-678"
+property   = "verify_spend"
+status     = "closed"
+bound      = "test_tamper_recipient_signals_canonical_substitution_rejected"
+test_crate = "stsh-verifier"
+test_file  = "canisters/verifier/src/lib.rs"
+
+# ── B-3 — the pool's recipient encoding binds the withdrawal destination ─────
+[[binding]]
+id         = "B-3"
+property   = "encode_recipient_signals"
+status     = "closed"
+bound      = "test_def108_recipient_encoding_injective_on_length"
+test_crate = "shielded_pool"
+test_file  = "canisters/shielded-pool/src/lib.rs"
+
+# ── B-4 — the custody Vault's ceremony-ROOT export-mode binding ──────────────
+# NOT the ZK trusted-setup ceremony record — see B-4-CEREMONY-ANCHOR below
+# (R-6, campaign B-4 mutation).
+[[binding]]
+id         = "B-4"
+property   = "write_ceremony_root"
+status     = "closed"
+bound      = "replay_and_export_roots_hash_differently"
+test_crate = "verify-custody-manifest"
+test_file  = "scripts/verify_custody_manifest/tests/export.rs"
+
+# ── B-4-CEREMONY-ANCHOR — the ZK trusted-setup ceremony RECORD's content
+# anchor (R-6, campaign B-4 mutation). Distinct from B-4 above.
+[[binding]]
+id         = "B-4-CEREMONY-ANCHOR"
+property   = "check_ceremony_record_anchor"
+status     = "closed"
+bound      = "test_ceremony_record_transcript_anchor_rejects_mismatch"
+test_crate = "verify-genesis-manifest"
+test_file  = "scripts/verify_genesis_manifest/tests/ceremony_transcript_tests.rs"
+
+# ── B-1-ACTION / B-1-EPOCH / B-1-EXPIRY (R-8) ────────────────────────────────
+# B-1 above binds the approving CALLER. These three bind the other three
+# commitment inputs `commitment_for` feeds `ApprovalCommitmentV1::new`: the
+# canonical action bytes, the proposal's retained creation epoch, and its
+# absolute expiry. Each row's test stores ONE real proposal and compares its
+# stored commitment against a second record sharing its `proposal_id` and
+# differing in exactly the named field.
+[[binding]]
+id         = "B-1-ACTION"
+property   = "approve_inner"
+status     = "closed"
+bound      = "b1_action_divergence_cross_approval_rejected"
+test_crate = "vault"
+test_file  = "canisters/vault/src/lib.rs"
+
+[[binding]]
+id         = "B-1-EPOCH"
+property   = "approve_inner"
+status     = "closed"
+bound      = "b1_epoch_divergence_cross_approval_rejected"
+test_crate = "vault"
+test_file  = "canisters/vault/src/lib.rs"
+
+[[binding]]
+id         = "B-1-EXPIRY"
+property   = "approve_inner"
+status     = "closed"
+bound      = "b1_expiry_divergence_cross_approval_rejected"
+test_crate = "vault"
+test_file  = "canisters/vault/src/lib.rs"
+
+# ── B-5-REBOOTSTRAP-SIGNATURE (R-8 V1a, CTO ruling
+# cto-ruling-r8-landed-diff-fix-wave-2026-09-06 item 1, closing SSA RED-1) ────
+#
+# `authorize_re_bootstrap` is the ONE endpoint that can re-open the bootstrap
+# path for a principal that has revoked its way to zero devices. It verifies the
+# approval's signature against the issuing device's stored signing key, over a
+# transcript rebuilt with its OWN action label. That verify was correct and
+# UNBOUND at fdbde43a: stripping `verify::verify_transcript` REDded nothing in
+# the whole vetkeys suite, and a forged 64-byte signature was accepted — because
+# every committed test signed VALIDLY, and the one negative arm was refused by
+# `check_issuer`'s STATUS check, a different predicate.
+#
+# The bound test presents FOUR approvals to the same endpoint: forged bytes from
+# an ACTIVE issuer (only the verify can refuse it), a cryptographically VALID
+# signature replayed from a `RevokeV1` transcript (only the ACTION LABEL differs,
+# which is what binds the label), a valid signature from a REVOKED device, and
+# the genuine one — accepted, so the refusals are not vacuous.
+#
+# NOTE the method warning that produced this row: the vetkeys suite installs a
+# PREBUILT Wasm, so a source mutation with no rebuild is INERT and the suite
+# passes for the wrong reason. Any mutation evidence against this row must state
+# the rebuild between the edit and the run.
+[[binding]]
+id         = "B-5-REBOOTSTRAP-SIGNATURE"
+property   = "authorize_re_bootstrap"
+status     = "closed"
+bound      = "l04_07_forged_or_replayed_signature_cannot_authorize_re_bootstrap"
+test_crate = "vetkeys"
+test_file  = "canisters/vetkeys/tests/crossdevice_acceptance.rs"
+
+# ── B-3-INTENT-* — a diverging retry under a live spend_id is a CONFLICT ─────
+#
+# `spend_intent_matches` (canisters/shielded-pool/src/lib.rs) decides whether a
+# private_spend resubmission under an existing spend_id is the SAME logical
+# operation. Two of its comparisons — payout destination and destination
+# subaccount — were unbound: deleting either left the whole existing suite green,
+# because `test_prec_spend_intent_fingerprint` hardcodes both fields in its
+# fixture and is structurally blind to the deletion.
+#
+# The bound tests seed a live (VerificationPending) record owned by the caller,
+# then retry twice through the REAL private_spend entrypoint: once identically
+# (DuplicateSpendId, the in-flight catch-all — NOT "accepted as idempotent") and
+# once with a diverging destination / subaccount (IdempotencyKeyConflict). Under
+# the mutation both collapse into the same arm, so the assert_ne! REDs.
+#
+# The existing B-3 row is a DIFFERENT property (`encode_recipient_signals`,
+# recipient ENCODING) — these rows do not repoint it.
+[[binding]]
+id         = "B-3-INTENT-DESTINATION"
+property   = "spend_intent_matches"
+status     = "closed"
+bound      = "b3_intent_destination_divergence_retry_rejected"
+test_crate = "integration-tests"
+test_file  = "integration-tests/tests/r9_pool_intent_binding_tests.rs"
+
+[[binding]]
+id         = "B-3-INTENT-SUBACCOUNT"
+property   = "spend_intent_matches"
+status     = "closed"
+bound      = "b3_intent_subaccount_divergence_retry_rejected"
+test_crate = "integration-tests"
+test_file  = "integration-tests/tests/r9_pool_intent_binding_tests.rs"
+
+# ── B-6-STAGE-BEFORE-FINALIZE — ARCHITECTURE.md law 3, from code ───────────────────
+#
+# Output commitments stay STAGED until the parent nullifier reservation reaches
+# finality via insert_batch; the Merkle append happens only afterwards. Until
+# this row the order was asserted only in prose — and one of those comments
+# (lib.rs, the SpendStatus state-machine block) still described the CLOSED
+# QA-DEF-034 outputs-first order.
+#
+# The bound test drives two real deposit-backed spends through
+# `force_nullifier_insert_unknown_for_test`: mode 2 (insert_batch skipped, so
+# finality is unresolved) must leave the Merkle leaf count UNCHANGED, and mode 0
+# (real call, finalizes) must move it. MUTATION RECIPE (packet R-9 D-1): a bare
+# relocation of the append ahead of the insert_batch await is INERT (the status
+# guard early-returns WrongSpendStatus); the RED mutation is relocation PLUS
+# advancing the status to NullifierFinalizedOutputsPending -> equality arm RED
+# (leaves 3 vs 1).
+[[binding]]
+id         = "B-6-STAGE-BEFORE-FINALIZE"
+property   = "spend_under_finality_mode"
+status     = "closed"
+bound      = "test_merkle_append_only_after_nullifier_finality"
+test_crate = "integration-tests"
+test_file  = "integration-tests/tests/r9_pool_intent_binding_tests.rs"
+
+# ── B-7-ACCOUNTING-WRITETHROUGH-SPEND — R-13, from code ──────────────────────
+#
+# `apply_private_spend_accounting` used to debit PRIVATE_LIABILITY and
+# ESCROW_BACKING with raw heap `borrow_mut` blocks and then return early on
+# `fee == 0` — the launch config — so `commit_pool_accounting` never ran and the
+# stable cell never saw the debit. The figures were correct only "by accident"
+# on the fee>0 path, where an unrelated reserve credit happened to commit all six
+# words afterwards.
+#
+# The bound test performs two real deposit-backed, zero-fee `private_spend`s
+# carrying nonzero public payouts (distinct denominations, hence distinct
+# debits), reads the six accounting words, upgrades the pool canister for real,
+# and reads them again. MUTATION RECIPE (packet R-13 AC-2): revert
+# `apply_private_spend_accounting`'s body to the base shape — raw
+# PRIVATE_LIABILITY/ESCROW_BACKING `.with(|..| borrow_mut)` blocks as top-level
+# statements followed by `if fee == 0 { return None; }` — as a PATCH of the fn
+# body, not a `git checkout` of the file (that would revert R-9's tests too).
+# Observed RED: before [50000000, 50000000, 0, 0, 0, 0] vs after
+# [100000000, 100000000, 0, 0, 0, 0] — words 0 and 1 differ by the payout.
+# The attestation `healthy` assertions in the same test are a disclosed SANITY
+# check, NOT an independent RED source: the debit is symmetric on escrow and
+# liability, so raw_solvency_delta is algebraically invariant and neither
+# published field can move in any build, correct or mutated.
+[[binding]]
+id         = "B-7-ACCOUNTING-WRITETHROUGH-SPEND"
+property   = "spend_with_payout_and_read_across_upgrade"
+status     = "closed"
+bound      = "b7_accounting_writethrough_spend_survives_upgrade"
+test_crate = "integration-tests"
+test_file  = "integration-tests/tests/r13_pool_accounting_writethrough_tests.rs"
+
+# ── B-7-ACCOUNTING-WRITETHROUGH-WITHDRAW — R-13, from code ───────────────────
+#
+# `apply_withdrawal_accounting` credited GOVERNANCE_REWARDS_RESERVE with a raw
+# heap `+=`, outside the funnel, on EVERY fee value — and it ran AFTER the two
+# `acct_add` calls had already committed, so the cell carried the pre-credit GRR
+# while the heap carried the post-credit one. The defect is LATENT rather than
+# live at launch only because `validate_staking_posture` refuses `enabled`
+# unconditionally (G-FEESPLIT), forcing the staking split to 0.
+#
+# The bound test writes a SYNTHETIC GovernanceFeeParams straight into the
+# thread-local (sound: `split_protocol_fee_to_reserves` itself calls only
+# `validate_split_bps`) to engineer a nonzero staking credit, and asserts the
+# cell word equals the heap word immediately after the call. Two invocations,
+# 0 bps and 2000 bps. MUTATION RECIPE (packet R-13 AC-3): restore the raw
+# `GOVERNANCE_REWARDS_RESERVE.with(|r| *r.borrow_mut() += staking);` after the
+# `acct_update` closure and drop the GRR `checked_add` from inside it. Observed
+# RED: heap 10000 vs cell 0.
+[[binding]]
+id         = "B-7-ACCOUNTING-WRITETHROUGH-WITHDRAW"
+property   = "apply_withdrawal_and_read_cell"
+status     = "closed"
+bound      = "b7_accounting_writethrough_withdraw_cell_matches_heap"
+test_crate = "shielded_pool"
+test_file  = "canisters/shielded-pool/src/lib.rs"
+
+# ── B-R3A-RELEASE-HASH-10 — the checker compares all TEN shipped Wasms ───────
+#
+# `check_release_identity` iterated the two-element literal
+# [("vault","vault.wasm"),("upgrader","upgrader.wasm")] while the ceremony
+# tree-assembly loop (verify_custody_manifest/src/finalize.rs:636-642) has
+# always shipped all TEN `INLINE_PAYLOAD_ARTIFACTS`. Eight of the ten shipped
+# artifacts were pinned NOWHERE — buildable from an unreviewed tree, assembled
+# into the release tree, and green at every gate.
+#
+# The bound test builds a truthful ten-pin root and a variant with exactly ONE
+# of the EIGHT NEW pins falsified (`treasury` — a package the old loop never
+# visited), calls `check_release_identity` on each in-process, and asserts
+# `assert_ne!` on the two `Vec<Violation>` results, with two-sided vacuity
+# (truthful empty, tampered non-empty) asserted first.
+#
+# MUTATION RECIPE: revert lib.rs:3252's loop to the two-element literal. The
+# tampered fixture's violations collapse to empty, matching the truthful side.
+# Observed RED: "vacuity: the one-pin-tampered root must produce at least one
+# violation, got none". The end-to-end companion arm (finalize.rs's third
+# mutation flip) goes RED as "a falsified treasury pin must FAIL --deploy-time".
+[[binding]]
+id         = "B-R3A-RELEASE-HASH-10"
+property   = "check_release_identity"
+status     = "closed"
+bound      = "r3a_check_release_identity_distinguishes_truthful_from_tampered_root"
+test_crate = "verify-custody-manifest"
+test_file  = "scripts/verify_custody_manifest/tests/coverage.rs"
+
+# ── B-R3A-STRING-API-PRIVATE — no public record-blind genesis surface ────────
+#
+# `run_gates_from_strs` runs gate_d and gate_v_pre_install and nothing else —
+# no genesis-principal record, no GP0..GP6. While it was `pub`, an out-of-crate
+# caller could get a green Vec<CheckResult> from it and report "the genesis
+# gates pass" from a run that never read the record the roles are bound to.
+# 49 call sites were on it.
+#
+# The bound test parses lib.rs's own source with `syn` (dev-dependency, `full`
+# feature only) rather than grepping it — a text lock is defeated by a reformat
+# or a `pub(crate)`. `fn_visibility` returns `bool`, so `syn::Visibility` never
+# needs `PartialEq`/`Debug` and no `extra-traits`/`printing`/`quote` is pulled
+# in. Invoked on "run_gates_from_strs" (expect true/Inherited) and
+# "run_gates_on_dir" (expect false/Public), each asserted individually, then
+# `assert_ne!` on the two bools.
+#
+# MUTATION RECIPE: restore `pub fn run_gates_from_strs`. Observed RED:
+# "`run_gates_from_strs` must NOT be `pub`: it runs gate_d and
+# gate_v_pre_install only …".
+[[binding]]
+id         = "B-R3A-STRING-API-PRIVATE"
+property   = "fn_visibility"
+status     = "closed"
+bound      = "r3a_run_gates_from_strs_is_not_pub"
+test_crate = "verify-genesis-manifest"
+test_file  = "scripts/verify_genesis_manifest/tests/visibility_lock.rs"
+
+# ── B-R3A-CLI-POSTURE — `--posture` asserted at the process boundary ─────────
+#
+# `run_gate.sh` does not call `run_posture_on_dir`; it spawns the binary and
+# reads its exit code and its `GENESIS-POSTURE-STAGE:` line. The
+# `verdict.passes()` branch, the two `pass` prints, the `DISALLOWED  {name}`
+# lines and the exit code were all unbound.
+#
+# A local `run_posture_cli(dir) -> ExitStatus` helper is invoked once on the
+# committed deployment dir and once on a DP3-scan-coverage-tampered scratch
+# copy (repo top level symlinked except `deployment`, plus a recursive complete
+# copy of deployment/mainnet, with the `legal_counsel` [[allocation]] table
+# deleted and [[counsel_schedule]] left in place), with `assert_ne!` on the two
+# ExitStatus codes. THE SAME test fn also asserts (`assert_eq!`) that the
+# tampered case's sorted DISALLOWED name set is exactly the ten names
+# D10-artifact-row-count, D2-manifest-sum-checked, D3-percent-sum,
+# DP0-approved-row-count, DP1-row-10-legal_counsel, DP3-scan-coverage,
+# GP1-role-extra-LEGAL_COUNSEL_VESTING,
+# GP1-role-missing-UNBOUND_ARTIFACT_ROW_10,
+# V6-schedule-sum-eq-custody-allocation, V8-counsel-section-sum.
+#
+# MUTATION RECIPES, three, each independently RED:
+#  (a) delete both `{POSTURE_MARKER} pass` println! calls (main.rs:120, :125)
+#      → "the CLI must print the rr1_performed=false pass marker".
+#  (b) invert `verdict.passes()` at main.rs:117 → "the committed tree's
+#      declared posture must PASS at the CLI boundary".
+#  (c) apply the legal_counsel tamper to the UNTAMPERED control's copy → "the
+#      UNTAMPERED scratch root must pass exactly as the committed tree does".
+[[binding]]
+id         = "B-R3A-CLI-POSTURE"
+property   = "run_posture_cli"
+status     = "closed"
+bound      = "r3a_posture_cli_distinguishes_pass_from_dp3_scan_coverage_disallowed"
+test_crate = "verify-genesis-manifest"
+test_file  = "scripts/verify_genesis_manifest/tests/placeholder_gate_tests.rs"
+# ── B-RL2-* — the gate lints' own bindings (lane R-L2) ───────────────────────
+#
+# The lints check the rest of the tree. Nothing checked THEM, which is the same
+# gap in the same shape: three of the crate's own load-bearing properties had
+# tests and no registry row, so renaming, ignoring or gutting one of those tests
+# cost nothing.
+
+# The (e) check is a census of what run_gate.sh RUNS, not of what its bytes
+# SPELL. `census_invoked` on the real committed script (true) and on the same
+# script with the vetkeys leg moved behind an unquoted `echo` (false) — the word
+# sequence is identical and in order in both; only the command position differs.
+# MUTATION RECIPE (packet R-L2 AC-1b′): revert the two call sites in
+# `bindings.rs` to `gate_script.contains(&suite.gate_invocation)`. Observed RED:
+# the echoed script is certified as invoking the suite.
+[[binding]]
+id         = "B-RL2-CENSUS-BY-CONTENT"
+property   = "census_invoked"
+status     = "closed"
+bound      = "census_rejects_invocation_inside_unquoted_echo"
+test_crate = "verify-gate-lints"
+test_file  = "scripts/verify_gate_lints/tests/bindings_tests.rs"
+
+# A `MEASURED` baseline row's `property` must be a code token of its referent.
+# `claims::run` over a synthetic tree with the token present (0 violations) and
+# absent (1 violation). This is what makes a re-pointed row cost a read of the
+# referent; it does NOT close the semantic-relevance gap, which cannot be closed
+# by construction. MUTATION RECIPE (packet R-L2 AC-2b): drop the
+# `property_in_referent` arm from `claims.rs`. Observed RED: a token no referent
+# contains is certified.
+[[binding]]
+id         = "B-RL2-MEASURED-PROPERTY"
+property   = "run"
+status     = "closed"
+bound      = "measured_row_property_absent_from_referent_body_is_red"
+test_crate = "verify-gate-lints"
+test_file  = "scripts/verify_gate_lints/tests/claims_fixtures.rs"
+
+# `TargetAtoms::matches` answers "is this VALUE in this key's set", not "does
+# this key exist". `matches("target_feature", <a value rustc printed>)` and
+# `matches("target_feature", "simd128")` — differing second argument, differing
+# outcome, both against the LIVE pinned-toolchain map. MUTATION RECIPE (packet
+# R-L2 AC-4a/4b): `target_cfg.rs` `vs.contains(value)` -> `!vs.is_empty()`.
+# Observed RED: every value evaluates true for any key rustc printed.
+[[binding]]
+id         = "B-RL2-TARGET-KEY-FIXTURES"
+property   = "matches"
+status     = "closed"
+bound      = "target_feature_and_target_has_atomic_are_set_membership_not_any_match"
+test_crate = "verify-gate-lints"
+test_file  = "scripts/verify_gate_lints/tests/fixtures.rs"
+
+
+# ── A6.6 (lane A6.6 config freeze) ───────────────────────────────────────────
+#
+# Four rows. Each states what it proves AND what it does not, because a row that
+# only names a property invites the reader to assume it covers more than it does.
+
+# A66-POOL-MIRROR — PROVES: CIRCUIT_MAX_VALUE_E8S is drift-locked to
+#   spend.circom's TEXT, via a parse-and-compare property invoked on the real
+#   file and on a one-token mutation of it. DOES NOT PROVE: that 10^15 is the
+#   correct bound — only that the pool and the circuit cannot diverge silently.
+[[binding]]
+id         = "A66-POOL-MIRROR"
+property   = "circuit_bound"
+status     = "closed"
+bound      = "circuit_max_value_matches_spend_circom"
+test_crate = "shielded_pool"
+test_file  = "canisters/shielded-pool/src/lib.rs"
+
+# A66-FEE-FLOOR — PROVES: the LIVE exit-fee helper's output varies with its
+#   argument across the launch ladder (2.5 STSH at the 1,000-STSH floor rung,
+#   25 STSH at 10,000) under the shipped config. DOES NOT PROVE: that 2.5 STSH
+#   is the ruled floor value — that is AC-7a's literal pin in the same crate.
+[[binding]]
+id         = "A66-FEE-FLOOR"
+property   = "unshield_protocol_fee"
+status     = "closed"
+bound      = "test_unshield_protocol_fee_differs_across_the_launch_ladder"
+test_crate = "stsh-fee-policy"
+test_file  = "canisters/fee-policy/src/lib.rs"
+
+# A66-DOMAIN-VERSION — PROVES: the Poseidon(4) domain-separator producer is
+#   injective across the v=2 / v=3 tuple encoding — the same producer, one
+#   differing limb, a different digest. DOES NOT PROVE: that
+#   DOMAIN_CIRCUIT_VERSION is actually 3 in the circuit or the wallet; that is
+#   AC-9's mirror table, and the wallet's own vitest, separately.
+[[binding]]
+id         = "A66-DOMAIN-VERSION"
+property   = "poseidon4_core"
+status     = "closed"
+bound      = "domain_hash_matches_d2_ceremony"
+test_crate = "stsh-poseidon-wasm"
+test_file  = "circuits/poseidon-wasm/src/lib.rs"
+
+# A66-VK-CHAIN — PROVES: the ACTUAL DPOOL-9 committed-artifact lock detects a
+#   one-byte-tampered verification_key.json, by invoking it over a good repo
+#   root and a shadow root and asserting the two verdicts differ. Deliberately
+#   NOT sha256_hex: a generic hash-collision demonstration would prove
+#   collision-resistance, not that this lane's pin chain is wired. DOES NOT
+#   PROVE: that every OTHER copy of the VK digest in the tree moved — that is
+#   the packet's zero-hits re-grep.
+[[binding]]
+id         = "A66-VK-CHAIN"
+property   = "check_vk_artifact_pin"
+status     = "closed"
+bound      = "test_dpool9_vk_pin_detects_tampered_artifact"
+test_crate = "verify-genesis-manifest"
+test_file  = "scripts/verify_genesis_manifest/src/lib.rs"

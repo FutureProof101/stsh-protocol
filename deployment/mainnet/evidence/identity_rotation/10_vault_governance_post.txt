@@ -1,0 +1,7 @@
+(
+  record {
+    governance_epoch = 1 : nat64;
+    threshold = 2 : nat32;
+    signer_count = 3 : nat32;
+  },
+)

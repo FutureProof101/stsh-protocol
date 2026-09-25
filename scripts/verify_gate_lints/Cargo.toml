@@ -1,0 +1,36 @@
+[package]
+name    = "verify-gate-lints"
+version = "0.1.0"
+edition = "2021"
+# Remediation lane R-L (campaign §5 G-a..G-d) — four permanent gate lints plus
+# one packet-only tool. HOST TOOL ONLY; never compiled into a canister Wasm.
+#
+# Subcommands:
+#   claims            (G-a) — every normative cost/rate claim in the governed
+#                             corpus carries MEASURED:/UNBACKED:.
+#   refused-ceilings  (G-b) — every production-view #[update] that is marked or
+#                             structurally guarded carries a ceiling registry row.
+#   bindings          (G-c) — every registered binding property has a real,
+#                             gate-invoked, non-ignored, shape-checked test.
+#   no-skips          (G-d) — no silent skip in a #[test] / fixture loader body.
+#   scope                   — PACKET-ONLY. Never invoked by run_gate.sh.
+
+[lib]
+name = "verify_gate_lints"
+path = "src/lib.rs"
+
+[[bin]]
+name = "verify_gate_lints"
+path = "src/main.rs"
+
+[dependencies]
+# The census and every structural rule parse Rust, they do not text-match.
+# Same reasoning as scripts/verify_memory_ids: formatting must be irrelevant
+# by construction. `cfg-expr` is deliberately NOT used (brief §3 OUT) — the
+# predicate evaluator is hand-implemented over syn's own Meta parse so the
+# reviewed dependency set does not grow.
+syn         = { version = "2", features = ["full", "visit", "printing", "extra-traits"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+quote       = "1"
+toml        = "0.8"
+serde       = { workspace = true }

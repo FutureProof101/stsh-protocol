@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  // token_icrc_conformance.test.ts predates this tsconfig and carries a
+  // pre-existing @dfinity/candid IDL typing mismatch (ICRC-lane file, out of
+  // the vetkeys lane's scope). It still RUNS under vitest; excluded from
+  // typecheck only until the ICRC lane reconciles its types.
+  //
+  // All shielded pages are now re-integrated on the post-A AppContext
+  // (L3a shield, L3b scan/balance, L3c spend). Only the pre-existing
+  // token_icrc_conformance typing mismatch stays excluded.
+  "exclude": [
+    "tests/token_icrc_conformance.test.ts"
+  ]
+}

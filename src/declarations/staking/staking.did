@@ -1,0 +1,173 @@
+// =============================================================================
+// STSH Staking Canister — Candid Interface
+// Security classification: GOVERNANCE BOUNDARY
+// =============================================================================
+
+type GovernanceParams = record {
+    min_proposal_deposit    : nat;
+    voting_delay_ns         : nat64;
+    voting_period_ns        : nat64;
+    execution_timelock_ns   : nat64;
+    vk_upgrade_timelock_ns  : nat64;
+    quorum_bps              : nat32;
+    treasury_quorum_bps     : nat32;
+    vk_quorum_bps           : nat32;
+    approval_threshold_bps  : nat32;
+};
+
+type StakePosition = record {
+    position_id     : nat64;
+    holder          : principal;
+    amount          : nat;
+    lock_days       : nat32;
+    lock_end_ns     : nat64;
+    voting_weight   : nat;
+    rewards_claimed : nat;
+    last_claim_ns   : nat64;
+    created_at_ns   : nat64;
+    closed          : bool;
+    // DEF-052: op_id of an in-flight lock/unlock op (Some only while pending).
+    op_id           : opt nat64;
+};
+
+// ── DEF-052: lock/unlock operation reconcile ────────────────────────────────────
+
+type LockOpType = variant { Lock; Unlock };
+
+// Controller decision for reconcile_lock / reconcile_unlock: Executed = the
+// token-side lock/unlock executed; NotExecuted = it did not.
+type LockDecision = variant { Executed; NotExecuted };
+
+type PendingLockOp = record {
+    op_id           : nat64;
+    position_id     : nat64;
+    holder          : principal;
+    amount          : nat;
+    op_type         : LockOpType;
+    initiated_at_ns : nat64;
+    snapshot        : StakePosition;
+};
+
+type RewardSourceBreakdown = record {
+    incentive_allocation_pct : nat32;
+    fee_revenue_pct          : nat32;
+    disclosure               : text;
+};
+
+type EmergencyPauseTarget = variant {
+    PoolDeposits;
+    PoolSpends;
+    Both;
+};
+
+// VerifierKeyUpgrade payload — all fields required.
+// Hard-rejected at creation AND execution if any are empty / all-zeros.
+// old_verifying_key_hash: the currently active VK hash (all-zeros rejected)
+// new_verifying_key_hash: replacement VK hash (all-zeros rejected)
+// activation_timestamp_ns: must be >= now + 14 days
+type VerifierKeyUpgradePayload = record {
+    old_verifying_key_hash      : blob;   // [u8;32]
+    new_verifying_key_hash      : blob;   // [u8;32]
+    circuit_version             : nat32;
+    proof_system_id             : text;
+    audit_artifact_url          : text;
+    audit_artifact_hash         : blob;   // [u8;32] SHA-256 of audit document
+    circuit_source_commit       : text;
+    verifier_wasm_hash          : blob;   // [u8;32] SHA-256 of verifier Wasm
+    activation_timestamp_ns     : nat64;  // >= now + 14 days
+    emergency_disable_supported : bool;
+};
+
+type ProposalType = variant {
+    ParameterUpdate     : record { key: text; value: text };
+    TreasurySpend       : record {
+        subaccount : text;
+        recipient  : principal;
+        amount     : nat;
+        reason     : text;
+    };
+    FeeUpdate           : record {
+        shield_bps   : nat32;
+        transfer_bps : nat32;
+        unshield_bps : nat32;
+    };
+    RewardScheduleUpdate : record { new_emission_rate_per_day: nat };
+    EmergencyPause      : record { target: EmergencyPauseTarget; reason: text };
+    VerifierKeyUpgrade  : VerifierKeyUpgradePayload;
+    CanisterUpgrade     : record {
+        canister_id : principal;
+        wasm_hash   : blob;   // [u8;32]
+        description : text;
+    };
+    GovernanceParamUpdate : GovernanceParams;
+};
+
+type ProposalStatus = variant {
+    VotingPending;
+    VotingOpen;
+    VotingClosed;
+    Passed;
+    Executing;     // DEF-055: in-flight execution (set before the first await)
+    Rejected;
+    Executed;
+    Expired;
+    Cancelled;
+};
+
+type Proposal = record {
+    id               : nat64;
+    proposer         : principal;
+    proposal_type    : ProposalType;
+    description      : text;
+    status           : ProposalStatus;
+    created_at_ns    : nat64;
+    voting_opens_ns  : nat64;
+    voting_closes_ns : nat64;
+    execute_after_ns : nat64;
+    votes_for        : nat;
+    votes_against    : nat;
+    executed_at_ns   : opt nat64;
+    execution_result : opt text;
+};
+
+type InitArgs = record {
+    token_canister                : principal;
+    pool_canister                 : principal;
+    treasury_canister             : principal;
+    initial_rewards_pool          : nat;
+    initial_emission_rate_per_day : nat;
+    governance_params             : opt GovernanceParams;
+};
+
+service : (InitArgs) -> {
+    // ── Staking ──────────────────────────────────────────────────────────────
+    stake         : (amount: nat, lock_days: nat32) -> (variant { Ok: nat64; Err: text });
+    unstake       : (position_id: nat64)            -> (variant { Ok; Err: text });
+    claim_rewards : (position_id: nat64)            -> (variant { Ok: nat; Err: text });
+
+    // ── DEF-052: lock/unlock reconcile (controller-only operator recovery) ─────
+    // Resolve a transport-unknown lock_for_staking / unlock_from_staking. These do
+    // NOT re-issue the token call — they reconcile local staking state only.
+    reconcile_lock        : (op_id: nat64, decision: LockDecision) -> (variant { Ok; Err: text });
+    reconcile_unlock      : (op_id: nat64, decision: LockDecision) -> (variant { Ok; Err: text });
+    list_pending_lock_ops : ()                                     -> (vec PendingLockOp) query;
+
+    // ── Governance ───────────────────────────────────────────────────────────
+    // create_proposal: VK upgrade proposals are hard-validated at creation
+    create_proposal  : (proposal_type: ProposalType, description: text) -> (variant { Ok: nat64; Err: text });
+    vote             : (proposal_id: nat64, approve: bool)              -> (variant { Ok; Err: text });
+    execute_proposal : (proposal_id: nat64)                             -> (variant { Ok; Err: text });
+
+    // ── Fee revenue (treasury → staking only) ────────────────────────────────
+    receive_fee_revenue : (amount: nat) -> ();
+
+    // ── Queries ──────────────────────────────────────────────────────────────
+    get_stake_positions         : (holder: principal)           -> (vec StakePosition)      query;
+    get_rewards_pool_balance    : ()                            -> (nat)                     query;
+    get_pending_rewards         : (holder: principal)           -> (nat)                     query;
+    get_reward_source_breakdown : ()                            -> (RewardSourceBreakdown)   query;
+    get_total_voting_weight     : ()                            -> (nat)                     query;
+    list_proposals_by_status    : (status: opt ProposalStatus)  -> (vec Proposal)            query;
+    get_governance_params       : ()                            -> (GovernanceParams)         query;
+    get_build_info              : ()                            -> (text)                    query;
+};

@@ -1,0 +1,94 @@
+# =============================================================================
+# STSH — `claims` (G-a) patterns.  DATA (invariant 3).
+# =============================================================================
+#
+# A hit is a line carrying BOTH a NORMATIVE word and a COST/RATE word: the
+# intersection is what makes it a *safety claim about cost*, which is the class
+# reviews/SWEEP_UNMEASURED_CLAIMS_V1 found asserted 31 times with nothing
+# behind it, three of them Critical (UMC-29, UMC-30, UMC-01).
+#
+# Discharge is `MEASURED: <path-or-test-name>` or `UNBACKED: <reason>`, in the
+# claim's own line or the two lines either side of it (a wrapped comment block).
+# There is NO `#[allow]`-style escape hatch, by design: when the regex
+# false-positives on prose, the answer is a pattern edit reviewed as data, and
+# when the claim is real the answer is `UNBACKED:`.
+#
+# HONEST SCOPE (brief §2 AMBER-1, printed by the lint on every run): the
+# automated guarantee is MARKER PRESENCE plus REFERENT EXISTENCE.  It is not a
+# proof that the referent's measurement is true, nor that it measures the
+# specific claim it is attached to.  A `MEASURED:` pointing at a real test that
+# does not exercise the attached claim is worse than no marker at all, and only
+# a human sample catches it.
+
+measured_marker = "MEASURED:"
+unbacked_marker = "UNBACKED:"
+
+normative = [
+  "cannot",
+  "can not",
+  "can never",
+  "never ",
+  "always ",
+  "guaranteed",
+  "guarantees",
+  "impossible",
+  "must not",
+  "will not",
+  "no way to",
+  "bounded by",
+  "is bounded",
+  "safe from",
+  # ── R-L2 additions. Every one produced >= 1 real hit over the governed
+  # corpus, measured before it was added; a pattern with zero hits cannot fail
+  # and is therefore not a lint, so `unreachable` (0 hits) was dropped outright
+  # rather than carried. Counts are NOT restated here — regenerate at the point
+  # of use, which is the stage's own output line.
+  "no drain",
+  "negligible",
+  "only ever",
+  "by construction",
+  "there is no",
+  "fail-closed",
+  "fail closed",
+  "at most",
+]
+
+# DELIBERATELY NARROW. "cost", "budget" and "gas" were in this list in the
+# lane's first pass and produced 107 false positives out of 137 hits, almost all
+# of them ordinary prose ("this cost real debugging time", "the review budget").
+# A pattern that flags prose trains readers to add `UNBACKED:` markers to
+# sentences, which is worse than no lint: the marker stops meaning anything.
+# The list is therefore the vocabulary of MACHINE cost — cycles, instructions,
+# rate limits, exhaustion — not the vocabulary of effort.
+cost_rate = [
+  "cycle",
+  "cycles",
+  "instruction",
+  "instructions",
+  "drain",
+  "exhaust",
+  "throttle",
+  "rate limit",
+  "rate-limit",
+  "rate-limited",
+  "per second",
+  "per-second",
+  "denial of service",
+  "quota",
+  "unmetered",
+  # ── R-L2 additions, same rule: measured >= 1 hit each first.
+  "unbounded",
+  "per-call",
+  "per call",
+  "refund",
+]
+
+# Lines that quote the markers, define the patterns, or are the lint's own
+# prose are never claims.
+ignore_lines_containing = [
+  "MEASURED: <",
+  "UNBACKED: <",
+  "measured_marker",
+  "unbacked_marker",
+  "claims_patterns",
+]

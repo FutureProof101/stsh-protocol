@@ -1,0 +1,23 @@
+(
+  opt record {
+    result = null;
+    action = variant {
+      UpdateSignerSet = record {
+        threshold = 2 : nat32;
+        signers = vec {
+          principal "ib4mm-7l7xb-lc4bu-t25ya-t3ahs-5zvaz-kkfef-5ezep-pbngz-mexxv-sae";
+          principal "m3y6b-2wc5k-7c5xs-52q73-wg5hs-lv5bw-zjusd-t7bgg-olw3q-7wkkl-6ae";
+          principal "4f6wg-dzscu-4ixsl-t57n5-tiilb-4tqcj-i6vzi-3qvqt-5y5fu-d6b6y-cae";
+        };
+      }
+    };
+    commitment_hash = blob "\e7\c8\38\88\f1\1e\84\26\3a\0b\b8\76\b5\79\81\35\43\c2\c5\2d\e8\3b\c5\fe\3f\a4\a3\24\4a\3b\23\37";
+    epoch = 0 : nat64;
+    created_at_ns = 1_789_993_250_538_300_761 : nat64;
+    proposal_id = 16 : nat64;
+    proposer = principal "5jmfd-2u6rs-j5c3d-jhmmq-3ri63-iha4r-l5vwb-smaqn-bjodx-y4alu-qae";
+    outcome = variant { Pending };
+    snapshot_id = null;
+    approvals = vec {};
+  },
+)

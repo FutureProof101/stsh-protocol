@@ -1,0 +1,320 @@
+// STSH vetKeys — II-anchored key-manager canister
+// Generated from canisters/vetkeys/src/lib.rs
+//
+// Init arg: the vetKD key name — "test_key_1" (or "dfx_test_key") for
+// local/testnet, "key_1" for production mainnet.
+//
+// The domain separator ("stsh.wallet.notes.v1") and key name ("notes") are
+// pinned constants shared with wallet/src/crypto/vetkeys.ts — the wallet
+// asserts them via get_config() at startup.
+
+// W-VETKEYS two-layer (D-1) — the TYPED refusal channel. The wallet must be
+// able to tell "out of quota, come back at T" from "your call lapsed, retry"
+// without parsing English.
+//
+// TWO rate limits, TWO variants, deliberately (CTO adjudication 7cd63a14…):
+// `RateLimited` is the A-2 per-HOUR meter, which runs first as a cheap
+// bounded pre-filter; `DerivationQuotaExceeded` is the ruled §H′ per-rolling-
+// 24 h quota. `remaining` and `retry_after_ns` come from §H′ only.
+type VetkeysError = variant {
+  AnonymousCaller;
+  RateLimited : text;
+  DerivationQuotaExceeded : record { retry_after_ns : nat64 };
+  AdmissionLapsed;
+  InvalidTransportKey : text;
+  NotAuthorized : text;
+  // Layer 1 (§B/§C/§E)
+  InvalidRequest : text;
+  BootstrapNotAuthorized : record { reason : text };
+  ApprovalRejected : text;
+  RegistrationRateExceeded : record { retry_after_ns : nat64 };
+  RevocationRateExceeded : record { retry_after_ns : nat64 };
+  DeviceLimitReached : record { active : nat32 };
+  UnknownDevice;
+  DeviceRevoked;
+  // §D eligibility. These two are NOT interchangeable: PrincipalNotEligible is
+  // an authoritative answer about this principal (balance below the floor);
+  // EligibilityCheckUnavailable means the question could not be asked at all
+  // (token canister unconfigured/unreachable) and is RETRYABLE.
+  PrincipalNotEligible : text;
+  EligibilityCheckUnavailable : text;
+  // C-26 remedy (fix brief V3 §7.2) — exactly these two variants.
+  // CycleFloorReached: the canister's liquid balance is below the pinned cycle
+  // floor plus the live derive price; the derive is refused BEFORE any
+  // management-cycle spend. About the canister, not the caller. `nat`, not
+  // nat64 (balances are u128); numbers, not text. No new disclosure —
+  // cycle_balance below is already public and non-sensitive.
+  CycleFloorReached : record { liquid_cycles : nat; required_cycles : nat };
+  // GlobalDerivationBudgetExceeded: the fleet-wide rolling-hour dispatch
+  // budget is spent. A FLEET refusal, deliberately distinct from every
+  // per-principal variant. retry_after_ns is exact: admitted at
+  // now + retry_after_ns, refused one ns earlier.
+  GlobalDerivationBudgetExceeded : record { retry_after_ns : nat64 };
+  // V5 §6 — the caller's FIRST derive is refused because the required balance
+  // has not been held long enough yet. NOT interchangeable with
+  // PrincipalNotEligible: that one is an authoritative "below the floor" with
+  // no retry, this one is "not yet, come back at T". Collapsing them would
+  // make the wallet tell an already-funded user to go get tokens. Exact:
+  // admitted at now + retry_after_ns, refused one ns earlier. An ESTABLISHED
+  // principal can never see it — the age test is inside the !established
+  // branch, so recovery is untouched.
+  EligibilityAgeNotMet : record { retry_after_ns : nat64 };
+  // LAUNCH-HARDEN-04 O-3: this principal's derive dispatches in the rolling
+  // hour reached the per-principal hourly cap (2, counting ALL derives).
+  // Exact: admitted at now + retry_after_ns, refused one ns earlier.
+  PrincipalHourlyDerivationCapExceeded : record { retry_after_ns : nat64 };
+};
+
+// LAUNCH-HARDEN-04 O-1(b): has_active_device's TYPED refusals. Answered ONLY to
+// the configured caller (the shielded pool, MemoryId 20). "Unconfigured" and
+// "not you" are never confused with a real user state (Ok(false) = an
+// authorized question about a principal with zero active devices).
+type DeviceCheckRefusal = variant { CallerNotConfigured; CallerNotAuthorized };
+
+// LAUNCH-HARDEN-04 O-8: the caller's own "require device approval" flag.
+// null = flag off. The approving device is deliberately not exposed.
+type DeviceApprovalPolicyView = record {
+  require_device_approval : bool;
+  set_at_ns : nat64;
+  pending_clear_effective_at_ns : opt nat64;
+};
+
+
+// C-26 observability (A1 fix brief V5 §3) — the cycle-floor position, with
+// EVERY platform outcome representable. Three variants, not two: "could not
+// tell" is not "fine", and collapsing any pair would let the monitor assert
+// something it cannot see. `Unavailable` maps to the monitor's Incomplete,
+// never to Ok. The cycle figures are already public through cycle_balance, so
+// this discloses nothing new.
+//
+// NO RAW CYCLE MAGNITUDES — VERDICTS INSTEAD. Carrying liquid/cost/floor here
+// would create a NEW raw-amount boundary on a public return, which the
+// amount-boundary census flags and which a builder may not enrol. So this type
+// carries the verdicts a consumer cannot compute for itself.
+//
+// AND cycle_balance IS NOT A SUBSTITUTE FOR THEM: that query returns the GROSS
+// balance, while the fence and this view use canister_liquid_cycle_balance,
+// already NET of the freezing reserve. Comparing the gross balance against the
+// pinned floor answers a different question. The liquid position is knowable
+// only here.
+//
+// (CycleFloorReached's figures are unaffected: they ride the ERROR half of a
+// Result, which the census excludes by design.)
+type CycleFloorView = variant {
+  // Balance AND live price were readable, so the fence's predicate could be
+  // evaluated. `admits` IS the full admission verdict.
+  Live : record { admits : bool };
+  // The price query returned an Err, so the ADMISSION verdict cannot be
+  // computed — but the WEAKER one still can, and is reported:
+  // meets_pinned_floor is `liquid >= DERIVE_CYCLE_FLOOR_CYCLES`, inclusive at
+  // the floor.
+  //
+  // NOT AN ADMISSION VERDICT. `true` means "above the reserve floor, cost
+  // component unavailable" — NEVER "a derive would succeed". `false` is a
+  // DEFINITE hard-floor condition and must alert. Reporting only `reason` here
+  // would collapse a known below-floor state into price unavailability.
+  FloorOnly : record { meets_pinned_floor : bool; reason : text };
+  // The position could not be established at all (no initialised KeyManager).
+  // No verdict of any kind — the monitor maps this to Incomplete, never Ok,
+  // and never to the FloorOnly alert.
+  Unavailable : text;
+};
+
+// The observability surface (V5 §3 + §6.7). READ-ONLY: the window prune is
+// computed on a copy, so a query can never move fleet capacity.
+//
+// PRIVACY — COUNTS ONLY. No principal ids, no hashes of them, no buckets
+// narrow enough to intersect across calls. Every field is a cardinality or a
+// magnitude.
+type DeriveBudgetStats = record {
+  window_ns : nat64;                  // the rolling window
+  budget : nat32;                     // the admission pin
+  consumed : nat32;                   // retained dispatches, INCLUDING untagged V1 carry
+  retry_after_ns : nat64;             // 0 while the budget admits
+  tagged_consumed : nat32;            // the subset carrying attribution
+  distinct_principals : nat32;        // over the TAGGED subset only
+  max_by_one_principal : nat32;       // the concentration numerator
+  first_derive_dispatches : nat32;    // tagged dispatches that were a first derive
+  // EPHEMERAL heap counters, epoch-scoped (the A-2 meter precedent): a refusal
+  // must never cause a stable write. Across an epoch change they are not
+  // comparable and a difference is not a rate.
+  refusals_budget_total : nat64;
+  // R-5 (L04-02): actual management-canister vetkd_public_key round trips.
+  // Incremented on a cache MISS and on an explicit controller refresh, never
+  // on a cache hit.
+  verification_key_management_calls_total : nat64;
+  stats_epoch_ns : nat64;
+  floor : CycleFloorView;             // DERIVED at query time, never counted
+  // §6.7 funding-wave rows. sightings_recorded_total counts BOTH a new
+  // insertion and an expired-row renewal — both begin an age-in period.
+  sightings_recorded_total : nat64;
+  age_refusals_total : nat64;
+  sightings_pending : nat32;          // live rows, bounded by MAX_SIGHTINGS; a count, no ids
+};
+
+// A device-signed authorization. The TRANSCRIPT is not transmitted: the
+// canister rebuilds it from the exact fields it is about to act on and
+// verifies the signature over those. `signature` is P-256 ECDSA in the fixed
+// 64-byte (r || s) form and MUST be low-S — a high-S signature is REFUSED, not
+// normalized, so the wallet normalizes s to n-s before sending.
+// W-VETKEYS L04-07: the Candid-safe projection of a re-bootstrap policy row.
+// `authorized_by_device` is deliberately absent — forensic evidence, and the
+// caller already knows its own devices.
+type RebootstrapPolicyView = record {
+  allow_re_bootstrap : bool;
+  authorized_at_ns   : nat64;
+};
+
+type SignedApproval = record {
+  issuer_device_id : text;
+  nonce : blob;        // 16 bytes, single-use, scoped to (principal, issuer)
+  expiry_ns : nat64;   // half-open: valid while now < expiry_ns
+  signature : blob;    // 64 bytes, r || s, low-S
+};
+
+// First device = Bootstrap (consumes a ticket only a completed Layer-2
+// ceremony can have minted); every later device = signed by an ACTIVE device.
+type DeviceApproval = variant {
+  Bootstrap;
+  Device : SignedApproval;
+};
+
+// A device's PUBLIC halves. Private key material never exists canister-side.
+type DeviceView = record {
+  device_id : text;
+  enc_pubkey_spki : blob;
+  sign_pubkey_spki : blob;
+  active : bool;
+  added_at_ns : nat64;
+  revoked_at_ns : opt nat64;
+  approved_by_device : opt text;  // null = registered via a bootstrap ticket
+};
+
+// A successful derive: the encrypted vetKey plus the caller's REMAINING §H′
+// allowance in the rolling window. The wallet warns at remaining <= 3.
+type EncryptedVetKeyReply = record { encrypted_key : blob; remaining : nat8 };
+
+// Install/upgrade argument:
+//   text          — the vetKD key name ("key_1" on mainnet).
+//   opt principal — §D: the token canister whose icrc1_balance_of answers
+//                   first-derive eligibility (CTO adjudication b216902b…).
+//                   TRAILING and OPTIONAL, so the pre-existing one-argument
+//                   install stays candid-compatible. At INSTALL, null leaves it
+//                   absent; at UPGRADE, null PRESERVES whatever is stored.
+//                   Absent = fail closed (retryable EligibilityCheckUnavailable),
+//                   never "eligible".
+//   opt principal — LAUNCH-HARDEN-04 O-1(b), MemoryId 20: the ONE principal
+//                   (the shielded pool) allowed to ask has_active_device.
+//                   TRAILING and OPTIONAL, the same semantics: at INSTALL, null
+//                   leaves it absent; at UPGRADE, null PRESERVES. Absent =
+//                   has_active_device REFUSES (CallerNotConfigured). Anonymous
+//                   or this canister's own id traps the install/upgrade. There
+//                   is NO callable setter.
+service : (text, opt principal, opt principal) -> {
+  // Canister-scoped vetKD public key (BLS12-381 G2). Used by the wallet to
+  // verify encrypted vetKeys and to IBE-encrypt note payloads offline.
+  get_vetkey_verification_key : () -> (blob);
+
+  // CONTROLLER-ONLY (R-5, L04-02). Forces a real management-canister call and
+  // overwrites the MemoryId 18 cache. A non-controller caller TRAPS. Never
+  // called by the wallet; the escape hatch for a future re-keying.
+  refresh_vetkey_verification_key_cache : () -> (blob);
+
+  // Derive the CALLER's encrypted vetKey, secured to the supplied transport
+  // public key (fresh 48-byte BLS12-381 G1 per session). Owner-only by
+  // construction; anonymous callers rejected.
+  //
+  // Admission is meter-first (A-2 hourly pre-filter) then §H′ (the ruled
+  // rolling-24 h quota), both synchronous and pre-await: a meter refusal never
+  // writes a §H′ reservation. `remaining` is the §H′ allowance left after this
+  // derive.
+  get_encrypted_vetkey : (blob) -> (variant { Ok : EncryptedVetKeyReply; Err : VetkeysError });
+
+  // ── Layer 1 (W-VETKEYS D-1): device registry. ZERO vetKD derives — this is
+  // the whole point of the two-layer design. Each call is ONE atomic message
+  // (no awaits), so authorization and the write it authorizes land together.
+
+  // Register a device for the caller. Rate-limited to 5 per rolling 24 h,
+  // successful or not; capped at 10 ACTIVE devices per principal.
+  register_device : (text, blob, blob, blob, DeviceApproval) -> (variant { Ok; Err : VetkeysError });
+
+  // Revoke one of the caller's devices. Deletes that device's envelope and
+  // closes its read path FORWARD; it cannot undo exposure the device already
+  // had. The record is retained as evidence.
+  revoke_device : (text, SignedApproval) -> (variant { Ok; Err : VetkeysError });
+
+  // Replace the caller's OWN device envelope (D-1b v3 §2) — the opt-in wallet
+  // passcode toggle. Self-service: the ReplaceV1 signature is by the SAME
+  // device, and it binds BOTH the old envelope hash (anti-rollback / lost
+  // update) and the new one. Rate-limited to 5 per principal per rolling 24 h
+  // on its own counter. The swap is atomic; it makes the old envelope
+  // unrecoverable canister-side, which is NOT a cryptographic cutoff for an
+  // envelope an attacker already copied.
+  replace_envelope : (text, blob, SignedApproval) -> (variant { Ok; Err : VetkeysError });
+
+  // The caller's own wrapped master-secret envelope for one ACTIVE device.
+  // Opaque without that device's non-extractable private key.
+  get_wrapped_secret : (text) -> (variant { Ok : blob; Err : VetkeysError }) query;
+
+  // The caller's OWN devices only — the range is keyed on the caller, so there
+  // is no shape of this call that returns another principal's devices.
+  list_devices : () -> (vec DeviceView) query;
+
+  // W-VETKEYS L04-07: authorize this principal to re-open the BOOTSTRAP path
+  // after a revocation to zero devices, on a ReBootstrapV1 signature from a
+  // device that is ACTIVE at signing time. Caller-scoped (target must be the
+  // caller); full §C discipline — rate limit, issuer check, transcript
+  // rebuild + verify, single-use nonce. A principal that revokes its LAST
+  // device without having signed one of these first is deliberately stuck.
+  authorize_re_bootstrap : (principal, SignedApproval) -> (variant { Ok; Err : VetkeysError });
+
+  // W-VETKEYS L04-07: the CALLER's own re-bootstrap policy row, or null if
+  // never set (the pre-this-lane default for every existing enrolment).
+  // Caller-scoped — no owner argument, no other principal's row is readable.
+  re_bootstrap_policy : () -> (opt RebootstrapPolicyView) query;
+
+  // The configured §D token canister, or null. Read-only and non-sensitive; it
+  // exists so upgrade-PRESERVE semantics can be proven by comparing the STORED
+  // principal rather than by observing that queries still behave alike.
+  get_token_canister : () -> (opt principal) query;
+
+  // LAUNCH-HARDEN-04 O-1(b): the configured has_active_device caller, or null.
+  // Read-only and non-sensitive; proves the STORED principal after an upgrade.
+  get_device_check_caller : () -> (opt principal) query;
+
+  // LAUNCH-HARDEN-04 O-1(b): true iff `principal` has at least one ACTIVE
+  // device — answered ONLY to the configured caller (the pool). Unconfigured →
+  // Err(CallerNotConfigured); any other caller → Err(CallerNotAuthorized),
+  // checked before any device read.
+  has_active_device : (principal) -> (variant { Ok : bool; Err : DeviceCheckRefusal }) query;
+
+  // LAUNCH-HARDEN-04 O-8: set (true) or clear (false) the caller's "require
+  // device approval" flag, signed by an ACTIVE device (SetDeviceApprovalPolicyV1
+  // transcript). true: effective immediately, cancels any pending II-only
+  // clear. false: DELETES the flag immediately. Blocks NEW-DEVICE ENROLMENT
+  // without an existing device's approval, and nothing else — a live, hijacked
+  // II session can still derive the vetKey.
+  set_device_approval_policy : (bool, SignedApproval) -> (variant { Ok; Err : VetkeysError });
+
+  // LAUNCH-HARDEN-04 O-8: the II-ONLY clear path (no device needed). Takes
+  // effect 24 h after the request; returns that instant (ns). A second request
+  // returns the same instant (never reset or extended). A held device can
+  // cancel it with set_device_approval_policy(true).
+  request_device_approval_policy_clear : () -> (variant { Ok : nat64; Err : VetkeysError });
+
+  // LAUNCH-HARDEN-04 O-8: the caller's OWN flag, or null (flag off).
+  device_approval_policy : () -> (opt DeviceApprovalPolicyView) query;
+
+  // (domain_separator, vetkd_key_name) — pinned config for wallet startup checks.
+  get_config : () -> (text, text) query;
+
+  // C-26 observability (V5 §3). Read-only, no caller check — the monitor may be
+  // unauthenticated, exactly as for cycle_balance, and every field is a count
+  // or a magnitude rather than an identity. The prune it performs is on a COPY.
+  derive_budget_stats : () -> (DeriveBudgetStats) query;
+
+  // R6-1 (lane A-2): this canister's own cycle balance. The interface CONTRACT
+  // consumed by lane A-6's fleet cycle monitor (GAP-U9-1) — do not change its
+  // shape without a CTO ruling. Not sensitive; no caller check.
+  cycle_balance : () -> (nat) query;
+}

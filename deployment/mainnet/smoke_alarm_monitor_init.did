@@ -1,0 +1,53 @@
+// =============================================================================
+// STSH — CANONICAL smoke_alarm_monitor INIT ARTIFACT (lane A-7)
+// =============================================================================
+// Interface: canisters/smoke-alarm-monitor/smoke_alarm_monitor.did:99 —
+// `service : (MonitorInit) -> {…}` (MonitorInit at :9-20).
+//
+// THE CONFIG IS IMMUTABLE AND THE CANISTER IS BLACKHOLED AT LAUNCH. There are
+// no setters. Every value below is permanent; `validate_config`
+// (canisters/smoke-alarm-monitor/src/lib.rs:840) traps at install on an
+// anonymous/management principal, an interval below the minimum, a staleness
+// bound tighter than the interval, or a capacity outside 1..=4096 — which makes
+// install the LAST point at which a wrong value is still fixable.
+//
+// Principals (RECORD_J18_VAULT_BIRTHS_2026-09-12.md):
+//   token_canister          stsh_token     clv7x-haaaa-aaaar-qchha-cai  (prop 5)
+//   pool_principal          shielded_pool  cxrfg-qaaaa-aaaar-qchfa-cai  (prop 1)
+//   treasury_principal      treasury       cqqds-5yaaa-aaaar-qchfq-cai  (prop 2)
+//   pool_attestation_source shielded_pool  cxrfg-qaaaa-aaaar-qchfa-cai  (prop 1)
+// `treasury_principal` is the account weighed for stray funds THROUGH THE
+// TOKEN's icrc1_balance_of — the monitor never calls the treasury (did:12-14).
+// `pool_attestation_source` is the canister exposing get_solvency_attestation,
+// which is the pool itself (did:15-16) — the two pool fields are deliberately
+// separate knobs that happen to take the same value today.
+//
+// Cadence (canisters/smoke-alarm-monitor/OPERATIONS.md:16-18):
+//   refresh_interval_ns 300_000_000_000   =  5 min
+//   max_staleness_ns    900_000_000_000   = 15 min  (>= interval, enforced)
+//   history_capacity    288               = 24 h at the 5-min cadence
+//
+// INSTALL ORDER — THIS CANISTER GOES LAST. `init` arms a zero-delay timer that
+// performs an immediate first refresh (src/lib.rs:633-641), which reads the
+// token, the pool and the treasury balance. Installed before them, the monitor
+// comes up on a CallFailed snapshot and retries on the next interval — not a
+// brick, but a monitor whose first published snapshot is red for no real
+// reason. Install it after every source it reads.
+//
+// This monitor reads the POOL ATTESTATION. It is NOT the reserves.stsh.fi page
+// (that is the `solvency_status` asset canister, pyeop-7yaaa-aaaam-ajfja-cai).
+//
+// The operator page uploads smoke_alarm_monitor_init.bin verbatim;
+// `expected_arg_hash` is the sha256 of that .bin (a7_install_kit.toml).
+// =============================================================================
+(
+  record {
+    token_canister          = principal "clv7x-haaaa-aaaar-qchha-cai";
+    pool_principal          = principal "cxrfg-qaaaa-aaaar-qchfa-cai";
+    treasury_principal      = principal "cqqds-5yaaa-aaaar-qchfq-cai";
+    pool_attestation_source = principal "cxrfg-qaaaa-aaaar-qchfa-cai";
+    refresh_interval_ns     = 300_000_000_000 : nat64;
+    max_staleness_ns        = 900_000_000_000 : nat64;
+    history_capacity        = 288 : nat32;
+  },
+)

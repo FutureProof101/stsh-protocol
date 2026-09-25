@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "canisters": {
+    "stsh_token": {
+      "type": "rust",
+      "candid": "canisters/token/stsh_token.did",
+      "package": "stsh_token",
+      "metadata": [
+        {
+          "name": "candid:service",
+          "path": "canisters/token/stsh_token.did"
+        }
+      ]
+    },
+    "shielded_pool": {
+      "type": "rust",
+      "candid": "canisters/shielded-pool/shielded_pool.did",
+      "package": "shielded_pool",
+      "dependencies": ["stsh_token", "nullifier_registry", "merkle_tree"]
+    },
+    "nullifier_registry": {
+      "type": "rust",
+      "candid": "canisters/nullifier-registry/nullifier_registry.did",
+      "package": "nullifier_registry"
+    },
+    "merkle_tree": {
+      "type": "rust",
+      "candid": "canisters/merkle-tree/merkle_tree.did",
+      "package": "merkle_tree"
+    },
+    "vesting": {
+      "type": "rust",
+      "candid": "canisters/vesting/vesting.did",
+      "package": "vesting",
+      "dependencies": ["stsh_token"]
+    },
+    "treasury": {
+      "type": "rust",
+      "candid": "canisters/treasury/treasury.did",
+      "package": "treasury",
+      "dependencies": ["stsh_token"]
+    },
+    "wallet_frontend": {
+      "type": "assets",
+      "source": ["wallet/dist"],
+      "dependencies": ["stsh_token", "vesting", "shielded_pool", "vetkeys"]
+    },
+    "verifier": {
+      "type": "rust",
+      "candid": "canisters/verifier/verifier.did",
+      "package": "stsh-verifier",
+      "metadata": [
+        {
+          "name": "candid:service",
+          "path": "canisters/verifier/verifier.did"
+        }
+      ]
+    },
+    "smoke_alarm_monitor": {
+      "type": "rust",
+      "candid": "canisters/smoke-alarm-monitor/smoke_alarm_monitor.did",
+      "package": "smoke_alarm_monitor",
+      "metadata": [
+        {
+          "name": "candid:service",
+          "path": "canisters/smoke-alarm-monitor/smoke_alarm_monitor.did"
+        }
+      ]
+    },
+    "vetkeys": {
+      "type": "custom",
+      "candid": "canisters/vetkeys/vetkeys.did",
+      "wasm": "canisters/vetkeys/target/wasm32-unknown-unknown/release/stsh_vetkeys.wasm",
+      "build": "cargo build --manifest-path canisters/vetkeys/Cargo.toml --target wasm32-unknown-unknown --release --locked",
+      "metadata": [
+        {
+          "name": "candid:service",
+          "path": "canisters/vetkeys/vetkeys.did"
+        }
+      ]
+    },
+    "solvency_status": {
+      "type": "assets",
+      "source": ["website/solvency-status/dist"]
+    },
+    "vault": {
+      "type": "rust",
+      "candid": "canisters/vault/vault.did",
+      "package": "vault"
+    },
+    "upgrader": {
+      "type": "rust",
+      "candid": "canisters/upgrader/upgrader.did",
+      "package": "upgrader"
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": "",
+      "args": "--release"
+    },
+    "canister_http": {
+      "enabled": false
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8080",
+      "type": "ephemeral"
+    },
+    "ic": {
+      "providers": ["https://icp-api.io"],
+      "type": "persistent"
+    }
+  }
+}

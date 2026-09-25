@@ -1,0 +1,152 @@
+// =============================================================================
+// STSH — CANONICAL stsh_token INIT ARTIFACT (P-ARITH G-1; placeholders P0-3)
+// =============================================================================
+// THE exact Candid init argument the mainnet deploy consumes — Gate-D
+// (scripts/verify_genesis_manifest) verifies EVERY field of this artifact
+// against deployment/mainnet/genesis_manifest.toml and records its SHA-256.
+// The deploy must pass THIS FILE to dfx (--argument-file); reconstructing the
+// args by hand is a Gate-D violation (adversarial vector: reconstructed args
+// differing from the verified artifact).
+//
+// Canonical forms (no discretion): subaccount = null on every allocation;
+// created_at_genesis = false; genesis_timestamp_ns = 0 (canister overwrites
+// both during init); vesting_policy = null on every row.
+// =============================================================================
+(
+  record {
+    allocations = vec {
+      record {
+        category_id = "treasury";
+        category_name = "Treasury";
+        amount = 29_500_000_000_000_000 : nat;
+        recipient = principal "dgsev-ynaaf-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "insurance";
+        category_name = "Insurance Reserve";
+        amount = 10_000_000_000_000_000 : nat;
+        recipient = principal "ny5jq-enaaj-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "founders";
+        category_name = "Founders";
+        amount = 18_000_000_000_000_000 : nat;
+        recipient = principal "6wp5i-7vaan-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { Vested };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "dev";
+        category_name = "Post-Ceremony Dev";
+        amount = 3_000_000_000_000_000 : nat;
+        recipient = principal "qedt3-4naar-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "zk_advisors";
+        category_name = "ZK Advisors";
+        amount = 4_000_000_000_000_000 : nat;
+        recipient = principal "dkrhd-hvaav-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "ceremony_rewards";
+        category_name = "Ceremony Rewards";
+        amount = 2_000_000_000_000_000 : nat;
+        recipient = principal "nu6kg-3vaaz-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "audit_bounty";
+        category_name = "Audit / Bug Bounty";
+        amount = 8_000_000_000_000_000 : nat;
+        recipient = principal "62m66-anaa5-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "airdrop";
+        category_name = "Usage-Reward Airdrop";
+        amount = 5_000_000_000_000_000 : nat;
+        recipient = principal "qqgxa-4fabb-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "shielded_incentives";
+        category_name = "Shielded-Use Incentives";
+        amount = 8_000_000_000_000_000 : nat;
+        recipient = principal "d6udy-h5abf-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { GovernanceLocked };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      record {
+        category_id = "liquidity";
+        category_name = "Liquidity";
+        amount = 12_000_000_000_000_000 : nat;
+        recipient = principal "na3o5-35abj-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { ImmediatelyLiquid };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+      // D-4 (drift item) — legal-counsel grant, 0.5% funded from `treasury` above.
+      // APPENDED LAST: D11/DP1 row checks are positional, so every existing index
+      // is preserved. `vesting_policy = null` as on every row — the schedule lives
+      // in the vesting canister (D-4 V2), exactly as founders does.
+      //
+      // `recipient` is the genesis vesting canister, the SAME principal the founders
+      // allocation names: that canister custodies both schedules. Enumerated D16
+      // exemption; the roles remain distinct in the manifest.
+      record {
+        category_id = "legal_counsel";
+        category_name = "Legal Counsel";
+        amount = 500_000_000_000_000 : nat;
+        recipient = principal "6wp5i-7vaan-ygyyl-dmvug-63dem-vza";
+        subaccount = null;
+        lock_policy = variant { Vested };
+        vesting_policy = null;
+        created_at_genesis = false;
+        genesis_timestamp_ns = 0 : nat64;
+      };
+    };
+    treasury = principal "dgsev-ynaaf-ygyyl-dmvug-63dem-vza";
+    staking_canister = principal "6oj2f-afabn-ygyyl-dmvug-63dem-vza";
+    fee_collector = opt principal "q4fuw-d5abr-ygyyl-dmvug-63dem-vza";
+  },
+)

@@ -1,0 +1,3 @@
+service : (record { allocations : vec record { amount : nat } }) -> {
+    ping : () -> (nat64) query;
+};

@@ -1,0 +1,45 @@
+# =============================================================================
+# STSH — governed corpus for the `claims` lint (G-a).  DATA (invariant 3).
+# =============================================================================
+#
+# The corpus the unmeasured-claims sweep (reviews/SWEEP_UNMEASURED_CLAIMS_V1)
+# governs: canister and host-tool source, the integration suite, the wallet's
+# TypeScript, and the root/docs Markdown.  Roots are declared here so the scan
+# set is reviewable as data rather than buried in the lint's logic.
+#
+# `exclude` carries the ONE rule every source lint in this repo has had to
+# learn the hard way: a lint must never scan a region that quotes its own
+# patterns.  `scripts/gate_lints/` and `scripts/verify_gate_lints/` state the
+# marker spellings verbatim, so scanning them is a guaranteed false positive.
+
+extensions = ["rs", "md", "ts", "toml", "sh"]
+
+dirs = [
+  "canisters",
+  "integration-tests",
+  "scripts",
+  "docs",
+  "wallet/src",
+  "deployment",
+]
+
+files = [
+  "ARCHITECTURE.md",
+  "README.md",
+  "PUBLIC_SIGNALS_BINDING.md",
+  "PUBLIC_SIGNALS_SCHEMA.md",
+  "SNARKJS_TO_CANDID_ENCODING.md",
+  "POSEIDON_PARAMS.md",
+  "MAINNET_DEPLOYMENT.md",
+  "run_gate.sh",
+]
+
+exclude = [
+  # This lint's own source and data quote every pattern and marker verbatim.
+  "scripts/gate_lints/",
+  "scripts/verify_gate_lints/",
+  # Build outputs and vendored trees are not authored claims.
+  "/target/",
+  "node_modules/",
+  "/.git/",
+]

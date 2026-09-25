@@ -1,0 +1,43 @@
+[package]
+name    = "vault"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testing = []
+
+# ── L0 compileable skeleton ──────────────────────────────────────────────────
+# Custody Vault canister (CUSTODY_VAULT_INTERFACE_FREEZE_V6). L0 lands the
+# shell — crate manifest, MemoryId allocation, memory manager, init/post_upgrade
+# stubs, .did skeleton; L1 fills the body (governance cell, proposal state
+# machine, execution engine, C1/C3/F-4).
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+sha2               = { workspace = true }
+stsh-custody-types = { path = "../custody-types" }
+
+# L1 in-crate acceptance tests (PocketIC drives the built vault.wasm; both
+# deps are already in the workspace lockfile — no new dependency, no lock
+# edit beyond cargo's automatic vault-entry update).
+[dev-dependencies]
+# W6-EVIDENCE-01 — the reachability gate lives in custody-types and is compiled
+# ONLY for test targets. Declared here as a DEV-dependency so `cargo build`
+# never enables it: the gate is test machinery and must not reach a canister.
+stsh-custody-types = { path = "../custody-types", features = ["gate-machinery"] }
+candid_parser = "0.1"
+pocket-ic = { workspace = true }
+# S9 (R5.2) — freeze cases need to CONSTRUCT a `CanisterSettings` to raise a
+# canister's freezing threshold. This is the exact type PocketIC's own
+# `update_canister_settings` takes (pocket-ic 9.0.2 depends on 0.3), and it is
+# already in the workspace lockfile — dev-only, never linked into a canister.
+ic-management-canister-types = "0.3"
+candid    = { workspace = true }
+serde     = { workspace = true }
+sha2      = { workspace = true }

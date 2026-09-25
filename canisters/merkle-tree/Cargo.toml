@@ -1,0 +1,27 @@
+[package]
+name    = "merkle_tree"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# P-MRK: test-only stable-map corruption hook used to prove scan pages fail
+# closed on a missing leaf/payload pair. The plain production build omits it.
+testing = []
+
+[dependencies]
+ic-cdk             = { workspace = true }
+ic-cdk-macros      = { workspace = true }
+ic-stable-structures = { workspace = true }
+candid             = { workspace = true }
+serde              = { workspace = true }
+# Poseidon hash — circomlib-compatible BN254/Fr (M4). See POSEIDON_PARAMS.md.
+light-poseidon     = { workspace = true }
+ark-bn254          = { workspace = true }
+ark-ff             = { workspace = true }
+# DEF-041: canonical BN254 field-encoding check before append (no ic-cdk dep).
+stsh-field-utils   = { path = "../field-utils" }
+stsh-eager-cell    = { path = "../eager-cell" }
+# sha2 removed in M4 — SHA-256 Merkle stub replaced by Poseidon

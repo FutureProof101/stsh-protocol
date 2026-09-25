@@ -1,0 +1,24 @@
+{
+  "manifestVersion": 1,
+  "proofSystemId": "groth16-bn254",
+  "circuitVersion": 3,
+  "poolVersion": 1,
+  "networkId": 1,
+  "assetId": 0,
+  "vkHash": "84dba3059c1fb15080cd2d1c5b9a1eefbfea7f3b0321e1297d83ad56acbc6914",
+  "frozenPoolPrincipal": "cxrfg-qaaaa-aaaar-qchfa-cai",
+  "artifacts": [
+    {
+      "id": "spend.wasm",
+      "path": "/zk/spend.wasm",
+      "sha256": "3e910987203d8e3b42e1b656d21aa4dffce23cad0f1dd84f6f093fce6fbf4585",
+      "bytes": 3818474
+    },
+    {
+      "id": "spend_1.zkey",
+      "path": "/zk/spend_1.zkey",
+      "sha256": "4898655e8b3c3de9517f649f7caf8366ff4f9c95190ac274d5859de58f21e80c",
+      "bytes": 7527594
+    }
+  ]
+}

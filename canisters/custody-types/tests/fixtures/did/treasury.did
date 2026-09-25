@@ -1,0 +1,129 @@
+// PINNED FIXTURE — repinned by lane R-2 (C-30, per-spend fee marker).
+// Repin reason: R-2 batches the pool→treasury PrivateTransferFee notification to a wall-clock
+// window boundary, so the row's timestamp_ns is now SUPPLIED BY THE POOL, not read from time()
+// on arrival: receive_fee_split gains a trailing nat64. No custody surface changed; FORCED.
+// STSH Treasury Canister — Candid Interface
+// Generated from canisters/treasury/src/lib.rs
+// Last regenerated: 2026-08-04 (L3a: + get_canister_refs_readback, freeze V6 §6)
+//
+// Init: (token_canister, pool_canister, controller)
+
+// ── Fee source type ───────────────────────────────────────────────────────────
+
+type FeeSource = variant {
+    ShieldFee;
+    PrivateTransferFee;
+    UnshieldFee;
+    DexRevenue;
+};
+
+// ── Subaccount balance ────────────────────────────────────────────────────────
+
+type SubaccountBalance = record {
+    name    : text;
+    balance : nat;
+};
+
+// ── Withdrawal proposal ───────────────────────────────────────────────────────
+
+// NB: Rust enum is: Pending, Executed, Rejected, Expired — no Approved variant.
+type ProposalStatus = variant {
+    Pending;
+    Executed;
+    Rejected;
+    Expired;
+};
+
+// RB-SWARM-A2 (L3-2): reject_proposal is a guarded, Pending-only transition.
+type RejectProposalError = variant {
+    NotFound;
+    NotPending : record { current : ProposalStatus };
+    InFlight;
+};
+
+// Lane L3a (custody-vault freeze V6 §6): canonical stored authority principals
+// (CANISTER_REFS eager cell, MemoryId 4). PUBLIC read-back; fails closed
+// (traps) on sentinel/uninitialised/corrupt state — never a default.
+type CanisterRefsReadback = record {
+    token_canister : principal;
+    pool_canister  : principal;
+    controller     : principal;
+};
+
+type WithdrawalProposal = record {
+    id               : nat64;
+    proposer         : principal;
+    subaccount_name  : text;        // named subaccount (e.g. "operations", "insurance")
+    recipient        : principal;
+    amount           : nat;
+    description      : text;
+    created_at_ns    : nat64;
+    execute_after_ns : nat64;
+    status           : ProposalStatus;
+};
+
+// ── W2 2-6: per-bucket debit-exactness + admission integrity ─────────────────
+//
+// SSA-S1S4-001. One row per bucket, from the reservation records themselves
+// (the truth source) plus the durable shortfall counters.
+//
+// COUNTER CONTRACT (packet V2 §2(7)): shortfall_total and shortfall_events
+// SATURATE, and a saturating write sets shortfall_overflowed durably. With the
+// flag SET, the value means "AT LEAST this much — the exact total is no longer
+// representable". With the flag CLEAR, the values are EXACT. The
+// never-under-report property is carried by value-plus-flag, not by the value
+// alone. (Admission arithmetic, by contrast, is CHECKED and refuses on
+// overflow: no wrapped or saturated sum ever participates in an admission
+// decision.)
+type BucketIntegrity = record {
+    subaccount_name      : text;
+    shortfall_total      : nat;    // saturating; see the contract above
+    shortfall_events     : nat64;  // saturating; see the contract above
+    shortfall_overflowed : bool;   // durable truthfulness flag for the two above
+    encumbered_total     : nat;    // sum of encumbrances of ACTIVE reservations
+    legacy_active_count  : nat64;  // active pre-W2-2-6 records BLOCKING this bucket
+    retired_count        : nat64;  // terminal RetiredNotExecuted, awaiting rejection
+};
+
+// ── Fee log entry ─────────────────────────────────────────────────────────────
+
+type FeeLogEntry = record {
+    timestamp_ns : nat64;
+    source       : FeeSource;
+    total_amount : nat;         // sum of operations + insurance + staking
+    operations   : nat;
+    insurance    : nat;
+    audit        : nat;         // always 0 for pool-source fees; reserved for future use
+    staking      : nat;
+};
+
+// ── Service ───────────────────────────────────────────────────────────────────
+
+service : (principal, principal, principal) -> {
+    // ── Fee receipt (pool canister only) ─────────────────────────────────────
+    // Pool pre-splits fees via GovernanceFeeParams; treasury only credits buckets.
+    receive_fee_split : (FeeSource, nat, nat, nat, nat64) -> (variant { Ok; Err : text });
+
+    // ── Subaccount balance queries ────────────────────────────────────────────
+    get_subaccount_balances : ()     -> (vec SubaccountBalance) query;
+    get_subaccount_balance  : (text) -> (opt nat)               query;
+
+    // ── Fee log ───────────────────────────────────────────────────────────────
+    get_fee_log : (nat64, nat64) -> (vec FeeLogEntry) query;
+
+    // ── Withdrawal proposals ──────────────────────────────────────────────────
+    // propose_withdrawal(subaccount_name, recipient, amount, description) -> proposal_id
+    propose_withdrawal : (text, principal, nat, text) -> (nat64);
+    execute_withdrawal : (nat64) -> (variant { Ok; Err : text });
+    reject_proposal    : (nat64) -> (variant { Ok: null; Err: RejectProposalError });
+    list_proposals     : ()      -> (vec WithdrawalProposal) query;
+
+    // ── W2 2-6 observability — PUBLIC, ungated ───────────────────────────────
+    get_treasury_admission_integrity : () -> (vec BucketIntegrity) query;
+
+    // ── Canonical authority read-back (L3a, freeze V6 §6) — PUBLIC ───────────
+    get_canister_refs_readback : () -> (CanisterRefsReadback) query;
+
+    // ── Build info ────────────────────────────────────────────────────────────
+    get_build_info : () -> (text) query;
+};

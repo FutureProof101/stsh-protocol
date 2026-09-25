@@ -1,0 +1,20 @@
+[package]
+name    = "stsh-field-utils"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+# ── #116 canonical field encoding ─────────────────────────────────────────────
+# Pure BN254 field canonicality helpers (no ic-cdk / no canister machinery).
+# Follows the same pattern as stsh-fee-policy: a dependency-free library crate
+# usable from verifier, shielded-pool, nullifier-registry, and integration-tests
+# without pulling in ICP SDK machinery.
+[dependencies]
+ark-bn254 = { workspace = true, default-features = false, features = ["std", "curve"] }
+ark-ff    = { workspace = true, default-features = false, features = ["std"] }
+# DEF-111: circomlib-compatible Poseidon for the value-bound Merkle leaf hash.
+# Uses a hardcoded fixed t=4 param set (poseidon_params.rs) — never new_circom /
+# get_poseidon_parameters, which blow the IC Wasm function-complexity ceiling.
+light-poseidon = { workspace = true }

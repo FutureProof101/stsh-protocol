@@ -1,0 +1,20 @@
+service : (principal) -> {
+    contains_nullifier        : (blob)     -> (bool)               query;
+    contains_nullifiers_batch : (vec blob) -> (vec bool)           query;
+    insert_nullifier          : (blob)     -> (variant { Ok; Err : text });
+    insert_batch              : (vec blob) -> (variant { Ok; Err : text });
+    count                     : ()         -> (nat64)              query;
+    // P-NUL (L0-F): exact full-set pagination — lexicographic, exclusive
+    // canonical-32-byte cursor, nonzero capped limit (rejects, never truncates).
+    get_nullifiers_page       : (opt blob, nat64) -> (variant { Ok: vec blob; Err: text }) query;
+    spent_at                  : (blob)     -> (opt nat64)          query;
+    // Custody Vault (interface freeze V6 §6): mutation-free UPDATE twin of
+    // spent_at, gated on the IC canister controller exactly as spent_at is.
+    spent_at_for_controller_update : (blob) -> (opt nat64);
+    // Custody Vault (freeze V6 §6): PUBLIC canonical read-back of the durable
+    // POOL_CANISTER authority principal. Fails closed (traps) on
+    // sentinel/uninitialised/corrupt state — never returns a default.
+    get_authority_refs        : ()         -> (principal)          query;
+    // Fleet cycle monitor (A-6/A-6b, GAP-U9-1): PUBLIC, additive, mutation-free.
+    cycle_balance             : ()         -> (nat)                query;
+};

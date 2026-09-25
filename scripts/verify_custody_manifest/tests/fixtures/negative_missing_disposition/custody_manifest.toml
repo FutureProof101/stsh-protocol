@@ -1,0 +1,49 @@
+# NEGATIVE CONTROL (freeze §13.2a): a union element (D4 candidate) with NO
+# manifest disposition at all. Must FAIL with MissingDisposition.
+schema_version = 2
+gate_epoch = "fixture-epoch-1"
+
+[bootstrap_ring]
+status = "pending"
+evidence_path = "deployment/mainnet/bootstrap_ring_evidence.toml"
+evidence_sha256 = ""
+members = ["vault", "upgrader"]
+
+[sources.d1]
+kind = "dfx_json_launch_entries"
+declared_complete_for = ["repo_declared_canisters"]
+
+[sources.d2]
+kind = "canister_ids_json"
+declared_complete_for = []
+
+[sources.d3]
+kind = "dns_zone_snapshot"
+status = "pending"
+declared_complete_for = []
+candidates = []
+
+[sources.d4]
+kind = "artifact2_evidenced_set"
+status = "populated"
+declared_complete_for = []
+collection_run = "fixture-run-1"
+candidates = ["aaaaa-aa"]
+
+[sources.d5]
+kind = "vault_create_canister_receipts"
+status = "pending"
+declared_complete_for = ["vault_created_production"]
+receipts = []
+
+[[canister]]
+dfx_name = "solvency_status"
+ids_name = "solvency_status"
+principal = "pyeop-7yaaa-aaaam-ajfja-cai"
+disposition = "set_controller_at_cutover"
+
+# R-3b S1: required deploy-posture declaration. Fixtures exercise the coverage
+# contract, not the deploy posture, so they declare the empty pre-ceremony set.
+[deploy_gate]
+posture = "pre-ceremony"
+expected_pending = []

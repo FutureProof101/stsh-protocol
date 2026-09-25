@@ -1,0 +1,482 @@
+# =============================================================================
+# STSH — A-7 INSTALL KIT  (lane A-7, 2026-09-12)
+# =============================================================================
+#
+# The machine-readable half of the A-7 install kit: one row per canister the
+# Owner installs through the wallet's `#/operator` page. The human half is
+# docs/A7_INSTALL_RUNBOOK.md; the two are written together and must stay
+# together.
+#
+# RR-1b (2026-09-13) ADDED THE TWO GENESIS ROWS — `stsh_token` (order 6) and
+# `vesting` (order 7) — so all NINE J-18 births are now installed under the same
+# reviewed, hashed, replayable discipline. They were the last two installs whose
+# arguments would otherwise have been carried to the console by hand. Their
+# `.did` files are the Gate-D genesis artifacts, unchanged by this kit; the kit
+# adds the encode, the hashes and the operator wiring. `shielded_pool` and
+# `smoke_alarm_monitor` moved from order 6/7 to 8/9 to make room — the order is
+# duplicate-checked, and the ordering itself is load-bearing: the token before
+# vesting (the vesting init names the token and the vesting account is minted by
+# the token install), and the pool after the token.
+#
+# WHY THIS FILE EXISTS. J-18 birthed nine canisters under the Vault
+# (office record RECORD_J18_VAULT_BIRTHS_2026-09-12.md). Before this lane only
+# vault / upgrader / stsh_token / vesting had a committed init artifact, so for
+# the other seven there was nothing to hash, review, or replay — the Owner would
+# have typed install arguments by hand at the console. Hand-reconstructed init
+# args are a Gate-D violation; this kit extends that discipline to every install.
+#
+# HOW THE OPERATOR PAGE USES IT. The page takes a target principal, a Wasm file,
+# an arg file, an `expected_wasm_hash` and an `expected_arg_hash`. It uploads the
+# RAW BYTES of both files and performs NO CANDID ENCODING
+# (wallet/src/ui/pages/operator.ts:664-667; wallet/src/operator/proposals.ts
+# `codePayload`). The Vault recomputes sha256 over exactly those bytes at
+# propose AND at execute, then forwards them as the install argument. Therefore:
+#
+#     the Owner uploads  <canister>_init.bin
+#     expected_arg_hash  = `arg_sha256` below  = sha256 of that .bin
+#     expected_wasm_hash = `wasm_sha256` below = the [wasm.*] pin
+#
+# The page displays a LOCAL sha256 for the Wasm only (operator.ts:628-636) —
+# never for the arg file. The runbook therefore has the Owner run
+# `sha256sum <file>.bin` before typing `expected_arg_hash`; this table is what
+# that number is checked against.
+#
+# `arg_text_sha256` is the hash of the reviewable Candid TEXT. It is recorded so
+# a review can be pinned to an exact document, but it is NOT what the page or
+# the Vault hashes — do not type it anywhere.
+#
+# ENCODER. `candid_parser` 0.1.4 (the parser/type-checker crate that `didc`
+# itself is built on), invoked IN-PROCESS by
+# `scripts/verify_custody_manifest/src/bin/verify_a7_kit.rs`. The encode path is
+# `pretty_check_file(<canister>.did)` → the `service : (…)` init type →
+# `parse_idl_args(<canister>_init.did)` → `to_bytes_with_types`, which is
+# exactly `didc encode -d <canister>.did -t '<init_type>'`. It is in-process
+# rather than a shelled-out `didc` binary deliberately: `didc` is not installed
+# in this environment and a gate stage that depends on an unpinned external
+# binary is a check whose absence is invisible. The SAME path produces the .bin
+# and verifies it, and the gate re-runs the verification on every run.
+#
+# VERIFIED BY: `cargo run -p verify-custody-manifest --bin verify_a7_kit`,
+# a BLOCKING stage of ./run_gate.sh. It re-encodes each `.did` against the
+# canister's own interface and requires byte-identity with the committed `.bin`,
+# re-derives both hashes, resolves every principal against the nine J-18 births,
+# the Vault, and every RESOLVED role in deployment/mainnet/genesis_principals.toml
+# — the committed, byte-pinned genesis principal record, read at point of use
+# rather than mirrored into the tool, because the genesis rows added at RR-1b
+# carry holder principals that are not canisters; the literal "PENDING" is a
+# role's fail-closed marker and is never admitted — cross-checks each
+# `wasm_sha256` against release_hashes.toml,
+# and enforces the shielded_pool hold in BOTH directions.
+#
+# PENDING ROWS ELSEWHERE ARE UNCHANGED. `custody_manifest.toml` rows whose
+# `launch_value = "PENDING(...)"` stay PENDING text after A-7; rebinding them is
+# a separate record lane, not this one. The pool's `verifier_canister` is
+# declared there as `authority_field VERIFIER_CANISTER` (init-writable) and is
+# supplied by shielded_pool_init.did — that is the cross-reference, not an edit.
+#
+# FEE ACTIVATION IS NOT AN INSTALL STEP. The pool installs on fee-free
+# launch_defaults; nonzero fees arrive later as a PoolSetGovernanceFeeParams
+# governance proposal (A-5/A-6).
+#
+# NOTE — THREE IDENTICAL ARG FILES. verifier, merkle_tree and nullifier_registry
+# all take `(principal)` = the pool, so their three .bin files are byte-identical
+# and share the arg sha256 18d4539b…. That is correct, and it is also a trap:
+# the arg hash cannot distinguish the three installs. The TARGET principal is the
+# only thing that does. Check the target twice.
+# =============================================================================
+
+schema_version = 1
+encoder = "candid_parser 0.1.4 (in-process, via scripts/verify_custody_manifest/src/bin/verify_a7_kit.rs)"
+
+# ── 1. verifier ──────────────────────────────────────────────────────────────
+[[entry]]
+canister        = "verifier"
+role            = "verifier"
+target          = "arjxl-zqaaa-aaaar-qchia-cai"
+interface       = "canisters/verifier/verifier.did"
+init_type       = "(principal)"
+arg_did         = "deployment/mainnet/verifier_init.did"
+arg_bin         = "deployment/mainnet/verifier_init.bin"
+arg_text_sha256 = "0f6f11ed06f620a17a9efe97de076e3462a561933424c67743ef0aef4250bf18"
+arg_sha256      = "18d4539ba181134e41fd6a7d4a91d84ba610766514a1765d5fe077a33fc26f79"
+# The dropdown role is `verifier`; the cargo package, and therefore the pin's
+# section name, is `stsh-verifier` (SSA G-02 alias, wallet/src/release/wasmPins.ts).
+wasm_row        = "stsh-verifier"
+wasm_sha256     = "5a7dcc4997419e65cd16fa3436a9189b7535e5137beb01ee17edff7292c81141"
+wasm_path       = "target/wasm32-unknown-unknown/release/stsh_verifier.wasm"
+order           = 1
+hold            = ""
+read_back       = "dfx canister --network ic info arjxl-zqaaa-aaaar-qchia-cai && dfx canister --network ic call --query arjxl-zqaaa-aaaar-qchia-cai get_authorized_pool '()'"
+
+# ── 2. merkle_tree ───────────────────────────────────────────────────────────
+[[entry]]
+canister        = "merkle_tree"
+role            = "merkle_tree"
+target          = "cmuzd-kyaaa-aaaar-qchhq-cai"
+interface       = "canisters/merkle-tree/merkle_tree.did"
+init_type       = "(principal)"
+arg_did         = "deployment/mainnet/merkle_tree_init.did"
+arg_bin         = "deployment/mainnet/merkle_tree_init.bin"
+arg_text_sha256 = "81cbbd8996a52c974be553ce1d748bf646b6460dab05e66d25fd6a21e10bfdfb"
+arg_sha256      = "18d4539ba181134e41fd6a7d4a91d84ba610766514a1765d5fe077a33fc26f79"
+wasm_row        = "merkle_tree"
+wasm_sha256     = "ebbac752e4a48249d6ee105fe77dd517a3094cf7161eba6dfef162133ffcb221"
+wasm_path       = "target/wasm32-unknown-unknown/release/merkle_tree.wasm"
+order           = 2
+hold            = ""
+read_back       = "dfx canister --network ic info cmuzd-kyaaa-aaaar-qchhq-cai && dfx canister --network ic call --query cmuzd-kyaaa-aaaar-qchhq-cai get_authority_refs '()'"
+
+# ── 3. nullifier_registry ────────────────────────────────────────────────────
+[[entry]]
+canister        = "nullifier_registry"
+role            = "nullifier_registry"
+target          = "ccwul-riaaa-aaaar-qchgq-cai"
+interface       = "canisters/nullifier-registry/nullifier_registry.did"
+init_type       = "(principal)"
+arg_did         = "deployment/mainnet/nullifier_registry_init.did"
+arg_bin         = "deployment/mainnet/nullifier_registry_init.bin"
+arg_text_sha256 = "247483da10c53129703fc078948828c45893d5d8c1f6099df641b77d1007d8ea"
+arg_sha256      = "18d4539ba181134e41fd6a7d4a91d84ba610766514a1765d5fe077a33fc26f79"
+wasm_row        = "nullifier_registry"
+wasm_sha256     = "d4bf8493731351d53a589113e99b23261a8fb7255f1e2ac967e8c077e400a951"
+wasm_path       = "target/wasm32-unknown-unknown/release/nullifier_registry.wasm"
+order           = 3
+hold            = ""
+read_back       = "dfx canister --network ic info ccwul-riaaa-aaaar-qchgq-cai && dfx canister --network ic call --query ccwul-riaaa-aaaar-qchgq-cai get_authority_refs '()'"
+
+# ── 4. treasury ──────────────────────────────────────────────────────────────
+[[entry]]
+canister        = "treasury"
+role            = "treasury"
+target          = "cqqds-5yaaa-aaaar-qchfq-cai"
+interface       = "canisters/treasury/treasury.did"
+init_type       = "(principal, principal, principal)"
+arg_did         = "deployment/mainnet/treasury_init.did"
+arg_bin         = "deployment/mainnet/treasury_init.bin"
+arg_text_sha256 = "3f30b73b71af3e22790d858d74e4259b374029120990a313221d19d8a99178d3"
+arg_sha256      = "b7eb28ed6ebe43a06e992b4f7b49a879715cd779c091e0528654ab9894ac5c00"
+wasm_row        = "treasury"
+wasm_sha256     = "0e314c758ae2a96509dbe9660bf9255de0f11ac5e8f5b02621c1bb2179d8e4a1"
+wasm_path       = "target/wasm32-unknown-unknown/release/treasury.wasm"
+order           = 4
+hold            = ""
+read_back       = "dfx canister --network ic info cqqds-5yaaa-aaaar-qchfq-cai && dfx canister --network ic call --query cqqds-5yaaa-aaaar-qchfq-cai get_canister_refs_readback '()'"
+
+# ── 5. vetkeys ───────────────────────────────────────────────────────────────
+#
+# THE ONE UNPINNED ROLE, BY RULING NOT BY OMISSION (D1). vetkeys is a
+# workspace-EXCLUDED crate (ic-cdk 0.20) and is not one of the ten
+# INLINE_PAYLOAD_ARTIFACTS, so release_hashes.toml carries no [wasm.*] row for
+# it and `wasm_row` is deliberately empty. `wasm_sha256` below is MEASURED from
+# the gate's own build of canisters/vetkeys, and verify_a7_kit hashes that built
+# artifact directly rather than comparing it to a pin. The operator page refuses
+# to build this proposal unless the "unpinned role (vetkeys)" acknowledgement is
+# ticked (wallet/src/release/wasmPins.ts UNPINNED_ROLES) — record the Owner
+# ruling id in the operator log, because the Vault has no on-chain note field.
+#
+# Authority: CTO_BOARD_RECONCILED_2026-09-11.md (5b7350d5) D1 row "vetkeys
+# installed at A-7"; MAINNET_DEPLOYMENT.md:375/:418 (adjudication b216902b…,
+# 2026-08-27). The in-repo "D1, 2026-08-14" references are the STAKING
+# exclusion — a different ruling, and NOT authority for this row.
+#
+# VETKEYS-AGE-2MIN (2026-09-23): `wasm_sha256` REBOUND from b51a8436… — the A-7
+# install, live on a7l2d until the upgrade below executes, and still staged
+# untouched at ~/a7-kit/vetkeys.wasm — to 144fb314…, ONE hash carrying BOTH
+# changes of this lane (canisters/vetkeys commit c299701d): ELIGIBILITY_MIN_AGE_NS
+# 900 s -> 120 s (ruling 559b411e…, superseding the 15-minute value of 6b60d432…)
+# and WRAPPED_SECRET_MAX_BYTES 512 -> 1024 in place on MemoryId 4
+# (RULING_VETKEYS_ENVELOPE_CAP_MECHANISM 2026-09-23, Option A). Measured from a
+# clean-target sanitised `env -i` build (the run_gate.sh re-exec shape) and
+# re-checked by this gate's own verify_a7_kit stage against its own build.
+# The new bytes are staged at ~/a7-kit/vetkeys_age2min_envcap.wasm.
+#
+# LAUNCH-HARDEN-04 (2026-09-24): `wasm_sha256` REBOUND 144fb314… (live on a7l2d
+# since Vault #27) -> 41197f1c…, the lane's vetkeys commit 65f38e0 (O-1(b)
+# pool-only has_active_device + MemoryId 20 DEVICE_CHECK_CALLER, O-2 sighting
+# eviction, O-3 derive caps, O-8 device-approval flag). Measured from a
+# clean-target sanitised `env -i` build (the run_gate.sh re-exec shape) and
+# re-checked by the gate's own verify_a7_kit stage. Staged at
+# ~/a7-kit/vetkeys_harden04.wasm (A-7 files untouched).
+#
+# VETKEYS-COMMENT-SCRUB (2026-09-24): `wasm_sha256` REBOUND 41197f1c… (live on
+# a7l2d since Vault #28) -> 4ea38e5f…, the lane's vetkeys commit 6bd438bb (ONE
+# doc-comment line rewritten in place above `revoke_device`; no code change, line
+# count unchanged). The in-place comment edit still moves the Wasm (same size,
+# different bytes); the base 5e8d54a rebuilt under the same recipe reproduces
+# 41197f1c exactly. Measured from a clean-target sanitised `env -i` build (the
+# run_gate.sh re-exec shape), twice, identical. Staged at
+# ~/a7-kit/vetkeys_comment_scrub.wasm (existing kit files untouched). Upgrade
+# arg for THIS upgrade: EMPTY (0 bytes, expected_arg_hash
+# e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855) — both
+# post_upgrade opts decode as None, which PRESERVES MemoryId 10 and MemoryId 20
+# (already set to the pool by Vault #28); MemoryId 19 is untouched by
+# post_upgrade.
+#
+# The interface init type grew a third positional `opt principal`
+# (device_check_caller), so `init_type` follows it and `vetkeys_init.did` gained
+# an explicit trailing `null` (CoS ruling C3): the ORIGINAL A-7 install
+# semantics (MemoryId 20 absent) re-encoded against the new interface, re-emitted
+# with `verify_a7_kit --emit`. PROVENANCE: the arg actually installed at A-7 was
+# the two-element encoding, arg_sha256 a88ec81ce02baed916d215a4206da0ee50906bfae00534b2326583ee8ebf3ad8
+# (arg_text_sha256 aa43af03504ea6a6cd51f88500ef1ce8e3702a3dc3f780f1d380573456cd5b27).
+#
+# This entry describes the Vault Management.UPGRADE of a7l2d, which carries a
+# NON-EMPTY arg that is NOT `arg_bin`: `(null, opt principal
+# "cxrfg-qaaaa-aaaar-qchfa-cai")`, 24 bytes, expected_arg_hash
+# d7641821f27452d3223de8780c958aa544c543700eb27bd52b55010ca11c749d (packet §R
+# form #1; `null` preserves the token cell, the second element sets MemoryId 20
+# to the pool). An EMPTY upgrade arg leaves MemoryId 20 absent and, once the
+# pool's MemoryId 28 is set, fails every private_spend closed.
+# `arg_bin`/`arg_sha256` below remain the (re-emitted) ORIGINAL install arg.
+[[entry]]
+canister        = "vetkeys"
+role            = "vetkeys"
+target          = "a7l2d-caaaa-aaaar-qchja-cai"
+interface       = "canisters/vetkeys/vetkeys.did"
+init_type       = "(text, opt principal, opt principal)"
+arg_did         = "deployment/mainnet/vetkeys_init.did"
+arg_bin         = "deployment/mainnet/vetkeys_init.bin"
+arg_text_sha256 = "2056a191c4623d73d30cc49bf8c525ec8b22e9f140b57b960f6433c9c8226eba"
+arg_sha256      = "10b6144edae6f645f792f25c1a4be54a79249791bb3edafa60fb36b8dea0f43e"
+wasm_row        = ""
+wasm_sha256     = "4ea38e5fb47749799210f618da91487b83f86a77b267e5733b774449c1caa375"
+wasm_path       = "canisters/vetkeys/target/wasm32-unknown-unknown/release/stsh_vetkeys.wasm"
+order           = 5
+hold            = ""
+read_back       = "dfx canister --network ic info a7l2d-caaaa-aaaar-qchja-cai && dfx canister --network ic call --query a7l2d-caaaa-aaaar-qchja-cai get_config '()' && dfx canister --network ic call --query a7l2d-caaaa-aaaar-qchja-cai get_token_canister '()' && dfx canister --network ic call --query a7l2d-caaaa-aaaar-qchja-cai get_device_check_caller '()'"
+
+# ── 6. stsh_token — GENESIS (RR-1b) ──────────────────────────────────────────
+#
+# THE LEDGER, and the first of the two GENESIS installs. It must precede
+# `vesting`: the vesting init argument NAMES the token canister, and the
+# founders/counsel allocation is minted to the vesting canister's account by
+# THIS install. Installing vesting first would leave a canister pointing at an
+# uninstalled ledger and a read-back with nothing to read.
+#
+# Its argument is deployment/mainnet/stsh_token_init.did — the Gate-D-verified
+# canonical genesis artifact, the same file `verify_genesis_manifest` checks
+# field-by-field against genesis_manifest.toml. It is NOT rewritten for this
+# kit; the kit adds the encode, the hashes and the operator wiring around it.
+# Every principal in it is a RESOLVED role in genesis_principals.toml (RR-1a for
+# ten of them, RR-1b for none — the counsel beneficiary is a vesting SCHEDULE
+# site, not a token allocation recipient).
+[[entry]]
+canister        = "stsh_token"
+role            = "stsh_token"
+target          = "clv7x-haaaa-aaaar-qchha-cai"
+interface       = "canisters/token/stsh_token.did"
+init_type       = "(record { fee_collector : opt principal; staking_canister : principal; allocations : vec AllocationCategory; pool_canister : opt principal; treasury : principal; })"
+arg_did         = "deployment/mainnet/stsh_token_init.did"
+arg_bin         = "deployment/mainnet/stsh_token_init.bin"
+arg_text_sha256 = "c5ebba40ab1381e7b458f45ef1b6e0811f5f0ab40915e08a72e42355befabcc7"
+arg_sha256      = "262fbd63a00805f81848b751301be6867d3323280987dec3c816521bf6d0f009"
+wasm_row        = "stsh_token"
+# HARDEN-02 (2026-09-17): a90318da… -> 3d036a17… -> 28c4327d… (the AC-10 re-pin
+# moved it a second time in the same lane), tracking the [wasm.stsh_token]
+# re-pin. HARDEN-02-CODE changed canisters/token/src/lib.rs and
+# canisters/token/Cargo.toml (H-01 + MD-01), so the module the Owner installs at
+# step 6 is a different module, and this row is what the operator page checks the
+# uploaded Wasm against.
+#
+# R-3a, NOW CONCRETE RATHER THAN HYPOTHETICAL — THE OWNER ACTION THIS IMPLIES.
+# The brief anticipated that a token Wasm STAGED in the Owner's ~/a7-kit would be
+# invalidated by this lane and asked for one line about it. It is stronger than a
+# labelling hazard: this record pins the hash, the gate enforces the pin, and any
+# stsh_token.wasm already copied into ~/a7-kit is now STALE. It must be replaced
+# from a build of this head before step 6 is attempted. The gate caught the
+# mismatch here (verify_a7_kit, Phase 2b"), which is the check doing its job — but
+# it cannot see the Owner's local kit directory.
+#
+# ESC-1 CLOSE-OUT (HARDEN-03-SETTLEMENT, CTO ruling 2026-09-18 "RE-STAGE"): the
+# token install ARGUMENT MOVED for the first time since RR-1b. D-3 added
+# `pool_canister : opt principal` to the token's `InitArgs`, which restates
+# `init_type` and re-encodes the argument:
+#   arg_text_sha256  e61d5a71... -> c5ebba40...
+#   arg_sha256       e7d69608... -> 262fbd63...   (1200 -> 1219 bytes)
+# Regenerated by the committed tool per docs/A7_INSTALL_RUNBOOK.md §7
+# (`cargo run -p verify-custody-manifest --bin verify_a7_kit -- --emit .`), NOT
+# hand-encoded. `init_type` is the tool's own check-1 rendering, not hand-typed.
+# The VALUE IS BOUND, NOT NULL — CTO ruling 2026-09-18. The builder regenerated
+# with `null` (the fail-safe mode: no deposit receipts; settlement returns
+# DepositSettlementUnavailable) and referred the choice up as a genesis-value
+# decision. The ruling: it must NOT ship null — the token has no setter (D-3
+# refused one), the pool principal has been immutable since J-18, and shipping
+# settlement inert would silently disable the lane being merged. The value is
+# `opt principal "cxrfg-qaaaa-aaaar-qchfa-cai"` — canister_ids.json
+# `shielded_pool.ic`, the same principal A-3 FINALIZE (045fed0) re-encoded the
+# commitment domain to, and this kit's own shielded_pool `target`.
+# `init_type` is UNCHANGED by the binding: the field was already in the type.
+# No allocation, principal or manifest field changed. This moves the install
+# ARGUMENT only — the token WASM is unaffected, since init args are not build
+# inputs, and [wasm.stsh_token] stays ac9336f2...
+#
+# OWNER ACTION: the `stsh_token_init.bin` / `.did` and `README.txt` row staged in
+# ~/a7-kit are STALE and must be re-copied from this head before step 6.
+# D-4 (CTO ruling 2026-09-17) already orders this lane BEFORE the stsh_token
+# install, which is what keeps the mandatory-expiry rule migration-free — there
+# are no legacy `expires_at: None` rows on a canister that has never been
+# installed.
+#
+# TOKEN-METADATA (2026-09-24): `wasm_sha256` follows the [wasm.stsh_token]
+# re-pin ac9336f2… -> 994a77ff… (token commit 62a6d298: NAME -> "STSH", logo
+# -> PNG data URL). clv7x is ALREADY installed (genesis, ac9336f2); this Wasm
+# reaches it by Vault Management.UPGRADE #31 with an EMPTY arg
+# (expected_arg_hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855;
+# post_upgrade takes no argument) — NOT `arg_bin`, which stays the genesis
+# install arg. Staged as ~/a7-kit/stsh_token_metadata.wasm; ~/a7-kit/stsh_token.wasm
+# (ac9336f2, the live module) is left untouched.
+#
+# TOKEN-APPROVE-TTL (2026-09-25): `wasm_sha256` follows the [wasm.stsh_token]
+# re-pin 994a77ff… -> 70786d0d… (token commit 43e42d99: icrc2_approve defaults
+# an absent expires_at to the 24 h cap and clamps an over-cap one). clv7x is
+# live on 994a77ff (TOKEN-METADATA); this Wasm reaches it by Vault
+# Management.UPGRADE #33 with an EMPTY arg (expected_arg_hash
+# e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855) — NOT
+# `arg_bin`. Staged as ~/a7-kit/stsh_token_approve_ttl.wasm;
+# ~/a7-kit/stsh_token_metadata.wasm and ~/a7-kit/stsh_token.wasm are left
+# untouched.
+wasm_sha256     = "70786d0db75b8409b00f7c7b94454c5e9e5c01457302009d2e39f7a7a46aa952"
+wasm_path       = "target/wasm32-unknown-unknown/release/stsh_token.wasm"
+order           = 6
+hold            = ""
+read_back       = "dfx canister --network ic info clv7x-haaaa-aaaar-qchha-cai && dfx canister --network ic call --query clv7x-haaaa-aaaar-qchha-cai icrc1_total_supply '()' && dfx canister --network ic call --query clv7x-haaaa-aaaar-qchha-cai icrc1_balance_of '(record { owner = principal \"cfxs7-4qaaa-aaaar-qchga-cai\"; subaccount = null })'"
+
+# ── 7. vesting — GENESIS (RR-1b) ─────────────────────────────────────────────
+#
+# The second genesis install. BOTH its schedule beneficiaries were RE-BOUND at
+# RR-1b REDO (2026-09-21) to their CANISTER-ROOTED (s3tyu native-origin) values
+# after the WT-1 `derivationOrigin` cutover made the pre-cutover `app.stsh.fi`
+# values aliases: FOUNDER_1_BENEFICIARY attested by
+# reviews/RECORD_FOUNDER_1_BENEFICIARY_NATIVE_2026-09-21.md (987805a1…) and
+# LEGAL_COUNSEL_BENEFICIARY by
+# reviews/RECORD_LEGAL_COUNSEL_BENEFICIARY_NATIVE_2026-09-21.md (e9d4a04e…), each
+# its own per-role entry in GENESIS_ATTESTATION_BINDINGS. `arg_text_sha256` and
+# `arg_sha256` below were re-emitted through `verify_a7_kit --emit` in the same
+# diff; `init_type`, `interface`, `target`, `order` and `wasm_sha256` are
+# untouched.
+#
+# LAUNCH-HARDEN-04 (2026-09-24): `wasm_sha256` follows the [wasm.vesting]
+# re-pin 760488eb… -> 8b9c5860… (O-7 commit adb1f8e). The Vault
+# Management.UPGRADE of cfxs7 carries the raw arg
+# `(opt record { rebind_controller = opt principal "cpdab-saaaa-aaaar-qca2q-cai" })`,
+# expected_arg_hash 84bd8f408cb773bc63f20cfb46e3a1420a9cc577025efc19cf03a5b1ea394fac
+# (packet form #3) — NOT `arg_bin`, which stays the genesis install arg.
+#
+# TWO schedules, ONE canister: founder (ib4mm…, 12e15, cliff 6 / linear 30) and
+# counsel (cliff 0 / linear 12, 0.5e15). This canister CUSTODIES both grants,
+# which is why the token read-back above expects 12,500,000,000,000,000 at
+# cfxs7… — founders 12e15 plus counsel 5e14 — and not 12e15.
+#
+# AFTER stsh_token, never before: `token_canister` here is clv7x…, and
+# `claim` performs a real `icrc1_transfer` against it.
+[[entry]]
+canister        = "vesting"
+role            = "vesting"
+target          = "cfxs7-4qaaa-aaaar-qchga-cai"
+interface       = "canisters/vesting/vesting.did"
+init_type       = "(record { controller : principal; schedules : vec record { total_amount : nat; beneficiary : principal; linear_months : nat32; cliff_months : nat32; }; token_canister : principal; })"
+arg_did         = "deployment/mainnet/vesting_init.did"
+arg_bin         = "deployment/mainnet/vesting_init.bin"
+arg_text_sha256 = "f8a2ebdb055ac1393a12accd071e42eed329b283225f6dc1a52cbaf4fa219b01"
+arg_sha256      = "d5f5f795be167025f80fc862e20ae2675a08a53d148f05e14f08abd24bd07705"
+wasm_row        = "vesting"
+wasm_sha256     = "8b9c58600198ed83d426430b55cdac38f61a612773628a82f778c95622225a2e"
+wasm_path       = "target/wasm32-unknown-unknown/release/vesting.wasm"
+order           = 7
+hold            = ""
+read_back       = "dfx canister --network ic info cfxs7-4qaaa-aaaar-qchga-cai && dfx canister --network ic call --query cfxs7-4qaaa-aaaar-qchga-cai list_schedules '()' && dfx canister --network ic call --query cfxs7-4qaaa-aaaar-qchga-cai get_canister_refs_readback '()'"
+
+# ── [RR-1 GATE — CLEARED 2026-09-13] ─────────────────────────────────────────
+#
+#   HISTORY, kept because the order it imposed is still the order to install in.
+#   This gate held every row below it until genesis_manifest.toml [pool_init]
+#   was rebound to the D5 principals carried in shielded_pool_init.did. RR-1a
+#   (a067074) rebound the section and lane A-7 REBASE corrected the two roots
+#   RR-1a had written to the pre-amendment DPOOL-5/7 sources
+#   (RULING_RECORD_POOL_TRUST_ROOTS_2026-09-13). The manifest and the artifact
+#   now AGREE on all four roots, `verify_genesis_manifest` is green on the
+#   rebound record, and `verify_a7_kit` check 6 — which enforces the hold in
+#   BOTH directions — now REQUIRES the shielded_pool `hold` to be EMPTY.
+
+# ── 8. shielded_pool ─────────────────────────────────────────────────────────
+[[entry]]
+canister        = "shielded_pool"
+role            = "shielded_pool"
+target          = "cxrfg-qaaaa-aaaar-qchfa-cai"
+interface       = "canisters/shielded-pool/shielded_pool.did"
+init_type       = "(record { initial_vk_hash : blob; controller : principal; treasury_canister : principal; verifier_canister : opt principal; token_canister : principal; initial_proof_system : text; staking_canister : principal; nullifier_canister : principal; merkle_canister : principal; })"
+arg_did         = "deployment/mainnet/shielded_pool_init.did"
+arg_bin         = "deployment/mainnet/shielded_pool_init.bin"
+arg_text_sha256 = "d3d43e9c4bed7e21c62de2b847afa5a9cceb7bd29a10fb12a86b03b7d54cb350"
+arg_sha256      = "be113f2c64e2d8a6daff981325aeaac2f4d77fe9ae4c2345f565833a34b2199b"
+wasm_row        = "shielded_pool"
+wasm_sha256     = "dca03f68fbf3ddf4c1bb1c4c36689d9a3dcf124fb5aab2bff50d88cca51afd69"
+wasm_path       = "target/wasm32-unknown-unknown/release/shielded_pool.wasm"
+order           = 8
+# ── HOLD CLEARED (lane A-7 REBASE, 2026-09-13) ───────────────────────────────
+# genesis_manifest.toml [pool_init] now names the same four trust roots this
+# row's `arg_did` carries, and the amended DPOOL-5/7 bind them to the records
+# that actually own them (this kit's `treasury` target, and
+# vault_authorities.toml [recovery].vault). verify_a7_kit check 6 enforces the
+# hold in BOTH directions, so with the two in agreement an empty `hold` is not
+# merely permitted — it is REQUIRED, and re-adding the text below would RED the
+# gate. The pool install is no longer held.
+#
+# NOTE — the header of deployment/mainnet/shielded_pool_init.did still reads
+# "DRAFT ONLY, HELD". That text is STALE and is deliberately NOT corrected: the
+# file's bytes are pinned by `arg_text_sha256` above and by `arg_sha256` through
+# the re-encode, and editing a comment in it would move the hash the Owner types
+# into the operator page. The authority on whether the install is held is THIS
+# row, which the gate checks; the .did header is prose the gate does not read.
+hold            = ""
+read_back       = "dfx canister --network ic info cxrfg-qaaaa-aaaar-qchfa-cai && dfx canister --network ic call --query cxrfg-qaaaa-aaaar-qchfa-cai get_verifier_canister '()'"
+
+# ── 9. smoke_alarm_monitor — LAST ────────────────────────────────────────────
+#
+# Its init arms a zero-delay timer that performs an immediate first refresh
+# (canisters/smoke-alarm-monitor/src/lib.rs:633-641), reading the token, the
+# pool and the treasury balance. Installed before those, it comes up on a
+# CallFailed snapshot and retries on the next 5-minute interval — not a brick,
+# but a monitor whose first published snapshot is red for no real reason.
+# Its config is IMMUTABLE and the canister is blackholed at launch.
+[[entry]]
+canister        = "smoke_alarm_monitor"
+role            = "smoke_alarm_monitor"
+target          = "awir7-uiaaa-aaaar-qchiq-cai"
+interface       = "canisters/smoke-alarm-monitor/smoke_alarm_monitor.did"
+init_type       = "(MonitorInit)"
+arg_did         = "deployment/mainnet/smoke_alarm_monitor_init.did"
+arg_bin         = "deployment/mainnet/smoke_alarm_monitor_init.bin"
+arg_text_sha256 = "44a632e3c906f832e64c95ab6e43a091320f8810de6c7c15fc595d95d6c9034e"
+arg_sha256      = "0a0d97ed86197ab85b521d9cde5559495607146a631a02468481c36e2b733cf1"
+wasm_row        = "smoke_alarm_monitor"
+wasm_sha256     = "8428ee40bb4f3d73c53102ccd8b9d7ae6790d83fd19ed79e92cdb14e7414f8dc"
+wasm_path       = "target/wasm32-unknown-unknown/release/smoke_alarm_monitor.wasm"
+order           = 9
+hold            = ""
+read_back       = "dfx canister --network ic info awir7-uiaaa-aaaar-qchiq-cai && dfx canister --network ic call --query awir7-uiaaa-aaaar-qchiq-cai get_config '()' && dfx canister --network ic call --query awir7-uiaaa-aaaar-qchiq-cai get_health_status '()'"
+
+# ── 9a. POOL VK ACTIVATION CEREMONY (PROT-24) — COMMENT ONLY, NOT AN ENTRY ───
+#
+# There is deliberately NO [[entry]] here: 9a installs nothing. It is recorded
+# in this file only so a reader of the kit cannot finish the nine rows and
+# believe the pool is ready.
+#
+# After row 8 the pool is still at PINNED_CIRCUIT_VERSION = 0
+# (canisters/shielded-pool/src/lib.rs:3740) and EVERY spend is rejected
+# CircuitVersionMismatch (:7951), while the shipped wallet bundle pins
+# circuitVersion 3 and throws client-side before any private_spend is sent.
+#
+# The fix is a Vault 2-of-3 proposal, NOT an operator-page install:
+#   variant { Application = variant { PoolScheduleVkActivation =
+#     record { 3 : nat32; blob <32 bytes of 84dba305…acbc6914>;
+#              <T> : nat64; <T+delta> : nat64 } } }
+# (vault.did:141; custody-types/src/lib.rs:852). The operator page's V1 action
+# surface is CLOSED and carries no Application variant, so there is no arg .bin
+# and no expected_arg_hash for this step — nothing in this kit to upload.
+# Activation is LAZY: after T passes, ONE private_spend call must be made (it
+# may itself be rejected) before get_circuit_version() reads 3.
+#
+# Full procedure, read-backs and the ceremony-record fields: docs/
+# A7_INSTALL_RUNBOOK.md §5a. SSoT V9.1 §8 item 9a. No kit edit is required —
+# shielded_pool_init.did already names the Vault as governance controller.

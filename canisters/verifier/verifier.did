@@ -1,0 +1,22 @@
+// STSH ZK Spend Verifier — Candid Interface
+// Production Groth16/BN254 verifier for shielded_pool (A2-2).
+// Called by shielded_pool via async inter-canister call; no custody.
+//
+// DEF-083: init takes the authorized shielded-pool principal; every
+// proof-verification entrypoint traps for any other caller. vk_hash remains
+// public (read-only binding check).
+//
+// verify_spend_canister_benchmark is intentionally excluded — not part of the
+// production interface, and also pool-caller-gated (see canisters/verifier/src/lib.rs).
+//
+// L3e (CUSTODY_VAULT_INTERFACE_FREEZE_V6 §6): get_authorized_pool is the PUBLIC
+// canonical read-back of the stored AUTHORIZED_POOL principal. Mutation-free,
+// no rebind counterpart; traps (fails closed) on uninitialized/sentinel state.
+
+service : (principal) -> {
+    verify_spend_canister : (blob, vec blob) -> (variant { Ok; Err : text });
+    vk_hash               : ()              -> (blob)                       query;
+    get_authorized_pool   : ()              -> (principal)                  query;
+    // Fleet cycle monitor (A-6/A-6b, GAP-U9-1): PUBLIC, additive, mutation-free.
+    cycle_balance         : ()              -> (nat)                        query;
+};
